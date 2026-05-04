@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.vite/
+.git/
+.repo.git/
+
+.env
+.env.*
+!.env.example
+
+.DS_Store
+Thumbs.db
+
+.codex
+.agents/
