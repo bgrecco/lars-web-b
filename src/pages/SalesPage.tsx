@@ -1,11 +1,13 @@
 import { startTransition, useEffect, useMemo, useState, type FormEvent } from "react";
 import ContactSection from "../components/ContactSection";
+import LarsLogoLoader from "../components/LarsLogoLoader";
 import { getSalesPropertyUrl, salesCatalog, type SalesProperty } from "../data/salesCatalog";
 
 type SalesFilters = {
   tipo: string;
   barrio: string;
   dormitorios: string;
+  banos: string;
   minimoUsd: string;
   ref: string;
   orden: string;
@@ -15,6 +17,7 @@ const initialFilters: SalesFilters = {
   tipo: "",
   barrio: "",
   dormitorios: "",
+  banos: "",
   minimoUsd: "",
   ref: "",
   orden: "",
@@ -42,6 +45,7 @@ function getInitialFiltersFromUrl(): SalesFilters {
     tipo: searchParams.get("tipo") ?? "",
     barrio: searchParams.get("barrio") ?? "",
     dormitorios: searchParams.get("dormitorios") ?? "",
+    banos: searchParams.get("banos") ?? "",
   };
 }
 
@@ -59,6 +63,18 @@ function matchesBedrooms(property: SalesProperty, dormitorios: string) {
   }
 
   return String(property.rooms) === dormitorios;
+}
+
+function matchesBathrooms(property: SalesProperty, banos: string) {
+  if (!banos) {
+    return true;
+  }
+
+  if (banos === "4+") {
+    return property.bathrooms >= 4;
+  }
+
+  return String(property.bathrooms) === banos;
 }
 
 function PaginationArrowIcon(props: { direction: "left" | "right" }) {
@@ -93,6 +109,10 @@ function getActiveFilterChips(filters: SalesFilters) {
     chips.push(`Dormitorios: ${filters.dormitorios}`);
   }
 
+  if (filters.banos) {
+    chips.push(`Baños: ${filters.banos}`);
+  }
+
   if (filters.minimoUsd) {
     chips.push(`Desde US$ ${currencyFormatter.format(Number(filters.minimoUsd))}`);
   }
@@ -108,9 +128,20 @@ function getActiveFilterChips(filters: SalesFilters) {
   return chips;
 }
 
-export default function SalesPage() {
+type SalesPageProps = {
+  listingContext?: "ventas" | "alquileres";
+  resultsTitle?: string;
+  showLoaderDemo?: boolean;
+};
+
+export default function SalesPage({
+  listingContext = "ventas",
+  resultsTitle = "Propiedades en venta",
+  showLoaderDemo = false,
+}: SalesPageProps) {
   const [draftFilters, setDraftFilters] = useState<SalesFilters>(() => getInitialFiltersFromUrl());
   const [appliedFilters, setAppliedFilters] = useState<SalesFilters>(() => getInitialFiltersFromUrl());
+  const [isLoaderVisible, setIsLoaderVisible] = useState(showLoaderDemo);
   const [page, setPage] = useState(1);
 
   const typeOptions = useMemo(
@@ -142,6 +173,7 @@ export default function SalesPage() {
         matchesType &&
         matchesLocation &&
         matchesBedrooms(property, appliedFilters.dormitorios) &&
+        matchesBathrooms(property, appliedFilters.banos) &&
         matchesMinimum &&
         matchesRef
       );
@@ -163,6 +195,25 @@ export default function SalesPage() {
   const activeFilterChips = getActiveFilterChips(appliedFilters);
 
   useEffect(() => {
+    if (!showLoaderDemo) {
+      setIsLoaderVisible(false);
+      return;
+    }
+
+    setIsLoaderVisible(true);
+
+    const timeoutId = window.setTimeout(() => {
+      setIsLoaderVisible(false);
+    }, 950);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [showLoaderDemo]);
+
+  useEffect(() => {
+    if (isLoaderVisible) {
+      return;
+    }
+
     const elements = Array.from(document.querySelectorAll<HTMLElement>(".sales-page .reveal:not(.is-visible)"));
 
     if (!elements.length) {
@@ -194,7 +245,17 @@ export default function SalesPage() {
     elements.forEach((element) => observer.observe(element));
 
     return () => observer.disconnect();
-  }, [page, totalPages, visibleProperties.length, activeFilterChips.length]);
+  }, [isLoaderVisible, page, totalPages, visibleProperties.length, activeFilterChips.length]);
+
+  if (isLoaderVisible) {
+    return (
+      <div className="sales-page">
+        <section className="sales-loader-section" aria-live="polite">
+          <LarsLogoLoader />
+        </section>
+      </div>
+    );
+  }
 
   const handleDraftFilterChange = (field: keyof SalesFilters, value: string) => {
     setDraftFilters((currentFilters) => ({
@@ -287,7 +348,21 @@ export default function SalesPage() {
               </label>
 
               <label className="sales-filter-field">
-                <span>Minimo US$</span>
+                <span>Baños</span>
+                <select
+                  value={draftFilters.banos}
+                  onChange={(event) => handleDraftFilterChange("banos", event.target.value)}
+                >
+                  <option value="">Todos</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4+">4+</option>
+                </select>
+              </label>
+
+              <label className="sales-filter-field">
+                <span>Mínimo US$</span>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -324,17 +399,12 @@ export default function SalesPage() {
 
             <div className="sales-filter-actions">
               <div className="sales-filter-summary">
-                <span>
-                  {activeFilterChips.length
-                    ? "Los filtros aplicados aparecen destacados abajo."
-                    : "Usa los filtros para refinar la seleccion disponible."}
-                </span>
+                {activeFilterChips.length ? (
+                  <span>Los filtros aplicados aparecen destacados abajo.</span>
+                ) : null}
               </div>
 
               <div className="sales-filter-buttons">
-                <button type="button" className="ghost-button sales-reset-button" onClick={handleResetFilters}>
-                  Limpiar
-                </button>
                 <button type="submit" className="primary-button search-cta-button">
                   Buscar
                 </button>
@@ -348,7 +418,7 @@ export default function SalesPage() {
         <div className="container">
           <div className="sales-results-head reveal">
             <div className="sales-results-copy">
-              <h2>Propiedades en venta</h2>
+              <h2>{resultsTitle}</h2>
             </div>
 
             <div className="sales-active-filters" aria-label="Filtros activos">
@@ -358,9 +428,7 @@ export default function SalesPage() {
                     {chip}
                   </span>
                 ))
-              ) : (
-                <span className="sales-filter-chip sales-filter-chip-muted">Sin filtros activos</span>
-              )}
+              ) : null}
             </div>
           </div>
 
@@ -372,7 +440,7 @@ export default function SalesPage() {
                   className={`sales-listing-card${property.reserved ? " is-reserved" : ""} reveal reveal-delay-${(index % 4) + 1}`}
                 >
                   <a
-                    href={getSalesPropertyUrl(property.id)}
+                    href={getSalesPropertyUrl(property.id, listingContext)}
                     className="sales-listing-card-hitarea"
                     aria-label={`Ver detalles de ${property.title}`}
                   />
@@ -404,16 +472,10 @@ export default function SalesPage() {
                       <p>{property.summary}</p>
                     </div>
 
-                    <div className="sales-listing-tags" aria-label={`Caracteristicas de ${property.title}`}>
-                      {property.tags.map((tag) => (
-                        <span key={tag}>{tag}</span>
-                      ))}
-                    </div>
-
                     <div className="sales-listing-stats" aria-label={`Datos de ${property.title}`}>
                       <div className="sales-listing-stat">
                         <img src="/icon-dorm.png" alt="" />
-                        <span>{property.rooms === 0 ? "Mono" : property.rooms}</span>
+                        <span>{property.rooms === 0 ? 1 : property.rooms}</span>
                       </div>
                       <div className="sales-listing-stat">
                         <img src="/icon-banos.png" alt="" />
@@ -428,7 +490,7 @@ export default function SalesPage() {
                     <div className="sales-listing-footer">
                       <strong>{property.price}</strong>
                       {!property.reserved ? (
-                        <a href={getSalesPropertyUrl(property.id)} className="text-link sales-listing-link">
+                        <a href={getSalesPropertyUrl(property.id, listingContext)} className="text-link sales-listing-link">
                           Consultar
                         </a>
                       ) : null}
@@ -451,13 +513,13 @@ export default function SalesPage() {
           )}
 
           {totalPages > 1 ? (
-            <div className="sales-pagination reveal reveal-delay-2" aria-label="Paginacion de propiedades">
+            <div className="sales-pagination reveal reveal-delay-2" aria-label="Paginación de propiedades">
               <button
                 type="button"
                 className="sales-page-button sales-page-arrow-button"
                 onClick={() => handlePageChange(page - 1)}
                 disabled={page === 1}
-                aria-label="Pagina anterior"
+                aria-label="Página anterior"
               >
                 <PaginationArrowIcon direction="left" />
               </button>
@@ -481,7 +543,7 @@ export default function SalesPage() {
                 className="sales-page-button sales-page-arrow-button"
                 onClick={() => handlePageChange(page + 1)}
                 disabled={page === totalPages}
-                aria-label="Pagina siguiente"
+                aria-label="Página siguiente"
               >
                 <PaginationArrowIcon direction="right" />
               </button>

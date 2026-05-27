@@ -1,16 +1,22 @@
+import WhatsAppIcon from "./WhatsAppIcon";
+
 type ContactCard = {
   title: string;
   details: string;
 };
 
+type ContactSectionProps = {
+  variant?: "default" | "contrast";
+};
+
 const contactCards: ContactCard[] = [
   {
-    title: "Casa central Cordon",
-    details: "Minas 1401 - Lunes a viernes de 9:00 a 17:00",
+    title: "Casa central Cordón",
+    details: "Minas 1401 - Lunes a viernes de 9:45 a 18:30",
   },
   {
     title: "Sucursal Pocitos Nuevo",
-    details: "Av. Gral Rivera 3471 - Lunes a viernes de 9:00 a 17:00",
+    details: "Rivera 3471 - Lunes a jueves de 10:00 a 18:30\n - Viernes de 10:00 a 17:00",
   },
   {
     title: "Contacto directo",
@@ -27,9 +33,17 @@ function ContactSectionHeader() {
   );
 }
 
-export default function ContactSection() {
+export default function ContactSection({ variant = "default" }: ContactSectionProps) {
+  const sectionClassName = [
+    "section",
+    "section-contact",
+    variant === "contrast" ? "section-contact-contrast" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <section className="section section-contact" id="contacto">
+    <section className={sectionClassName} id="contacto">
       <div className="container contact-layout">
         <div className="contact-copy">
           <ContactSectionHeader />
@@ -55,11 +69,11 @@ export default function ContactSection() {
               <input type="text" placeholder="Nombre" aria-label="Nombre" />
             </label>
             <label className="contact-field contact-field-wide">
-              <span className="sr-only">Celular / Teléfono</span>
+              <span className="sr-only">Celular</span>
               <input
                 type="tel"
-                placeholder="Celular / Teléfono"
-                aria-label="Celular / Teléfono"
+                placeholder="Celular"
+                aria-label="Celular"
               />
             </label>
             <label className="contact-field contact-field-wide">
@@ -83,6 +97,16 @@ export default function ContactSection() {
           <button type="button" className="primary-button contact-submit">
             Enviar consulta
           </button>
+
+          <a
+            className="contact-whatsapp-button"
+            href="https://wa.me/59824010101"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <WhatsAppIcon />
+            <span>Contactarme por WhatsApp</span>
+          </a>
         </form>
       </div>
     </section>

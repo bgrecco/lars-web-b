@@ -79,8 +79,8 @@ function getEstimatedTax(priceValue: number, ratio: number) {
 function buildDescription(property: SalesPropertySeed) {
   const formatLabel = property.rooms === 0 ? "un monoambiente" : `una planta de ${getRoomLabel(property.rooms)}`;
   const reservationLine = property.reserved
-    ? "Actualmente se encuentra reservada, pero podemos registrar tu interes por si se libera o aparece una alternativa con el mismo perfil."
-    : "Hoy se presenta como una opcion lista para coordinar visita y avanzar con asesoramiento comercial personalizado.";
+    ? "Actualmente se encuentra reservada, pero podemos registrar tu interés por si se libera o aparece una alternativa con el mismo perfil."
+    : "Hoy se presenta como una opción lista para coordinar visita y avanzar con asesoramiento comercial personalizado.";
 
   return [
     `${property.summary} La propuesta combina ${formatLabel}, ${property.size} bien aprovechados y una lectura comercial clara desde el primer recorrido.`,
@@ -102,7 +102,7 @@ function buildCharacteristics(property: SalesPropertySeed) {
 }
 
 function buildAmenities(property: SalesPropertySeed) {
-  return [...property.tags, "Circulacion funcional", "Buena entrada de luz", "Asesoramiento Lars"];
+  return [...property.tags, "Circulación funcional", "Buena entrada de luz", "Asesoramiento Lars"];
 }
 
 function buildFinancialInfo(property: SalesPropertySeed) {
@@ -112,20 +112,20 @@ function buildFinancialInfo(property: SalesPropertySeed) {
 
   return [
     `Gastos comunes estimados: $ ${commonExpenses.toLocaleString("es-UY")}`,
-    `Contribucion inmobiliaria estimada: $ ${contribution.toLocaleString("es-UY")}`,
+    `Contribución inmobiliaria estimada: $ ${contribution.toLocaleString("es-UY")}`,
     `Impuesto de primaria estimado: $ ${primaryTax.toLocaleString("es-UY")}`,
-    "Honorarios y documentacion: consultar con el equipo comercial",
+    "Honorarios y documentación: consultar con el equipo comercial",
   ];
 }
 
 function buildInternalInfo(property: SalesPropertySeed) {
   return [
     `Ficha Lars: Ref. ${property.ref}`,
-    "Coordinacion de visitas sujeta a agenda",
-    "Documentacion y condiciones disponibles a solicitud",
+    "Coordinación de visitas sujeta a agenda",
+    "Documentación y condiciones disponibles a solicitud",
     property.reserved
       ? "Estado actual: reservada, con posibilidad de seguimiento comercial"
-      : "Estado actual: abierta a consultas y proxima coordinacion",
+      : "Estado actual: abierta a consultas y próxima coordinación",
   ];
 }
 
@@ -149,7 +149,7 @@ function enrichProperty(property: SalesPropertySeed, extraImages: string[]) {
 const salesCatalogSeeds: SalesPropertySeed[] = [
   {
     id: 9,
-    ref: "009",
+    ref: "0009",
     type: "Apartamento",
     title: "Villa Dolores Apartment",
     price: "US$ 121.000",
@@ -157,15 +157,15 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     location: "Villa Dolores",
     rooms: 2,
     bathrooms: 1,
-    size: "46 m2",
+    size: "46 m²",
     image: "/property-villa-dolores.png",
     reserved: true,
-    summary: "Una unidad compacta y rendidora, muy buscada para inversores que priorizan ubicacion y rotacion.",
-    tags: ["Balcon", "Luminoso", "Ideal renta"],
+    summary: "Una unidad compacta y rendidora, muy buscada para inversores que priorizan ubicación y rotación.",
+    tags: ["Balcón", "Luminoso", "Ideal renta"],
   },
   {
     id: 10,
-    ref: "010",
+    ref: "0010",
     type: "Loft",
     title: "Punta Carretas Loft",
     price: "US$ 121.000",
@@ -173,14 +173,14 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     location: "Punta Carretas",
     rooms: 2,
     bathrooms: 1,
-    size: "46 m2",
+    size: "46 m²",
     image: "/property-punta-carretas.png",
-    summary: "Perfil joven, flexible y con una puesta mas editorial para una zona con demanda sostenida.",
+    summary: "Perfil joven, flexible y con una puesta más editorial para una zona con demanda sostenida.",
     tags: ["Loft", "Cerca del mar", "Entrega inmediata"],
   },
   {
     id: 11,
-    ref: "011",
+    ref: "0011",
     type: "Studio",
     title: "La Blanqueada Studio",
     price: "US$ 121.000",
@@ -188,30 +188,30 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     location: "La Blanqueada",
     rooms: 0,
     bathrooms: 1,
-    size: "38 m2",
+    size: "38 m²",
     image: "/property-la-blanqueada.png",
     reserved: true,
-    summary: "Monoambiente funcional con circulacion clara y potencial para primera vivienda o renta universitaria.",
+    summary: "Monoambiente funcional con circulación clara y potencial para primera vivienda o renta universitaria.",
     tags: ["Monoambiente", "Bajo mantenimiento", "Buen metraje"],
   },
   {
     id: 12,
-    ref: "012",
+    ref: "0012",
     type: "Casa",
-    title: "Parque Rodo House",
+    title: "Parque Rodó House",
     price: "US$ 248.000",
     priceValue: 248000,
-    location: "Parque Rodo",
+    location: "Parque Rodó",
     rooms: 3,
     bathrooms: 2,
-    size: "124 m2",
+    size: "124 m²",
     image: "/1.png",
     summary: "Una casa con escala barrial y espacios sociales pensados para quienes quieren vivir Montevideo con aire propio.",
     tags: ["Patio", "Escritorio", "Actualizada"],
   },
   {
     id: 13,
-    ref: "013",
+    ref: "0013",
     type: "Apartamento",
     title: "Pocitos Classic",
     price: "US$ 321.000",
@@ -219,14 +219,14 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     location: "Pocitos",
     rooms: 3,
     bathrooms: 2,
-    size: "86 m2",
+    size: "86 m²",
     image: "/property-pocitos.png",
-    summary: "Una propuesta mas amplia, con lectura familiar y un lenguaje clasico actualizado.",
-    tags: ["Garaje", "Terraza", "Porteria"],
+    summary: "",
+    tags: ["Garaje", "Terraza", "Portería"],
   },
   {
     id: 14,
-    ref: "014",
+    ref: "0014",
     type: "Apartamento",
     title: "Tres Cruces Flat",
     price: "US$ 213.000",
@@ -234,14 +234,14 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     location: "Tres Cruces",
     rooms: 2,
     bathrooms: 1,
-    size: "59 m2",
+    size: "59 m²",
     image: "/2.png",
-    summary: "Conectividad, practicidad y una planta muy facil de entender para un publico amplio.",
-    tags: ["Conectividad", "Balcon", "Muy rentable"],
+    summary: "Conectividad, practicidad y una planta muy fácil de entender para un público amplio.",
+    tags: ["Conectividad", "Balcón", "Muy rentable"],
   },
   {
     id: 15,
-    ref: "015",
+    ref: "0015",
     type: "Apartamento",
     title: "Buceo Terrace",
     price: "US$ 198.000",
@@ -249,14 +249,14 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     location: "Buceo",
     rooms: 2,
     bathrooms: 2,
-    size: "67 m2",
+    size: "67 m²",
     image: "/3.png",
-    summary: "Una opcion contemporanea con outdoor propio y un perfil muy alineado a la demanda actual.",
+    summary: "Una opción contemporánea con outdoor propio y un perfil muy alineado a la demanda actual.",
     tags: ["Terraza", "Parrillero", "Vista abierta"],
   },
   {
     id: 16,
-    ref: "016",
+    ref: "0016",
     type: "Casa",
     title: "Carrasco Garden House",
     price: "US$ 448.000",
@@ -264,29 +264,29 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     location: "Carrasco",
     rooms: 4,
     bathrooms: 3,
-    size: "188 m2",
+    size: "188 m²",
     image: "/4.png",
-    summary: "Casa con escala, jardin y una narrativa mas premium para quienes buscan calidad residencial.",
-    tags: ["Jardin", "4 dorm.", "Barbacoa"],
+    summary: "Casa con escala, jardín y una narrativa más premium para quienes buscan calidad residencial.",
+    tags: ["Jardín", "4 dorm.", "Barbacoa"],
   },
   {
     id: 17,
-    ref: "017",
+    ref: "0017",
     type: "Loft",
-    title: "Cordon Patio Loft",
+    title: "Cordón Patio Loft",
     price: "US$ 176.000",
     priceValue: 176000,
-    location: "Cordon",
+    location: "Cordón",
     rooms: 1,
     bathrooms: 1,
-    size: "54 m2",
+    size: "54 m²",
     image: "/property-villa-dolores.png",
     summary: "Un formato flexible con patio propio y una identidad urbana muy marcada.",
     tags: ["Patio", "Diseño", "Ideal pareja"],
   },
   {
     id: 18,
-    ref: "018",
+    ref: "0018",
     type: "Penthouse",
     title: "Pocitos Nuevo Penthouse",
     price: "US$ 389.000",
@@ -294,7 +294,7 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     location: "Pocitos",
     rooms: 3,
     bathrooms: 2,
-    size: "112 m2",
+    size: "112 m²",
     image: "/property-pocitos.png",
     summary: "Metraje generoso, terrazas reales y una puesta pensada para una audiencia que busca algo especial.",
     tags: ["Penthouse", "Terrazas", "Suite"],
@@ -309,25 +309,40 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     location: "Centro",
     rooms: 1,
     bathrooms: 1,
-    size: "63 m2",
+    size: "63 m²",
     image: "/2.png",
-    summary: "Una alternativa profesional con ubicacion central y una imagen cuidada desde el acceso.",
-    tags: ["Oficina", "Recepcion", "Muy visible"],
+    summary: "Una alternativa profesional con ubicación central y una imagen cuidada desde el acceso.",
+    tags: ["Oficina", "Recepción", "Muy visible"],
   },
   {
     id: 20,
     ref: "020",
-    type: "Duplex",
-    title: "Malvin Duplex",
+    type: "Dúplex",
+    title: "Malvin Dúplex",
     price: "US$ 264.000",
     priceValue: 264000,
     location: "Malvin",
     rooms: 3,
     bathrooms: 2,
-    size: "98 m2",
+    size: "98 m²",
     image: "/3.png",
-    summary: "Duplex con muy buena distribucion, resuelto para una vida diaria mas comoda y versatil.",
-    tags: ["Duplex", "Al frente", "Listo para entrar"],
+    summary: "Dúplex con muy buena distribución, resuelto para una vida diaria más cómoda y versátil.",
+    tags: ["Dúplex", "Al frente", "Listo para entrar"],
+  },
+  {
+    id: 21,
+    ref: "021",
+    type: "Apartamento",
+    title: "Pocitos Bright Apartment",
+    price: "US$ 232.000",
+    priceValue: 232000,
+    location: "Pocitos",
+    rooms: 2,
+    bathrooms: 2,
+    size: "72 m²",
+    image: "/property-punta-carretas.png",
+    summary: "Apartamento luminoso con buena escala social y un perfil ideal para completar la grilla demo.",
+    tags: ["Luminoso", "Garaje", "Balcón"],
   },
 ];
 
@@ -346,8 +361,8 @@ export function getSalesPropertyById(id: number) {
   return salesCatalog.find((property) => property.id === id);
 }
 
-export function getSalesPropertyUrl(id: number) {
-  return `/propiedades/${id}`;
+export function getSalesPropertyUrl(id: number, origin?: "ventas" | "alquileres") {
+  return origin === "alquileres" ? `/propiedades/${id}?origen=alquileres` : `/propiedades/${id}`;
 }
 
 export function getSimilarSalesProperties(property: SalesProperty, limit = 3) {

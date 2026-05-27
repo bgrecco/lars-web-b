@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import ContactSection from "./components/ContactSection";
+import WhatsAppFloatingButton from "./components/WhatsAppFloatingButton";
 import { getSalesPropertyById } from "./data/salesCatalog";
+import AboutPage from "./pages/AboutPage";
+import CommonExpensesPage from "./pages/CommonExpensesPage";
 import PropertyDetailsPage from "./pages/PropertyDetailsPage";
+import ProjectsPage from "./pages/ProjectsPage";
 import SalesPage from "./pages/SalesPage";
 
-type NavRoute = "home" | "ventas";
+type NavRoute = "home" | "ventas" | "alquileres" | "proyectos" | "gastos" | "acerca" | "contacto";
 
 type NavLink = {
   label: string;
@@ -14,21 +18,13 @@ type NavLink = {
 
 type AppRoute =
   | { name: "home" }
+  | { name: "acerca" }
+  | { name: "gastos" }
   | { name: "ventas" }
+  | { name: "alquileres" }
+  | { name: "proyectos" }
+  | { name: "contacto" }
   | { name: "propiedad"; propertyId: number | null };
-
-type Metric = {
-  value: string;
-  label: string;
-};
-
-type QuickGroup = {
-  title: string;
-  items: Array<{
-    label: string;
-    href: string;
-  }>;
-};
 
 type ListingMedia = {
   image: string;
@@ -47,24 +43,6 @@ type Listing = {
   image: string;
   gallery: ListingMedia[];
   videoSrc?: string;
-};
-
-type Project = {
-  tag: string;
-  title: string;
-  location: string;
-  description: string;
-  image: string;
-};
-
-type Service = {
-  title: string;
-  description: string;
-};
-
-type AboutTopic = {
-  title: string;
-  description: string;
 };
 
 function buildListingGallery(title: string, primaryImage: string): ListingMedia[] {
@@ -93,68 +71,32 @@ function buildListingGallery(title: string, primaryImage: string): ListingMedia[
 }
 
 const navLinks: NavLink[] = [
-  { label: "Gastos Comunes", href: "/#servicios" },
+  { label: "Gastos Comunes", href: "/gastos-comunes", route: "gastos" },
   { label: "Ventas", href: "/ventas", route: "ventas" },
-  { label: "Alquileres", href: "/#propiedades" },
-  { label: "Proyectos", href: "/#proyectos" },
-  { label: "Lars", href: "/#acerca" },
-  { label: "Contacto", href: "/#contacto" },
-];
-
-const heroMetrics: Metric[] = [
-  { value: "+55 años", label: "de experiencia y trayectoria familiar" },
-  { value: "2 oficinas", label: "Cordón y Pocitos Nuevo para atención cercana" },
-  { value: "24/7", label: "acceso online para pagos y consultas" },
-  {
-    value: "5 departamentos",
-    label: "ventas, alquiler, gastos comunes, departamento contable y administración de propiedades",
-  },
+  { label: "Alquileres", href: "/alquileres", route: "alquileres" },
+  { label: "Proyectos", href: "/proyectos", route: "proyectos" },
+  { label: "Lars", href: "/acerca", route: "acerca" },
+  { label: "Contacto", href: "/contacto", route: "contacto" },
 ];
 
 const heroHighlights = [
   {
-    title: "Propiedades destacadas",
-    detail: "Selección actualizada para compra, alquiler y oportunidades con seguimiento comercial.",
+    title: "Consultar por gastos comunes",
+    detail: "Administración, liquidación mensual y respaldo operativo para edificios.",
+    icon: "expenses",
+    href: "/gastos-comunes",
   },
   {
-    title: "Gastos comunes",
-    detail: "Administración, liquidación mensual y respaldo operativo para edificios y comunidades.",
+    title: "Propiedades en alquiler",
+    detail: "Visualizá todas nuestras propiedades disponibles para alquiler.",
+    icon: "rent",
+    href: "/alquileres",
   },
   {
-    title: "Atención directa",
-    detail: "Equipo disponible desde Cordón y Pocitos Nuevo para orientar cada consulta.",
-  },
-];
-
-const quickGroups: QuickGroup[] = [
-  {
-    title: "Zonas destacadas",
-    items: [
-      { label: "Pocitos", href: "/ventas?barrio=Pocitos#ventas-filtros" },
-      { label: "Tres Cruces", href: "/ventas?barrio=Tres%20Cruces#ventas-filtros" },
-      { label: "Buceo", href: "/ventas?barrio=Buceo#ventas-filtros" },
-      { label: "Carrasco", href: "/ventas?barrio=Carrasco#ventas-filtros" },
-      { label: "Punta Carretas", href: "/ventas?barrio=Punta%20Carretas#ventas-filtros" },
-    ],
-  },
-  {
-    title: "Tipos de propiedad",
-    items: [
-      { label: "Casas", href: "/ventas?tipo=Casa#ventas-filtros" },
-      { label: "Apartamentos", href: "/ventas?tipo=Apartamento#ventas-filtros" },
-      { label: "Oficinas", href: "/ventas?tipo=Oficina#ventas-filtros" },
-      { label: "Locales", href: "/ventas?tipo=Local#ventas-filtros" },
-      { label: "Terrenos", href: "/ventas?tipo=Terreno#ventas-filtros" },
-    ],
-  },
-  {
-    title: "Cantidad de dormitorios",
-    items: [
-      { label: "1", href: "/ventas?dormitorios=1#ventas-filtros" },
-      { label: "2", href: "/ventas?dormitorios=2#ventas-filtros" },
-      { label: "3", href: "/ventas?dormitorios=3#ventas-filtros" },
-      { label: "4+", href: "/ventas?dormitorios=4%2B#ventas-filtros" },
-    ],
+    title: "Propiedades en venta",
+    detail: "Visualizá todas nuestras propiedades disponibles para venta.",
+    icon: "sale",
+    href: "/ventas",
   },
 ];
 
@@ -166,7 +108,7 @@ const featuredListings: Listing[] = [
     location: "Villa Dolores",
     rooms: 3,
     bathrooms: 2,
-    size: "46 m2",
+    size: "46 m²",
     image: "/property-villa-dolores.png",
     gallery: buildListingGallery("Villa Dolores Loft", "/property-villa-dolores.png"),
     videoSrc: "/hero-bg.mp4",
@@ -178,7 +120,7 @@ const featuredListings: Listing[] = [
     location: "Pocitos",
     rooms: 3,
     bathrooms: 2,
-    size: "46 m2",
+    size: "46 m²",
     image: "/property-pocitos.png",
     gallery: buildListingGallery("Pocitos Classic", "/property-pocitos.png"),
   },
@@ -189,7 +131,7 @@ const featuredListings: Listing[] = [
     location: "Punta Carretas",
     rooms: 2,
     bathrooms: 1,
-    size: "46 m2",
+    size: "46 m²",
     image: "/property-punta-carretas.png",
     gallery: buildListingGallery("Punta Carretas Loft", "/property-punta-carretas.png"),
   },
@@ -200,98 +142,9 @@ const featuredListings: Listing[] = [
     location: "La Blanqueada",
     rooms: 2,
     bathrooms: 1,
-    size: "46 m2",
+    size: "46 m²",
     image: "/property-la-blanqueada.png",
     gallery: buildListingGallery("La Blanqueada Studio", "/property-la-blanqueada.png"),
-  },
-];
-
-const featuredProjects: Project[] = [
-  {
-    tag: "Proyecto destacado",
-    title: "Tempo Guayabos",
-    location: "Montevideo",
-    description:
-      "Una pieza principal para desarrollos con mucha presencia visual, identidad propia y CTA claro.",
-    image: "/project-tempo.png",
-  },
-  {
-    tag: "Edificio boutique",
-    title: "Visca",
-    location: "Montevideo",
-    description:
-      "Bloque pensado para presentar edificios y apartamentos con una lectura mas directa y editorial.",
-    image: "/project-urban.png",
-  },
-  {
-    tag: "Housing garden",
-    title: "Vila",
-    location: "Barra de Carrasco",
-    description:
-      "Una variante para proyectos con mas aire residencial, terrazas y vida de barrio.",
-    image: "/project-garden.png",
-  },
-];
-
-const services: Service[] = [
-  {
-    title: "Gastos Comunes",
-    description:
-      "Seguimiento real, liquidacion mensual, pago online 24/7 y respaldo contable, fiscal y operativo.",
-  },
-  {
-    title: "Administracion de Propiedades",
-    description:
-      "Marketing del inmueble, gestion de garantias, control de pagos y acompañamiento durante todo el contrato.",
-  },
-  {
-    title: "Ventas y Alquileres",
-    description:
-      "Tasacion, produccion fotografica, acompañamiento en visitas y un proceso comercial mas claro y cercano.",
-  },
-  {
-    title: "Atencion Lars",
-    description:
-      "Empresa familiar y multigeneracional con una forma de trabajo personalizada, presente y resolutiva.",
-  },
-];
-
-const aboutMetrics: Metric[] = [
-  { value: "Trayectoria", label: "+55 años de experiencia" },
-  { value: "Modelo", label: "Empresa familiar y multigeneracional" },
-  { value: "Servicios", label: "Administracion, ventas y alquileres" },
-];
-
-const aboutTopics: AboutTopic[] = [
-  {
-    title: "Atencion personalizada",
-    description:
-      "Acompanamos cada consulta con un trato directo, seguimiento cercano y respuestas pensadas para la situacion real de cada cliente.",
-  },
-  {
-    title: "Compromiso y confianza",
-    description:
-      "Trabajamos con continuidad, claridad en la informacion y una forma de gestionar que prioriza relaciones de largo plazo.",
-  },
-  {
-    title: "Red de oficinas",
-    description:
-      "Nuestra presencia en Cordon y Pocitos Nuevo nos permite estar cerca de propietarios, inquilinos y compradores en zonas clave de Montevideo.",
-  },
-  {
-    title: "Respuesta agil",
-    description:
-      "Ordenamos consultas, visitas y gestiones operativas para que cada paso avance con menos friccion y mayor previsibilidad.",
-  },
-  {
-    title: "Mirada actual",
-    description:
-      "Combinamos trayectoria familiar con herramientas digitales, comunicacion clara y una lectura actual del mercado inmobiliario.",
-  },
-  {
-    title: "Servicio integral",
-    description:
-      "Integramos administracion, ventas, alquileres y gastos comunes para resolver necesidades inmobiliarias desde un mismo equipo.",
   },
 ];
 
@@ -332,8 +185,28 @@ function getWrappedIndex(index: number, length: number) {
 function getRouteFromPathname(pathname: string): AppRoute {
   const normalizedPathname = pathname.replace(/\/+$/, "") || "/";
 
+  if (normalizedPathname === "/gastos-comunes") {
+    return { name: "gastos" };
+  }
+
+  if (normalizedPathname === "/acerca") {
+    return { name: "acerca" };
+  }
+
   if (normalizedPathname === "/ventas") {
     return { name: "ventas" };
+  }
+
+  if (normalizedPathname === "/alquileres") {
+    return { name: "alquileres" };
+  }
+
+  if (normalizedPathname === "/proyectos") {
+    return { name: "proyectos" };
+  }
+
+  if (normalizedPathname === "/contacto") {
+    return { name: "contacto" };
   }
 
   const propertyMatch = normalizedPathname.match(/^\/propiedades\/([^/]+)$/);
@@ -450,7 +323,7 @@ function ListingShowcaseCard(props: ListingShowcaseCardProps) {
           </div>
         </div>
 
-        <div className="listing-showcase-thumbs" aria-label={`Imagenes secundarias de ${listing.title}`}>
+          <div className="listing-showcase-thumbs" aria-label={`Imágenes secundarias de ${listing.title}`}>
           {listing.gallery.map((media, index) =>
             interactive && onMediaSelect ? (
               <button
@@ -520,57 +393,45 @@ function ListingShowcasePreview(props: {
   );
 }
 
-function TopActionIcon(props: { kind: "sueldos" | "clientes" }) {
-  const { kind } = props;
-
-  if (kind === "sueldos") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path
-          d="M7 3.5h8l3 3v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M15 3.5V7h3"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M8.5 11h6M8.5 14.5h6M8.5 18h4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-        />
-      </svg>
-    );
+function HeroInsightIcon(props: { kind: string }) {
+  switch (props.kind) {
+    case "expenses":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6.5 4.5h11v15h-11z" />
+          <path d="M9 8h6" />
+          <path d="M9 11.5h6" />
+          <path d="M9 15h3" />
+        </svg>
+      );
+    case "rent":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4.5 11.5 12 5l7.5 6.5" />
+          <path d="M6.5 10.5v8h11v-8" />
+          <path d="M10 18.5v-5h4v5" />
+          <path d="M16.5 6.5h2v3" />
+        </svg>
+      );
+    case "sale":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4.5 11.5 12 5l7.5 6.5" />
+          <path d="M6.5 10.5v9h11v-9" />
+          <path className="hero-insight-icon-detail" d="M12 9.6v7.3" />
+          <path className="hero-insight-icon-detail" d="M14.4 11.1c-.5-.7-1.3-1-2.3-1-1.2 0-2 .6-2 1.5 0 2.2 4.4 1 4.4 3.4 0 .9-.8 1.5-2.1 1.5-1.1 0-2-.4-2.6-1.1" />
+        </svg>
+      );
+    default:
+      return null;
   }
+}
 
+function SearchIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M12 11a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M5.5 19.5a6.5 6.5 0 0 1 13 0"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <circle cx="10.5" cy="10.5" r="5.5" />
+      <path d="m15 15 4.5 4.5" />
     </svg>
   );
 }
@@ -615,25 +476,45 @@ function TopbarIcon(props: { kind: "location" | "phone" }) {
   );
 }
 
-function FooterSocialIcon(props: { kind: "instagram" | "facebook" | "linkedin" }) {
+function TopbarBranchInfo(props: {
+  branch: (typeof topbarBranches)[number];
+}) {
+  const { branch } = props;
+
+  return (
+    <>
+      <span className="topbar-branch-name">{branch.office}</span>
+      <span className="topbar-info-item">
+        <TopbarIcon kind="location" />
+        <span>{branch.address}</span>
+      </span>
+      <a className="topbar-info-item" href={branch.phoneHref}>
+        <TopbarIcon kind="phone" />
+        <span>{branch.phone}</span>
+      </a>
+    </>
+  );
+}
+
+function FooterSocialIcon(props: { kind: "instagram" | "facebook" | "tiktok" }) {
   const { kind } = props;
 
   if (kind === "facebook") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path
-          d="M14 8.2h2.2V4.7A13 13 0 0 0 13 4.5c-3.2 0-5.35 1.95-5.35 5.5v3.1H4.1V17h3.55v2.5h4.3V17h3.45l0.55-3.9h-4v-2.7c0-1.12 0.32-2.2 2.05-2.2Z"
+          d="M12 2.9c-5.03 0-9.1 4.08-9.1 9.1 0 4.54 3.32 8.31 7.66 9v-6.39H8.25V12h2.31v-1.98c0-2.28 1.36-3.54 3.44-3.54 1 0 2.04.18 2.04.18v2.24h-1.15c-1.13 0-1.49.7-1.49 1.43V12h2.53l-.4 2.61H13.4V21c4.34-.69 7.66-4.46 7.66-9 0-5.02-4.07-9.1-9.06-9.1Z"
           fill="currentColor"
         />
       </svg>
     );
   }
 
-  if (kind === "linkedin") {
+  if (kind === "tiktok") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path
-          d="M6.1 9.15h3.65V19.5H6.1V9.15Zm1.82-4.65a2.1 2.1 0 1 1 0 4.2 2.1 2.1 0 0 1 0-4.2Zm4.1 4.65h3.5v1.42h0.05c0.48-0.88 1.66-1.72 3.4-1.72 3.62 0 4.18 2.26 4.18 5.2v5.45H19.5v-4.84c0-1.15-0.02-2.62-1.7-2.62-1.72 0-1.98 1.26-1.98 2.55v4.91h-3.8V9.15Z"
+          d="M14.45 4.2c0.35 2.35 1.66 3.72 4.05 3.87v3.15c-1.38 0.13-2.58-0.32-3.95-1.16v5.9c0 2.98-1.84 4.92-4.66 4.92-2.66 0-4.39-1.58-4.39-3.98 0-2.7 2.06-4.18 5.13-3.84v3.25c-1.14-0.18-1.82 0.22-1.82 0.94 0 0.62 0.54 1.02 1.32 1.02 0.92 0 1.34-0.54 1.34-1.72V4.2h2.98Z"
           fill="currentColor"
         />
       </svg>
@@ -693,7 +574,6 @@ function App() {
   const [listingTransitionDirection, setListingTransitionDirection] = useState<"left" | "right" | null>(null);
   const [listingMotionKey, setListingMotionKey] = useState(0);
   const [footerBranchIndex, setFooterBranchIndex] = useState(0);
-  const [activeAboutTopicIndex, setActiveAboutTopicIndex] = useState(0);
 
   useEffect(() => {
     const elements = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
@@ -726,13 +606,38 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (route.name === "acerca") {
+      document.title = "Lars | Acerca";
+      return;
+    }
+
+    if (route.name === "gastos") {
+      document.title = "Lars | Gastos Comunes";
+      return;
+    }
+
     if (route.name === "ventas") {
       document.title = "Lars | Ventas";
       return;
     }
 
+    if (route.name === "alquileres") {
+      document.title = "Lars | Alquileres";
+      return;
+    }
+
+    if (route.name === "proyectos") {
+      document.title = "Lars | Proyectos";
+      return;
+    }
+
     if (route.name === "propiedad") {
       document.title = activeProperty ? `Lars | ${activeProperty.title}` : "Lars | Propiedad";
+      return;
+    }
+
+    if (route.name === "contacto") {
+      document.title = "Lars | Contacto";
       return;
     }
 
@@ -778,26 +683,26 @@ function App() {
     setListingIndex(index);
   };
 
-  const activeAboutTopic = aboutTopics[getWrappedIndex(activeAboutTopicIndex, aboutTopics.length)];
   const activeFooterBranch = topbarBranches[getWrappedIndex(footerBranchIndex, topbarBranches.length)];
+  const pageShellClassName = [
+    "page-shell",
+    route.name !== "home" ? "page-shell-sales" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <div className={`page-shell${route.name !== "home" ? " page-shell-sales" : ""}`}>
+    <div className={pageShellClassName}>
       <div className="topbar">
         <div className="container topbar-inner">
-          {topbarBranches.map((branch) => (
-            <div className="topbar-branch" key={branch.office}>
-              <span className="topbar-branch-name">{branch.office}</span>
-              <span className="topbar-info-item">
-                <TopbarIcon kind="location" />
-                <span>{branch.address}</span>
-              </span>
-              <a className="topbar-info-item" href={branch.phoneHref}>
-                <TopbarIcon kind="phone" />
-                <span>{branch.phone}</span>
-              </a>
-            </div>
-          ))}
+          <div className="topbar-branch">
+            <TopbarBranchInfo branch={topbarBranches[0]} />
+          </div>
+
+          <div className="topbar-branch">
+            <TopbarBranchInfo branch={topbarBranches[1]} />
+          </div>
+
         </div>
       </div>
 
@@ -820,22 +725,30 @@ function App() {
           </nav>
           <div className="header-actions" aria-label="Accesos directos">
             <button type="button" className="header-action-button">
-              <TopActionIcon kind="sueldos" />
-              <span>Sueldos</span>
+              <span>Clientes</span>
             </button>
             <button type="button" className="header-action-button">
-              <TopActionIcon kind="clientes" />
-              <span>Clientes</span>
+              <span>Sueldos</span>
             </button>
           </div>
         </div>
       </header>
 
       <main>
-        {route.name === "ventas" ? (
-          <SalesPage />
+        {route.name === "acerca" ? (
+          <AboutPage />
+        ) : route.name === "gastos" ? (
+          <CommonExpensesPage />
+        ) : route.name === "ventas" ? (
+          <SalesPage showLoaderDemo />
+        ) : route.name === "alquileres" ? (
+          <SalesPage listingContext="alquileres" resultsTitle="Propiedades en alquiler" />
+        ) : route.name === "proyectos" ? (
+          <ProjectsPage />
         ) : route.name === "propiedad" ? (
           <PropertyDetailsPage propertyId={route.propertyId} />
+        ) : route.name === "contacto" ? (
+          <ContactSection />
         ) : (
           <>
             <section className="hero" id="inicio">
@@ -855,15 +768,14 @@ function App() {
           <div className="container hero-stage">
             <div className="hero-content reveal">
               <h1>"Servimos bien para servir siempre"</h1>
-              <p>
-                Una experiencia integral para vender, alquilar, administrar y acompañar decisiones
-                inmobiliarias con cercanía, trayectoria y mirada actual.
+              <p className="hero-tagline">
+                Más de medio siglo de seriedad brindando un servicio integral y a la vanguardia en el rubro inmobiliario
               </p>
               <div className="hero-actions">
                 <a className="primary-button search-cta-button" href="#propiedades">
                   Ver propiedades
                 </a>
-                <a className="hero-link-button" href="#servicios">
+                <a className="hero-link-button" href="/gastos-comunes">
                   Consultar gastos comunes
                 </a>
               </div>
@@ -872,37 +784,28 @@ function App() {
             <aside className="hero-insight-panel reveal reveal-delay-2" aria-label="Resumen de servicios Lars">
               <div className="hero-insight-heading">
                 <span>Hoy en Lars</span>
-                <strong>Información clave para empezar rápido</strong>
+                <strong>Información de interés general</strong>
               </div>
 
               <div className="hero-insight-list">
-                {heroHighlights.map((item, index) => (
-                  <article key={item.title} className="hero-insight-item">
-                    <span className="hero-insight-index">{String(index + 1).padStart(2, "0")}</span>
+                {heroHighlights.map((item) => (
+                  <a key={item.title} className="hero-insight-item" href={item.href}>
+                    <span className="hero-insight-icon">
+                      <HeroInsightIcon kind={item.icon} />
+                    </span>
                     <div>
                       <h2>{item.title}</h2>
                       <p>{item.detail}</p>
                     </div>
-                  </article>
+                  </a>
                 ))}
               </div>
 
               <a className="hero-panel-link" href="#contacto">
-                Hablar con un asesor
+                Contactarme
               </a>
             </aside>
 
-            <div className="hero-metrics">
-              {heroMetrics.map((item, index) => (
-                <article
-                  key={item.value}
-                  className={`hero-metric-card reveal reveal-delay-${index + 1}`}
-                >
-                  <strong>{item.value}</strong>
-                  <span>{item.label}</span>
-                </article>
-              ))}
-            </div>
           </div>
         </section>
 
@@ -912,23 +815,25 @@ function App() {
               <form className="search-card reveal reveal-delay-3">
                 <div className="search-header">
                   <div>
-                    <h2>Encontra propiedades y servicios Lars desde la home</h2>
+                    <h2>
+                      <span className="search-title-icon">
+                        <SearchIcon />
+                      </span>
+                      Buscador de propiedades
+                    </h2>
                   </div>
-                  <button type="button" className="ghost-button">
-                    Ver filtros
-                  </button>
                 </div>
 
                 <div className="search-grid">
-                  <label>
-                    Operacion
+                  <label className="search-field-compact">
+                    Operación
                     <select defaultValue="venta">
                       <option value="venta">Venta</option>
                       <option value="alquiler">Alquiler</option>
                       <option value="proyectos">Proyectos</option>
                     </select>
                   </label>
-                  <label>
+                  <label className="search-field-compact">
                     Tipo
                     <select defaultValue="apartamento">
                       <option value="apartamento">Apartamento</option>
@@ -937,47 +842,52 @@ function App() {
                       <option value="terreno">Terreno</option>
                     </select>
                   </label>
-                  <label>
-                    Zona o referencia
+                  <label className="search-field-standard search-field-zone">
+                    Zona
                     <input type="text" placeholder="Ej: Pocitos, Carrasco o referencia" />
                   </label>
-                  <label>
-                    Presupuesto
+                  <label className="search-field-compact">
+                    Dormitorios
+                    <select defaultValue="">
+                      <option value="" />
+                      <option value="1">1 dormitorio</option>
+                      <option value="2">2 dormitorios</option>
+                      <option value="3">3 dormitorios</option>
+                      <option value="4+">4 o más</option>
+                    </select>
+                  </label>
+                  <label className="search-field-compact">
+                    Baños
+                    <select defaultValue="">
+                      <option value="" />
+                      <option value="1">1 baño</option>
+                      <option value="2">2 baños</option>
+                      <option value="3">3 baños</option>
+                      <option value="4+">4 o más</option>
+                    </select>
+                  </label>
+                  <label className="search-field-compact search-field-reference">
+                    Nº de ref.
+                    <input type="text" placeholder="Ej: 1234" />
+                  </label>
+                  <label className="search-field-standard">
+                    Precio
                     <select defaultValue="mid">
-                      <option value="mid">USD 120.000 - 250.000</option>
-                      <option value="low">Hasta USD 120.000</option>
-                      <option value="high">Mas de USD 250.000</option>
+                      <option value="mid">US$ 120.000 - 250.000</option>
+                      <option value="low">Hasta US$ 120.000</option>
+                      <option value="high">Más de US$ 250.000</option>
                     </select>
                   </label>
                 </div>
 
                 <div className="search-actions">
-                  <div className="search-tags">
-                    <span>Garaje</span>
-                    <span>Barbacoa</span>
-                    <span>Piscina</span>
-                    <span>Entrega inmediata</span>
+                  <div className="search-action-buttons">
+                    <button type="button" className="primary-button search-cta-button">
+                      Buscar
+                    </button>
                   </div>
-                  <button type="button" className="primary-button search-cta-button">
-                    Buscar
-                  </button>
                 </div>
               </form>
-
-              <div className="quick-grid">
-                {quickGroups.map((group, index) => (
-                  <article key={group.title} className={`quick-card reveal reveal-delay-${index + 1}`}>
-                    <h3>{group.title}</h3>
-                    <div className="quick-links">
-                      {group.items.map((item) => (
-                        <a key={item.label} href={item.href}>
-                          {item.label}
-                        </a>
-                      ))}
-                    </div>
-                  </article>
-                ))}
-              </div>
             </div>
           </div>
         </section>
@@ -985,7 +895,7 @@ function App() {
             <section className="section section-listings" id="propiedades">
           <div className="container">
             <SectionHeader
-              title="Destacadas en venta y alquiler"
+              title="Propiedades destacadas"
               description=""
             />
 
@@ -1033,14 +943,14 @@ function App() {
                     type="button"
                     className="listing-carousel-button listing-carousel-button-next"
                     onClick={handleNextListings}
-                    aria-label="Ver mas propiedades"
+                    aria-label="Ver más propiedades"
                   >
                     <CarouselArrowIcon direction="right" />
                   </button>
                 </div>
               </div>
 
-              <div className="listing-carousel-dots" aria-label="Paginacion de propiedades">
+              <div className="listing-carousel-dots" aria-label="Paginación de propiedades">
                 {featuredListings.map((listing, index) => (
                   <button
                     key={listing.title}
@@ -1056,128 +966,12 @@ function App() {
           </div>
         </section>
 
-            <section className="section section-projects" id="proyectos">
-          <div className="container">
-            <SectionHeader
-              title="Proyectos"
-              description=""
-            />
-
-            <div className="projects-grid">
-              {featuredProjects.map((project, index) => (
-                <article
-                  key={project.title}
-                  className={`project-card reveal${index === 0 ? " project-card-wide" : ""}`}
-                >
-                  <div className="project-image-wrap">
-                    <img src={project.image} alt={project.title} className="project-image" />
-                  </div>
-                  <div className="project-body">
-                    <h3>{project.title}</h3>
-                    <p className="project-meta">{project.location}</p>
-                    <p>{project.description}</p>
-                    <a href="#contacto" className="text-link">
-                      Ver proyecto
-                    </a>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-            <section className="section section-dark" id="servicios">
-          <div className="container services-layout">
-            <div className="services-copy reveal">
-              <SectionHeader
-                title="Gastos comunes, administracion y atencion personalizada dentro de la misma experiencia"
-                description=""
-                inverse
-              />
-
-              <div className="service-pills">
-                <span>Seguimiento continuo</span>
-                <span>Pago online</span>
-                <span>Gestion tributaria</span>
-                <span>Atencion cercana</span>
-              </div>
-            </div>
-
-            <div className="service-grid">
-              {services.map((service, index) => (
-                <article key={service.title} className={`service-feature-card reveal reveal-delay-${index + 1}`}>
-                  <span className="service-number">0{index + 1}</span>
-                  <h3>{service.title}</h3>
-                  <p>{service.description}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-            <section className="section section-about" id="acerca">
-          <div className="container about-layout">
-            <div className="about-copy">
-              <SectionHeader
-                title="Una empresa familiar que combina trayectoria, continuidad y cercania"
-                description=""
-              />
-
-              <div className="metric-pills">
-                {aboutMetrics.map((item) => (
-                  <article key={item.value} className="metric-pill reveal">
-                    <strong>{item.value}</strong>
-                    <span>{item.label}</span>
-                  </article>
-                ))}
-              </div>
-
-              <div className="about-tags" aria-label="Temas sobre Lars">
-                {aboutTopics.map((item, index) => (
-                  <button
-                    key={item.title}
-                    type="button"
-                    className={index === activeAboutTopicIndex ? "is-active" : undefined}
-                    onClick={() => setActiveAboutTopicIndex(index)}
-                    aria-controls="about-topic-card"
-                    aria-pressed={index === activeAboutTopicIndex}
-                  >
-                    {item.title}
-                  </button>
-                ))}
-              </div>
-
-              <article
-                key={activeAboutTopic.title}
-                id="about-topic-card"
-                className="about-topic-card"
-                aria-live="polite"
-              >
-                <h3>{activeAboutTopic.title}</h3>
-                <p>{activeAboutTopic.description}</p>
-              </article>
-            </div>
-
-            <aside className="spotlight-panel reveal reveal-delay-2">
-              <div className="spotlight-image-wrap">
-                <img src="/ggcc-city.png" alt="Ciudad y edificios gestionados por Lars" />
-              </div>
-              <div className="spotlight-body">
-                <h3>Servicio integral con mirada actual y una forma de trabajo cercana.</h3>
-                <p>
-                  Brindamos administracion de gastos comunes, ventas, alquileres y administracion
-                  de propiedades con un equipo especializado, foco real en cada necesidad y una
-                  experiencia mas clara para el cliente.
-                </p>
-              </div>
-            </aside>
-          </div>
-        </section>
-
             <ContactSection />
           </>
         )}
       </main>
+
+      <WhatsAppFloatingButton />
 
       <footer className="site-footer">
         <div className="container footer-inner">
@@ -1188,8 +982,10 @@ function App() {
             aria-label={`${activeFooterBranch.office}: ${activeFooterBranch.address}, ${activeFooterBranch.phone}`}
           >
             <span className="footer-branch-name">{activeFooterBranch.office}</span>
+            <span className="footer-branch-separator" aria-hidden="true">-</span>
             <span className="footer-branch-details">
               <span>{activeFooterBranch.address}</span>
+              <span className="footer-branch-separator" aria-hidden="true">-</span>
               <a href={activeFooterBranch.phoneHref}>{activeFooterBranch.phone}</a>
             </span>
           </div>
@@ -1200,8 +996,8 @@ function App() {
             <a href="https://www.facebook.com/" aria-label="Facebook">
               <FooterSocialIcon kind="facebook" />
             </a>
-            <a href="https://www.linkedin.com/" aria-label="LinkedIn">
-              <FooterSocialIcon kind="linkedin" />
+            <a href="https://www.tiktok.com/" aria-label="TikTok">
+              <FooterSocialIcon kind="tiktok" />
             </a>
           </div>
         </div>
