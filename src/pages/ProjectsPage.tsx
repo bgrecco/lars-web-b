@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import ContactSection from "../components/ContactSection";
-import { featuredProjects } from "../data/projectsCatalog";
+import { featuredProjects, getProjectUrl } from "../data/projectsCatalog";
 
 export default function ProjectsPage() {
   useEffect(() => {
@@ -61,7 +61,7 @@ export default function ProjectsPage() {
                   <h3>{project.title}</h3>
                   <p className="project-meta">{project.location}</p>
                   <p>{project.description}</p>
-                  <a href="/contacto" className="text-link">
+                  <a href={getProjectUrl(project.slug)} className="text-link">
                     Ver proyecto
                   </a>
                 </div>

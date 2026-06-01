@@ -1,19 +1,35 @@
 import { useEffect, useRef, useState } from "react";
 import ContactSection from "./components/ContactSection";
 import WhatsAppFloatingButton from "./components/WhatsAppFloatingButton";
+import { getProjectBySlug } from "./data/projectsCatalog";
 import { getSalesPropertyById } from "./data/salesCatalog";
 import AboutPage from "./pages/AboutPage";
 import CommonExpensesPage from "./pages/CommonExpensesPage";
+import ProjectDetailsPage from "./pages/ProjectDetailsPage";
+import PropertyAdminPage from "./pages/PropertyAdminPage";
 import PropertyDetailsPage from "./pages/PropertyDetailsPage";
+import PropertyManagementPage from "./pages/PropertyManagementPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import SalesPage from "./pages/SalesPage";
 
-type NavRoute = "home" | "ventas" | "alquileres" | "proyectos" | "gastos" | "acerca" | "contacto";
+type NavRoute =
+  | "home"
+  | "ventas"
+  | "alquileres"
+  | "propietarios"
+  | "proyectos"
+  | "gastos"
+  | "acerca"
+  | "contacto";
 
 type NavLink = {
   label: string;
   href: string;
   route?: NavRoute;
+  children?: Array<{
+    label: string;
+    href: string;
+  }>;
 };
 
 type AppRoute =
@@ -22,7 +38,10 @@ type AppRoute =
   | { name: "gastos" }
   | { name: "ventas" }
   | { name: "alquileres" }
+  | { name: "administracion-propiedades" }
+  | { name: "propietarios" }
   | { name: "proyectos" }
+  | { name: "proyecto"; projectSlug: string | null }
   | { name: "contacto" }
   | { name: "propiedad"; propertyId: number | null };
 
@@ -73,9 +92,18 @@ function buildListingGallery(title: string, primaryImage: string): ListingMedia[
 const navLinks: NavLink[] = [
   { label: "Gastos Comunes", href: "/gastos-comunes", route: "gastos" },
   { label: "Ventas", href: "/ventas", route: "ventas" },
-  { label: "Alquileres", href: "/alquileres", route: "alquileres" },
+  {
+    label: "Alquileres",
+    href: "/alquileres",
+    route: "alquileres",
+    children: [
+      { label: "Propiedades en alquiler", href: "/alquileres" },
+      { label: "Administración de propiedades", href: "/alquileres/administracion-de-propiedades" },
+    ],
+  },
+  { label: "Propietarios", href: "/propietarios", route: "propietarios" },
   { label: "Proyectos", href: "/proyectos", route: "proyectos" },
-  { label: "Lars", href: "/acerca", route: "acerca" },
+  { label: "Nosotros", href: "/acerca", route: "acerca" },
   { label: "Contacto", href: "/contacto", route: "contacto" },
 ];
 
@@ -201,8 +229,25 @@ function getRouteFromPathname(pathname: string): AppRoute {
     return { name: "alquileres" };
   }
 
+  if (
+    normalizedPathname === "/administracion-propiedades" ||
+    normalizedPathname === "/alquileres/administracion-de-propiedades"
+  ) {
+    return { name: "administracion-propiedades" };
+  }
+
+  if (normalizedPathname === "/propietarios") {
+    return { name: "propietarios" };
+  }
+
   if (normalizedPathname === "/proyectos") {
     return { name: "proyectos" };
+  }
+
+  const projectMatch = normalizedPathname.match(/^\/proyectos\/([^/]+)$/);
+
+  if (projectMatch) {
+    return { name: "proyecto", projectSlug: decodeURIComponent(projectMatch[1]) || null };
   }
 
   if (normalizedPathname === "/contacto") {
@@ -436,6 +481,75 @@ function SearchIcon() {
   );
 }
 
+function SearchDemoFilterIcon(props: { kind: "home" | "building" | "bed" | "bath" | "tag" | "arrow" }) {
+  const { kind } = props;
+
+  if (kind === "home") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 11.5 12 4l9 7.5" />
+        <path d="M6.5 10.5V20h11v-9.5" />
+        <path d="M10 20v-5h4v5" />
+      </svg>
+    );
+  }
+
+  if (kind === "building") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 21V4.8C5 3.8 5.8 3 6.8 3h8.4c1 0 1.8.8 1.8 1.8V21" />
+        <path d="M8.5 7h1" />
+        <path d="M13.5 7h1" />
+        <path d="M8.5 11h1" />
+        <path d="M13.5 11h1" />
+        <path d="M8.5 15h1" />
+        <path d="M13.5 15h1" />
+        <path d="M3 21h18" />
+      </svg>
+    );
+  }
+
+  if (kind === "bed") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 11V5" />
+        <path d="M4 14h16" />
+        <path d="M20 14v5" />
+        <path d="M4 19v-8h13a3 3 0 0 1 3 3" />
+        <path d="M8 11V9.5A1.5 1.5 0 0 1 9.5 8h2A1.5 1.5 0 0 1 13 9.5V11" />
+      </svg>
+    );
+  }
+
+  if (kind === "bath") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 12V5.5A2.5 2.5 0 0 1 9.5 3H10" />
+        <path d="M4 12h16" />
+        <path d="M5 12v3a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-3" />
+        <path d="M8 19 7 21" />
+        <path d="m16 19 1 2" />
+      </svg>
+    );
+  }
+
+  if (kind === "tag") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20.5 13.5 13.5 20.5a2 2 0 0 1-2.8 0L3 12.8V4h8.8l8.7 8.7a2 2 0 0 1 0 2.8z" />
+        <circle cx="7.5" cy="7.5" r=".7" fill="currentColor" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 12h14" />
+      <path d="m13 6 6 6-6 6" />
+    </svg>
+  );
+}
+
 function TopbarIcon(props: { kind: "location" | "phone" }) {
   const { kind } = props;
 
@@ -563,17 +677,106 @@ function CarouselArrowIcon(props: { direction: "left" | "right" }) {
   );
 }
 
+type SearchDemoFilterKey = "operation" | "type" | "bedrooms" | "bathrooms" | "price";
+
+type SearchDemoFilter = {
+  key: SearchDemoFilterKey;
+  label: string;
+  icon: "home" | "building" | "bed" | "bath" | "tag";
+  options: Array<{ value: string; label: string }>;
+};
+
+const searchDemoFilters: SearchDemoFilter[] = [
+  {
+    key: "operation",
+    label: "Operación",
+    icon: "home",
+    options: [
+      { value: "venta", label: "Venta" },
+      { value: "alquiler", label: "Alquiler" },
+      { value: "proyectos", label: "Proyectos" },
+    ],
+  },
+  {
+    key: "type",
+    label: "Tipo",
+    icon: "building",
+    options: [
+      { value: "apartamento", label: "Apartamento" },
+      { value: "casa", label: "Casa" },
+      { value: "oficina", label: "Oficina" },
+      { value: "terreno", label: "Terreno" },
+    ],
+  },
+  {
+    key: "bedrooms",
+    label: "Dormitorios",
+    icon: "bed",
+    options: [
+      { value: "", label: "Dormitorios" },
+      { value: "1", label: "1 dormitorio" },
+      { value: "2", label: "2 dormitorios" },
+      { value: "3", label: "3 dormitorios" },
+      { value: "4+", label: "4 o más" },
+    ],
+  },
+  {
+    key: "bathrooms",
+    label: "Baños",
+    icon: "bath",
+    options: [
+      { value: "", label: "Baños" },
+      { value: "1", label: "1 baño" },
+      { value: "2", label: "2 baños" },
+      { value: "3", label: "3 baños" },
+      { value: "4+", label: "4 o más" },
+    ],
+  },
+  {
+    key: "price",
+    label: "Precio",
+    icon: "tag",
+    options: [
+      { value: "mid", label: "US$ 120.000 - 250.000" },
+      { value: "low", label: "Hasta US$ 120.000" },
+      { value: "high", label: "Más de US$ 250.000" },
+    ],
+  },
+];
+
+const initialSearchDemoFilters: Record<SearchDemoFilterKey, string> = {
+  operation: "venta",
+  type: "apartamento",
+  bedrooms: "",
+  bathrooms: "",
+  price: "mid",
+};
+
 function App() {
   const route = getRouteFromPathname(window.location.pathname);
-  const activeNavRoute: NavRoute = route.name === "propiedad" ? "ventas" : route.name;
+  const activeNavRoute: NavRoute =
+    route.name === "propiedad"
+      ? "ventas"
+      : route.name === "proyecto"
+        ? "proyectos"
+        : route.name === "administracion-propiedades"
+          ? "alquileres"
+          : route.name === "propietarios"
+          ? "propietarios"
+          : route.name;
   const activeProperty = route.name === "propiedad" && route.propertyId !== null
     ? getSalesPropertyById(route.propertyId)
+    : undefined;
+  const activeProject = route.name === "proyecto" && route.projectSlug !== null
+    ? getProjectBySlug(route.projectSlug)
     : undefined;
   const [listingIndex, setListingIndex] = useState(0);
   const [listingMediaIndex, setListingMediaIndex] = useState(0);
   const [listingTransitionDirection, setListingTransitionDirection] = useState<"left" | "right" | null>(null);
   const [listingMotionKey, setListingMotionKey] = useState(0);
   const [footerBranchIndex, setFooterBranchIndex] = useState(0);
+  const [searchDemoIndex, setSearchDemoIndex] = useState(0);
+  const [searchDemoValues, setSearchDemoValues] = useState<Record<SearchDemoFilterKey, string>>(initialSearchDemoFilters);
 
   useEffect(() => {
     const elements = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
@@ -626,8 +829,23 @@ function App() {
       return;
     }
 
+    if (route.name === "administracion-propiedades") {
+      document.title = "Lars | Administración de propiedades";
+      return;
+    }
+
+    if (route.name === "propietarios") {
+      document.title = "Lars | Propietarios";
+      return;
+    }
+
     if (route.name === "proyectos") {
       document.title = "Lars | Proyectos";
+      return;
+    }
+
+    if (route.name === "proyecto") {
+      document.title = activeProject ? `Lars | ${activeProject.title}` : "Lars | Proyecto";
       return;
     }
 
@@ -642,7 +860,7 @@ function App() {
     }
 
     document.title = "Lars";
-  }, [activeProperty, route.name]);
+  }, [activeProject, activeProperty, route.name]);
 
   const listingCount = featuredListings.length;
   const activeListing = featuredListings[getWrappedIndex(listingIndex, listingCount)];
@@ -683,7 +901,33 @@ function App() {
     setListingIndex(index);
   };
 
+  const handlePreviousSearchDemo = () => {
+    setSearchDemoIndex((currentIndex) => getWrappedIndex(currentIndex - 1, 2));
+  };
+
+  const handleNextSearchDemo = () => {
+    setSearchDemoIndex((currentIndex) => getWrappedIndex(currentIndex + 1, 2));
+  };
+
+  const handleSearchDemoFilterChange = (key: SearchDemoFilterKey, value: string) => {
+    setSearchDemoValues((currentValues) => ({
+      ...currentValues,
+      [key]: value,
+    }));
+  };
+
+  const handleClearSearchDemoFilters = () => {
+    setSearchDemoValues({
+      operation: "",
+      type: "",
+      bedrooms: "",
+      bathrooms: "",
+      price: "",
+    });
+  };
+
   const activeFooterBranch = topbarBranches[getWrappedIndex(footerBranchIndex, topbarBranches.length)];
+  const isSearchDemoActive = searchDemoIndex === 1;
   const pageShellClassName = [
     "page-shell",
     route.name !== "home" ? "page-shell-sales" : "",
@@ -712,16 +956,44 @@ function App() {
             <img src="/logo.png" alt="Lars" className="brand-logo" />
           </a>
           <nav className="site-nav" aria-label="Principal">
-            {navLinks.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className={item.route === activeNavRoute ? "is-active" : undefined}
-                aria-current={item.route === activeNavRoute ? "page" : undefined}
-              >
-                {item.label}
-              </a>
-            ))}
+            {navLinks.map((item) =>
+              item.children ? (
+                <div
+                  key={item.label}
+                  className={`site-nav-dropdown${item.route === activeNavRoute ? " is-active" : ""}`}
+                >
+                  <a
+                    href={item.href}
+                    className="site-nav-dropdown-trigger"
+                    aria-current={item.route === activeNavRoute ? "page" : undefined}
+                  >
+                    {item.label}
+                    <span className="site-nav-dropdown-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </span>
+                  </a>
+
+                  <div className="site-nav-dropdown-menu">
+                    {item.children.map((child) => (
+                      <a key={child.label} href={child.href}>
+                        {child.label}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className={item.route === activeNavRoute ? "is-active" : undefined}
+                  aria-current={item.route === activeNavRoute ? "page" : undefined}
+                >
+                  {item.label}
+                </a>
+              ),
+            )}
           </nav>
           <div className="header-actions" aria-label="Accesos directos">
             <button type="button" className="header-action-button">
@@ -743,8 +1015,14 @@ function App() {
           <SalesPage showLoaderDemo />
         ) : route.name === "alquileres" ? (
           <SalesPage listingContext="alquileres" resultsTitle="Propiedades en alquiler" />
+        ) : route.name === "administracion-propiedades" ? (
+          <PropertyManagementPage />
+        ) : route.name === "propietarios" ? (
+          <PropertyAdminPage />
         ) : route.name === "proyectos" ? (
           <ProjectsPage />
+        ) : route.name === "proyecto" ? (
+          <ProjectDetailsPage projectSlug={route.projectSlug} />
         ) : route.name === "propiedad" ? (
           <PropertyDetailsPage propertyId={route.propertyId} />
         ) : route.name === "contacto" ? (
@@ -812,82 +1090,145 @@ function App() {
             <section className="hero-search-band">
           <div className="container search-wrap" id="buscador">
             <div className="search-stack">
-              <form className="search-card reveal reveal-delay-3">
-                <div className="search-header">
-                  <div>
-                    <h2>
-                      <span className="search-title-icon">
-                        <SearchIcon />
-                      </span>
-                      Buscador de propiedades
-                    </h2>
+              <div className="search-demo-switch reveal reveal-delay-2" aria-label="Cambiar versión del buscador">
+                <button type="button" onClick={handlePreviousSearchDemo} aria-label="Ver versión anterior del buscador">
+                  <CarouselArrowIcon direction="left" />
+                </button>
+                <span>{isSearchDemoActive ? "Demo nuevo buscador" : "Buscador actual"}</span>
+                <button type="button" onClick={handleNextSearchDemo} aria-label="Ver versión siguiente del buscador">
+                  <CarouselArrowIcon direction="right" />
+                </button>
+              </div>
+
+              {isSearchDemoActive ? (
+                <form className="search-card search-card-demo">
+                  <div className="search-demo-heading">
+                    <div>
+                      <h2>Buscador de propiedades</h2>
+                      <p>Encontrá propiedades según tus preferencias</p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="search-grid">
-                  <label className="search-field-compact">
-                    Operación
-                    <select defaultValue="venta">
-                      <option value="venta">Venta</option>
-                      <option value="alquiler">Alquiler</option>
-                      <option value="proyectos">Proyectos</option>
-                    </select>
+                  <label className="search-demo-query">
+                    <span>
+                      <SearchIcon />
+                    </span>
+                    <input type="text" placeholder="Buscar por zona, barrio o referencia..." />
                   </label>
-                  <label className="search-field-compact">
-                    Tipo
-                    <select defaultValue="apartamento">
-                      <option value="apartamento">Apartamento</option>
-                      <option value="casa">Casa</option>
-                      <option value="oficina">Oficina</option>
-                      <option value="terreno">Terreno</option>
-                    </select>
-                  </label>
-                  <label className="search-field-standard search-field-zone">
-                    Zona
-                    <input type="text" placeholder="Ej: Pocitos, Carrasco o referencia" />
-                  </label>
-                  <label className="search-field-compact">
-                    Dormitorios
-                    <select defaultValue="">
-                      <option value="" />
-                      <option value="1">1 dormitorio</option>
-                      <option value="2">2 dormitorios</option>
-                      <option value="3">3 dormitorios</option>
-                      <option value="4+">4 o más</option>
-                    </select>
-                  </label>
-                  <label className="search-field-compact">
-                    Baños
-                    <select defaultValue="">
-                      <option value="" />
-                      <option value="1">1 baño</option>
-                      <option value="2">2 baños</option>
-                      <option value="3">3 baños</option>
-                      <option value="4+">4 o más</option>
-                    </select>
-                  </label>
-                  <label className="search-field-compact search-field-reference">
-                    Nº de ref.
-                    <input type="text" placeholder="Ej: 1234" />
-                  </label>
-                  <label className="search-field-standard">
-                    Precio
-                    <select defaultValue="mid">
-                      <option value="mid">US$ 120.000 - 250.000</option>
-                      <option value="low">Hasta US$ 120.000</option>
-                      <option value="high">Más de US$ 250.000</option>
-                    </select>
-                  </label>
-                </div>
 
-                <div className="search-actions">
-                  <div className="search-action-buttons">
-                    <button type="button" className="primary-button search-cta-button">
-                      Buscar
+                  <div className="search-demo-filters" aria-label="Filtros de búsqueda">
+                    {searchDemoFilters.map((filter) => (
+                      <label
+                        className={`search-demo-filter${searchDemoValues[filter.key] ? " search-demo-filter-active" : ""}`}
+                        key={filter.key}
+                      >
+                        <SearchDemoFilterIcon kind={filter.icon} />
+                        <select
+                          aria-label={filter.label}
+                          value={searchDemoValues[filter.key]}
+                          onChange={(event) => handleSearchDemoFilterChange(filter.key, event.currentTarget.value)}
+                        >
+                          {filter.options.map((option) => (
+                            <option value={option.value} key={`${filter.key}-${option.value}`}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </label>
+                    ))}
+                  </div>
+
+                  <div className="search-demo-actions">
+                    <button type="button" className="search-demo-clear" onClick={handleClearSearchDemoFilters}>
+                      Limpiar filtros
+                    </button>
+                    <button type="button" className="search-demo-submit">
+                      Buscar propiedades
+                      <SearchDemoFilterIcon kind="arrow" />
                     </button>
                   </div>
+                </form>
+              ) : (
+                <form className="search-card">
+                  <div className="search-header">
+                    <div>
+                      <h2>
+                        <span className="search-title-icon">
+                          <SearchIcon />
+                        </span>
+                        Buscador de propiedades
+                      </h2>
+                    </div>
                 </div>
-              </form>
+
+                  <div className="search-grid">
+                    <label className="search-field-compact">
+                      Operación
+                      <select defaultValue="venta">
+                        <option value="venta">Venta</option>
+                        <option value="alquiler">Alquiler</option>
+                        <option value="proyectos">Proyectos</option>
+                      </select>
+                    </label>
+                    <label className="search-field-compact">
+                      Tipo
+                      <select defaultValue="apartamento">
+                        <option value="apartamento">Apartamento</option>
+                        <option value="casa">Casa</option>
+                        <option value="oficina">Oficina</option>
+                        <option value="terreno">Terreno</option>
+                      </select>
+                    </label>
+                    <label className="search-field-standard search-field-zone">
+                      Zona
+                      <input type="text" placeholder="Ej: Pocitos, Carrasco o referencia" />
+                    </label>
+                    <label className="search-field-compact">
+                      Dormitorios
+                      <select defaultValue="">
+                        <option value="" />
+                        <option value="1">1 dormitorio</option>
+                        <option value="2">2 dormitorios</option>
+                        <option value="3">3 dormitorios</option>
+                        <option value="4+">4 o más</option>
+                      </select>
+                    </label>
+                    <label className="search-field-compact">
+                      Baños
+                      <select defaultValue="">
+                        <option value="" />
+                        <option value="1">1 baño</option>
+                        <option value="2">2 baños</option>
+                        <option value="3">3 baños</option>
+                        <option value="4+">4 o más</option>
+                      </select>
+                    </label>
+                    <label className="search-field-compact search-field-reference">
+                      Nº de ref.
+                      <input type="text" placeholder="Ej: 1234" />
+                    </label>
+                    <label className="search-field-standard">
+                      Precio
+                      <select defaultValue="mid">
+                        <option value="mid">US$ 120.000 - 250.000</option>
+                        <option value="low">Hasta US$ 120.000</option>
+                        <option value="high">Más de US$ 250.000</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="search-actions">
+                    <div className="search-action-buttons">
+                      <button type="button" className="primary-button search-cta-button">
+                        Buscar
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         </section>

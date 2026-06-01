@@ -490,7 +490,7 @@ export default function SalesPage({
                     <div className="sales-listing-footer">
                       <strong>{property.price}</strong>
                       {!property.reserved ? (
-                        <a href={getSalesPropertyUrl(property.id, listingContext)} className="text-link sales-listing-link">
+                        <a href={`${getSalesPropertyUrl(property.id, listingContext)}#consulta`} className="text-link sales-listing-link">
                           Consultar
                         </a>
                       ) : null}

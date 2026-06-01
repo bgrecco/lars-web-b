@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import ImageLightbox from "../components/ImageLightbox";
 import WhatsAppIcon from "../components/WhatsAppIcon";
 import {
   getSalesPropertyById,
@@ -122,9 +123,12 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
   const propertyOrigin = getPropertyOrigin();
   const backCopy = getPropertyBackCopy(propertyOrigin);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [lightboxImageIndex, setLightboxImageIndex] = useState<number | null>(null);
+  const contactCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setActiveImageIndex(0);
+    setLightboxImageIndex(null);
   }, [property?.id]);
 
   useEffect(() => {
@@ -162,6 +166,19 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
 
     return () => observer.disconnect();
   }, [property?.id]);
+
+  useEffect(() => {
+    if (!property || typeof window === "undefined" || window.location.hash !== "#consulta") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      contactCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      contactCardRef.current?.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true });
+    }, 80);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [property]);
 
   if (!property) {
     return (
@@ -202,6 +219,14 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
   const handleContactSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
   };
+  const handleOpenLightbox = (index: number) => {
+    setActiveImageIndex(index);
+    setLightboxImageIndex(index);
+  };
+  const handleLightboxIndexChange = (index: number) => {
+    setActiveImageIndex(index);
+    setLightboxImageIndex(index);
+  };
 
   return (
     <div className="property-details-page">
@@ -215,11 +240,18 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
 
           <div className="property-gallery-shell reveal reveal-delay-1" id="galeria">
             <div className="property-gallery-main">
-              <img
-                src={activeImage.image}
-                alt={activeImage.alt}
-                style={{ objectPosition: activeImage.objectPosition ?? "center center" }}
-              />
+              <button
+                type="button"
+                className="property-gallery-main-button"
+                onClick={() => handleOpenLightbox(activeImageIndex)}
+                aria-label={`Abrir imagen ${activeImageIndex + 1} de ${property.title}`}
+              >
+                <img
+                  src={activeImage.image}
+                  alt={activeImage.alt}
+                  style={{ objectPosition: activeImage.objectPosition ?? "center center" }}
+                />
+              </button>
               {property.reserved ? (
                 <span className="property-status-pill property-gallery-status-pill is-reserved">
                   Reservada
@@ -233,8 +265,8 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
                   key={`${image.image}-${index}`}
                   type="button"
                   className={`property-gallery-thumb${index === activeImageIndex ? " is-active" : ""}`}
-                  onClick={() => setActiveImageIndex(index)}
-                  aria-label={`Ver imagen ${index + 1}`}
+                  onClick={() => handleOpenLightbox(index)}
+                  aria-label={`Abrir imagen ${index + 1}`}
                   aria-pressed={index === activeImageIndex}
                 >
                   <img
@@ -246,6 +278,14 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
               ))}
             </div>
           </div>
+
+          <ImageLightbox
+            images={gallery}
+            activeIndex={lightboxImageIndex}
+            title={property.title}
+            onClose={() => setLightboxImageIndex(null)}
+            onIndexChange={handleLightboxIndexChange}
+          />
 
           <div className="property-intro-shell reveal reveal-delay-2">
             <div className="property-intro-copy">
@@ -333,8 +373,8 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
 
             </div>
 
-            <aside className="property-contact-sidebar">
-              <div className="property-contact-card reveal reveal-delay-2">
+            <aside className="property-contact-sidebar" id="consulta">
+              <div ref={contactCardRef} className="property-contact-card reveal reveal-delay-2">
                 <h2>Quiero más información sobre esta propiedad</h2>
 
                 <form className="property-contact-form" onSubmit={handleContactSubmit}>
