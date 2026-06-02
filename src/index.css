@@ -1550,6 +1550,7 @@ button {
     margin-top:2rem
 }
 .project-card {
+    position:relative;
     display:grid;
     grid-template-rows:auto 1fr;
     height:100%;
@@ -1574,6 +1575,16 @@ button {
 .project-card .text-link {
     align-self:end;
     font-size:1.18rem
+}
+.project-card-hitarea {
+    position:absolute;
+    inset:0;
+    z-index:3;
+    border-radius:inherit
+}
+.project-card-hitarea:focus-visible {
+    outline:2px solid rgba(7,24,90,.24);
+    outline-offset:-.18rem
 }
 .section-dark {
     position:relative;
@@ -1626,7 +1637,7 @@ button {
     color:#ffffffc7
 }
 .section-contact,.sales-page .section-contact {
-    --contact-description-font: Poppins,sans-serif;
+    --contact-description-font: Lato,"Poppins",sans-serif;
     --contact-description-size: 1.26rem;
     --contact-description-line-height: 1.38;
     background:radial-gradient(circle at 12% 0%,rgba(77,228,201,.12),transparent 24%),linear-gradient(180deg,#fbfdff,#f5f9ff 42%,#edf3ff)
@@ -1993,7 +2004,6 @@ button {
     --common-description-font: Poppins,sans-serif;
     --common-description-size: 1.38rem;
     --common-description-line-height: 1.38;
-    --ggcc-parallax: 0px;
     color:#fff;
     background:radial-gradient(circle at 84% 10%,rgba(77,228,201,.18),transparent 22%),radial-gradient(circle at 12% 8%,rgba(158,247,230,.1),transparent 22%),linear-gradient(180deg,#020d3e,#061852 46%,#030d35)
 }
@@ -2010,9 +2020,7 @@ button {
     align-self:center;
     display:grid;
     gap:1.2rem;
-    max-width:none;
-    transform:translateY(calc(var(--ggcc-parallax) * .035));
-    will-change:transform
+    max-width:none
 }
 .common-expenses-hero h1,.common-expenses-section-head h2,.common-expenses-payment-head h2 {
     margin:0;
@@ -2114,9 +2122,7 @@ button {
     grid-column:1 / -1;
     display:grid;
     grid-template-columns:repeat(3,minmax(0,1fr));
-    gap:1rem;
-    transform:translateY(calc(var(--ggcc-parallax) * -.025));
-    will-change:transform
+    gap:1rem
 }
 .common-expenses-metric {
     display:grid;
@@ -2179,9 +2185,8 @@ button {
 }
 .common-expenses-page .spotlight-panel.common-expenses-management-visual .spotlight-image-wrap img {
     min-height:calc(100% + 5rem);
-    transform:translateY(calc(var(--ggcc-parallax) * -.055)) scale(1.08);
-    transform-origin:center;
-    will-change:transform
+    transform:scale(1.08);
+    transform-origin:center
 }
 .common-expenses-page .spotlight-panel.common-expenses-management-visual .spotlight-body {
     padding-top:.9rem
@@ -5820,7 +5825,7 @@ button {
         padding:.72rem .5rem
   }
   .listing-showcase-stat img {
-        width:1.65rem;
+        width:auto;
         height:1.65rem
   }
   .listing-showcase-stat span {

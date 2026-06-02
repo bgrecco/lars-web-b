@@ -6,6 +6,7 @@ export type Project = {
   address: string;
   description: string;
   image: string;
+  cardImage: string;
   imagePosition?: string;
   gallery: ProjectGalleryItem[];
   deliveryDates: string[];
@@ -19,9 +20,18 @@ export type Project = {
 
 export type ProjectGalleryItem = {
   image: string;
+  thumbImage?: string;
   alt: string;
   objectPosition?: string;
 };
+
+function withOptimizedGalleryImage(image: string, alt: string): ProjectGalleryItem {
+  return {
+    image: `/optimized/gallery/${image.replace(/^\//, "").replace(/\.[^.]+$/, ".webp")}`,
+    thumbImage: `/optimized/gallery/thumbs/${image.replace(/^\//, "").replace(/\.[^.]+$/, ".webp")}`,
+    alt,
+  };
+}
 
 export type ProjectUnit = {
   unit: string;
@@ -48,11 +58,12 @@ export const featuredProjects: Project[] = [
     description:
       "Un proyecto contemporáneo de entorno motivante e inspirador, con espacios diseñados para favorecer la vida cotidiana y llevar la experiencia de amenities a un nivel superior.",
     image: "/project-tempo.png",
+    cardImage: "/optimized/projects/project-tempo-card.webp",
     gallery: [
-      { image: "/images/projects/tempo/1.png", alt: "Fachada de Tempo Guayabos" },
-      { image: "/images/projects/tempo/2.png", alt: "Lobby y espacios comunes de Tempo Guayabos" },
-      { image: "/images/projects/tempo/3.png", alt: "Piscina y terraza de Tempo Guayabos" },
-      { image: "/images/projects/tempo/4.png", alt: "Amenity exterior de Tempo Guayabos" },
+      withOptimizedGalleryImage("/images/projects/tempo/1.png", "Fachada de Tempo Guayabos"),
+      withOptimizedGalleryImage("/images/projects/tempo/2.png", "Lobby y espacios comunes de Tempo Guayabos"),
+      withOptimizedGalleryImage("/images/projects/tempo/3.png", "Piscina y terraza de Tempo Guayabos"),
+      withOptimizedGalleryImage("/images/projects/tempo/4.png", "Amenity exterior de Tempo Guayabos"),
     ],
     deliveryDates: ["Torre 1 - Diciembre 2025", "Torre 3 - Junio 2026"],
     benefits: [
@@ -144,11 +155,12 @@ export const featuredProjects: Project[] = [
     description:
       "Bloque pensado para presentar edificios y apartamentos con una lectura más directa y editorial.",
     image: "/project-urban.png",
+    cardImage: "/optimized/projects/project-urban-card.webp",
     gallery: [
-      { image: "/project-urban.png", alt: "Vista principal de Visca" },
-      { image: "/images/projects/2.png", alt: "Fachada alternativa de Visca" },
-      { image: "/images/projects/tempo/2.png", alt: "Espacio común de Visca" },
-      { image: "/images/projects/tempo/4.png", alt: "Terraza de Visca" },
+      withOptimizedGalleryImage("/project-urban.png", "Vista principal de Visca"),
+      withOptimizedGalleryImage("/images/projects/2.png", "Fachada alternativa de Visca"),
+      withOptimizedGalleryImage("/images/projects/tempo/2.png", "Espacio común de Visca"),
+      withOptimizedGalleryImage("/images/projects/tempo/4.png", "Terraza de Visca"),
     ],
     deliveryDates: ["Entrega estimada - 2026"],
     benefits: ["Proyecto con asesoramiento comercial Lars.", "Opciones para vivienda e inversión."],
@@ -170,11 +182,12 @@ export const featuredProjects: Project[] = [
     description:
       "Una variante para proyectos con más aire residencial, terrazas y vida de barrio.",
     image: "/project-garden.png",
+    cardImage: "/optimized/projects/project-garden-card.webp",
     gallery: [
-      { image: "/project-garden.png", alt: "Vista principal de Vila" },
-      { image: "/images/projects/5.png", alt: "Fachada de Vila" },
-      { image: "/images/projects/tempo/3.png", alt: "Área exterior de Vila" },
-      { image: "/images/projects/tempo/4.png", alt: "Jardín de Vila" },
+      withOptimizedGalleryImage("/project-garden.png", "Vista principal de Vila"),
+      withOptimizedGalleryImage("/images/projects/5.png", "Fachada de Vila"),
+      withOptimizedGalleryImage("/images/projects/tempo/3.png", "Área exterior de Vila"),
+      withOptimizedGalleryImage("/images/projects/tempo/4.png", "Jardín de Vila"),
     ],
     deliveryDates: ["Entrega estimada - 2026"],
     benefits: ["Entorno residencial consolidado.", "Unidades con expansión exterior."],
@@ -196,11 +209,12 @@ export const featuredProjects: Project[] = [
     description:
       "Demo para presentar una propuesta urbana con unidades compactas, amenities y lectura comercial clara.",
     image: "/project-urban.png",
+    cardImage: "/optimized/projects/project-urban-card.webp",
     gallery: [
-      { image: "/project-urban.png", alt: "Vista principal de Nexo" },
-      { image: "/images/projects/4.png", alt: "Fachada de Nexo" },
-      { image: "/images/projects/tempo/2.png", alt: "Lobby de Nexo" },
-      { image: "/images/projects/tempo/3.png", alt: "Amenity de Nexo" },
+      withOptimizedGalleryImage("/project-urban.png", "Vista principal de Nexo"),
+      withOptimizedGalleryImage("/images/projects/4.png", "Fachada de Nexo"),
+      withOptimizedGalleryImage("/images/projects/tempo/2.png", "Lobby de Nexo"),
+      withOptimizedGalleryImage("/images/projects/tempo/3.png", "Amenity de Nexo"),
     ],
     deliveryDates: ["Lanzamiento comercial"],
     benefits: ["Ubicación urbana de alta conectividad.", "Unidades pensadas para renta."],

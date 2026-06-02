@@ -78,7 +78,15 @@ function SimilarPropertyCard(props: { property: SalesProperty; index: number; or
       className={`property-similar-card${property.reserved ? " is-reserved" : ""} reveal reveal-delay-${(index % 3) + 1}`}
     >
       <div className="property-similar-media">
-        <img src={property.image} alt={property.title} style={{ objectPosition: property.imagePosition ?? "center center" }} />
+        <img
+          src={property.cardImage}
+          alt={property.title}
+          width="700"
+          height="394"
+          loading="lazy"
+          decoding="async"
+          style={{ objectPosition: property.imagePosition ?? "center center" }}
+        />
         <div className="property-similar-badges">
           <span className="property-similar-pill">{property.type}</span>
           {property.reserved ? <span className="property-similar-pill is-reserved">Reservada</span> : null}
@@ -93,15 +101,15 @@ function SimilarPropertyCard(props: { property: SalesProperty; index: number; or
         <h3>{property.title}</h3>
         <div className="property-similar-stats" aria-label={`Datos de ${property.title}`}>
           <span>
-            <img src="/optimized/home/icon-dorm.webp" alt="" />
+            <img src="/optimized/home/icon-dorm.webp" alt="" width="40" height="36" />
             {property.rooms === 0 ? "Mono" : property.rooms}
           </span>
           <span>
-            <img src="/optimized/home/icon-banos.webp" alt="" />
+            <img src="/optimized/home/icon-banos.webp" alt="" width="39" height="40" />
             {property.bathrooms}
           </span>
           <span>
-            <img src="/optimized/home/icon-sup.webp" alt="" />
+            <img src="/optimized/home/icon-sup.webp" alt="" width="40" height="36" />
             {property.size}
           </span>
         </div>
@@ -130,6 +138,10 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
     setActiveImageIndex(0);
     setLightboxImageIndex(null);
   }, [property?.id]);
+
+  useEffect(() => {
+    document.title = property ? `Lars | ${property.title}` : "Lars | Propiedad";
+  }, [property]);
 
   useEffect(() => {
     const elements = Array.from(
@@ -243,6 +255,10 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
                 <img
                   src={activeImage.image}
                   alt={activeImage.alt}
+                  width="1400"
+                  height="788"
+                  fetchPriority="high"
+                  decoding="async"
                   style={{ objectPosition: activeImage.objectPosition ?? "center center" }}
                 />
               </button>
@@ -264,8 +280,12 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
                   aria-pressed={index === activeImageIndex}
                 >
                   <img
-                    src={image.image}
+                    src={image.thumbImage ?? image.image}
                     alt=""
+                    width="480"
+                    height="270"
+                    loading="lazy"
+                    decoding="async"
                     style={{ objectPosition: image.objectPosition ?? "center center" }}
                   />
                 </button>
@@ -307,15 +327,15 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
 
               <div className="property-intro-stats" aria-label={`Datos principales de ${property.title}`}>
                 <div className="property-intro-stat">
-                  <img src="/optimized/home/icon-dorm.webp" alt="" />
+                  <img src="/optimized/home/icon-dorm.webp" alt="" width="40" height="36" />
                   <span>{getBedroomStatLabel(property.rooms)}</span>
                 </div>
                 <div className="property-intro-stat">
-                  <img src="/optimized/home/icon-banos.webp" alt="" />
+                  <img src="/optimized/home/icon-banos.webp" alt="" width="39" height="40" />
                   <span>{property.bathrooms}</span>
                 </div>
                 <div className="property-intro-stat">
-                  <img src="/optimized/home/icon-sup.webp" alt="" />
+                  <img src="/optimized/home/icon-sup.webp" alt="" width="40" height="36" />
                   <span>{property.size}</span>
                 </div>
               </div>

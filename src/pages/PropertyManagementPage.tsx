@@ -123,7 +123,14 @@ export default function PropertyManagementPage() {
 
 					<aside className="spotlight-panel common-expenses-management-visual property-management-visual reveal reveal-delay-2">
 						<div className="spotlight-image-wrap">
-							<img src="/rent-city.png" alt="Edificios residenciales administrados por Lars" />
+							<img
+								src="/optimized/sections/rent-city.webp"
+								alt="Edificios residenciales administrados por Lars"
+								width="840"
+								height="1722"
+								fetchPriority="high"
+								decoding="async"
+							/>
 						</div>
 						<div className="spotlight-body">
 							<h3>Un equipo entre el propietario, el inquilino y la operación diaria</h3>

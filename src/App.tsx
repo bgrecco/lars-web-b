@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import ContactSection from "./components/ContactSection";
 import WhatsAppFloatingButton from "./components/WhatsAppFloatingButton";
-import { getProjectBySlug } from "./data/projectsCatalog";
-import { getSalesPropertyById, salesCatalog } from "./data/salesCatalog";
 import AboutPage from "./pages/AboutPage";
 import CommonExpensesPage from "./pages/CommonExpensesPage";
 import ProjectDetailsPage from "./pages/ProjectDetailsPage";
@@ -204,9 +202,19 @@ const topbarBranches = [
   },
 ];
 
-const searchNeighborhoodOptions = Array.from(new Set(salesCatalog.map((property) => property.location))).sort((left, right) =>
-  left.localeCompare(right, "es"),
-);
+const searchNeighborhoodOptions = [
+  "Buceo",
+  "Carrasco",
+  "Centro",
+  "Cordón",
+  "La Blanqueada",
+  "Malvin",
+  "Parque Rodó",
+  "Pocitos",
+  "Punta Carretas",
+  "Tres Cruces",
+  "Villa Dolores",
+];
 
 function SectionHeader(props: {
   title: string;
@@ -675,12 +683,6 @@ function App() {
           : route.name === "propietarios"
           ? "propietarios"
           : route.name;
-  const activeProperty = route.name === "propiedad" && route.propertyId !== null
-    ? getSalesPropertyById(route.propertyId)
-    : undefined;
-  const activeProject = route.name === "proyecto" && route.projectSlug !== null
-    ? getProjectBySlug(route.projectSlug)
-    : undefined;
   const [listingIndex, setListingIndex] = useState(0);
   const [listingMediaIndex, setListingMediaIndex] = useState(0);
   const [listingTransitionDirection, setListingTransitionDirection] = useState<"left" | "right" | null>(null);
@@ -762,12 +764,12 @@ function App() {
     }
 
     if (route.name === "proyecto") {
-      document.title = activeProject ? `Lars | ${activeProject.title}` : "Lars | Proyecto";
+      document.title = "Lars | Proyecto";
       return;
     }
 
     if (route.name === "propiedad") {
-      document.title = activeProperty ? `Lars | ${activeProperty.title}` : "Lars | Propiedad";
+      document.title = "Lars | Propiedad";
       return;
     }
 
@@ -777,7 +779,7 @@ function App() {
     }
 
     document.title = "Lars";
-  }, [activeProject, activeProperty, route.name]);
+  }, [route.name]);
 
   const listingCount = featuredListings.length;
   const activeListing = featuredListings[getWrappedIndex(listingIndex, listingCount)];
@@ -979,7 +981,7 @@ function App() {
       <header className="site-header">
         <div className="container header-inner">
           <a className="logo-link" href="/#inicio" aria-label="Volver al inicio">
-            <img src="/optimized/home/logo.webp" alt="Lars" className="brand-logo" />
+            <img src="/optimized/home/logo.webp" alt="Lars" className="brand-logo" width="352" height="93" />
           </a>
           <nav className="site-nav" aria-label="Principal">
             {navLinks.map((item) =>

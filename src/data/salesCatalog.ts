@@ -1,5 +1,6 @@
 export type SalesGalleryItem = {
   image: string;
+  thumbImage?: string;
   alt: string;
   objectPosition?: string;
 };
@@ -17,6 +18,7 @@ export type SalesProperty = {
   bathrooms: number;
   size: string;
   image: string;
+  cardImage: string;
   imagePosition?: string;
   reserved?: boolean;
   summary: string;
@@ -39,6 +41,7 @@ type SalesPropertySeed = Omit<
   | "financialInfo"
   | "internalInfo"
 > & {
+  cardImage?: string;
   address?: string;
   description?: string;
   gallery?: SalesGalleryItem[];
@@ -50,10 +53,19 @@ type SalesPropertySeed = Omit<
 
 function buildGallery(title: string, primaryImage: string, extraImages: string[]): SalesGalleryItem[] {
   return [primaryImage, ...extraImages].slice(0, 4).map((image, index) => ({
-    image,
+    image: getOptimizedGalleryImage(image),
+    thumbImage: getOptimizedGalleryThumb(image),
     alt: `${title} imagen ${index + 1}`,
     objectPosition: "center center",
   }));
+}
+
+function getOptimizedGalleryImage(image: string) {
+  return `/optimized/gallery/${image.replace(/^\//, "").replace(/\.[^.]+$/, ".webp")}`;
+}
+
+function getOptimizedGalleryThumb(image: string) {
+  return `/optimized/gallery/thumbs/${image.replace(/^\//, "").replace(/\.[^.]+$/, ".webp")}`;
 }
 
 function getRoomLabel(rooms: number) {
@@ -136,6 +148,7 @@ function buildAddress(location: string) {
 function enrichProperty(property: SalesPropertySeed, extraImages: string[]) {
   return {
     ...property,
+    cardImage: property.cardImage ?? property.image,
     address: property.address ?? buildAddress(property.location),
     description: property.description ?? buildDescription(property),
     gallery: property.gallery ?? buildGallery(property.title, property.image, extraImages),
@@ -159,6 +172,7 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     bathrooms: 1,
     size: "46 m²",
     image: "/property-villa-dolores.png",
+    cardImage: "/optimized/listings/property-villa-dolores-card.webp",
     reserved: true,
     summary: "Una unidad compacta y rendidora, muy buscada para inversores que priorizan ubicación y rotación.",
     tags: ["Balcón", "Luminoso", "Ideal renta"],
@@ -175,6 +189,7 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     bathrooms: 1,
     size: "46 m²",
     image: "/property-punta-carretas.png",
+    cardImage: "/optimized/listings/property-punta-carretas-card.webp",
     summary: "Perfil joven, flexible y con una puesta más editorial para una zona con demanda sostenida.",
     tags: ["Loft", "Cerca del mar", "Entrega inmediata"],
   },
@@ -190,6 +205,7 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     bathrooms: 1,
     size: "38 m²",
     image: "/property-la-blanqueada.png",
+    cardImage: "/optimized/listings/property-la-blanqueada-card.webp",
     reserved: true,
     summary: "Monoambiente funcional con circulación clara y potencial para primera vivienda o renta universitaria.",
     tags: ["Monoambiente", "Bajo mantenimiento", "Buen metraje"],
@@ -206,6 +222,7 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     bathrooms: 2,
     size: "124 m²",
     image: "/1.png",
+    cardImage: "/optimized/listings/1-card.webp",
     summary: "Una casa con escala barrial y espacios sociales pensados para quienes quieren vivir Montevideo con aire propio.",
     tags: ["Patio", "Escritorio", "Actualizada"],
   },
@@ -221,6 +238,7 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     bathrooms: 2,
     size: "86 m²",
     image: "/property-pocitos.png",
+    cardImage: "/optimized/listings/property-pocitos-card.webp",
     summary: "",
     tags: ["Garaje", "Terraza", "Portería"],
   },
@@ -236,6 +254,7 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     bathrooms: 1,
     size: "59 m²",
     image: "/2.png",
+    cardImage: "/optimized/listings/2-card.webp",
     summary: "Conectividad, practicidad y una planta muy fácil de entender para un público amplio.",
     tags: ["Conectividad", "Balcón", "Muy rentable"],
   },
@@ -251,6 +270,7 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     bathrooms: 2,
     size: "67 m²",
     image: "/3.png",
+    cardImage: "/optimized/listings/3-card.webp",
     summary: "Una opción contemporánea con outdoor propio y un perfil muy alineado a la demanda actual.",
     tags: ["Terraza", "Parrillero", "Vista abierta"],
   },
@@ -266,6 +286,7 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     bathrooms: 3,
     size: "188 m²",
     image: "/4.png",
+    cardImage: "/optimized/listings/4-card.webp",
     summary: "Casa con escala, jardín y una narrativa más premium para quienes buscan calidad residencial.",
     tags: ["Jardín", "4 dorm.", "Barbacoa"],
   },
@@ -281,6 +302,7 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     bathrooms: 1,
     size: "54 m²",
     image: "/property-villa-dolores.png",
+    cardImage: "/optimized/listings/property-villa-dolores-card.webp",
     summary: "Un formato flexible con patio propio y una identidad urbana muy marcada.",
     tags: ["Patio", "Diseño", "Ideal pareja"],
   },
@@ -296,6 +318,7 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     bathrooms: 2,
     size: "112 m²",
     image: "/property-pocitos.png",
+    cardImage: "/optimized/listings/property-pocitos-card.webp",
     summary: "Metraje generoso, terrazas reales y una puesta pensada para una audiencia que busca algo especial.",
     tags: ["Penthouse", "Terrazas", "Suite"],
   },
@@ -311,6 +334,7 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     bathrooms: 1,
     size: "63 m²",
     image: "/2.png",
+    cardImage: "/optimized/listings/2-card.webp",
     summary: "Una alternativa profesional con ubicación central y una imagen cuidada desde el acceso.",
     tags: ["Oficina", "Recepción", "Muy visible"],
   },
@@ -326,6 +350,7 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     bathrooms: 2,
     size: "98 m²",
     image: "/3.png",
+    cardImage: "/optimized/listings/3-card.webp",
     summary: "Dúplex con muy buena distribución, resuelto para una vida diaria más cómoda y versátil.",
     tags: ["Dúplex", "Al frente", "Listo para entrar"],
   },
@@ -341,6 +366,7 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     bathrooms: 2,
     size: "72 m²",
     image: "/property-punta-carretas.png",
+    cardImage: "/optimized/listings/property-punta-carretas-card.webp",
     summary: "Apartamento luminoso con buena escala social y un perfil ideal para completar la grilla demo.",
     tags: ["Luminoso", "Garaje", "Balcón"],
   },

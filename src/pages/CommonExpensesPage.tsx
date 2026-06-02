@@ -1,5 +1,3 @@
-import { useEffect } from "react";
-
 import ContactSection from "../components/ContactSection";
 
 type ServiceItem = {
@@ -140,46 +138,6 @@ function ServiceItemCard(props: { item: ServiceItem; index: number }) {
 }
 
 export default function CommonExpensesPage() {
-  useEffect(() => {
-    const page = document.querySelector<HTMLElement>(".common-expenses-page");
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-    if (!page || reducedMotion.matches) {
-      return;
-    }
-
-    let frameId = 0;
-
-    const updateParallax = () => {
-      frameId = 0;
-      const pageTop = page.getBoundingClientRect().top;
-      const progress = Math.min(Math.max(-pageTop, 0), 920);
-      page.style.setProperty("--ggcc-parallax", `${progress}px`);
-    };
-
-    const requestUpdate = () => {
-      if (frameId) {
-        return;
-      }
-
-      frameId = window.requestAnimationFrame(updateParallax);
-    };
-
-    updateParallax();
-    window.addEventListener("scroll", requestUpdate, { passive: true });
-    window.addEventListener("resize", requestUpdate);
-
-    return () => {
-      if (frameId) {
-        window.cancelAnimationFrame(frameId);
-      }
-
-      window.removeEventListener("scroll", requestUpdate);
-      window.removeEventListener("resize", requestUpdate);
-      page.style.removeProperty("--ggcc-parallax");
-    };
-  }, []);
-
   return (
     <div className="common-expenses-page">
       <section className="common-expenses-hero">
@@ -214,7 +172,14 @@ export default function CommonExpensesPage() {
 
           <aside className="spotlight-panel common-expenses-management-visual reveal reveal-delay-2">
             <div className="spotlight-image-wrap">
-              <img src="/ggcc-city.png" alt="Edificio residencial administrado por Lars" />
+              <img
+                src="/optimized/sections/ggcc-city.webp"
+                alt="Edificio residencial administrado por Lars"
+                width="900"
+                height="1292"
+                fetchPriority="high"
+                decoding="async"
+              />
             </div>
             <div className="spotlight-body">
               <h3>Gestión de gastos comunes con respaldo operativo</h3>

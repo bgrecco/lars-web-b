@@ -96,7 +96,15 @@ function ProjectSimilarCard(props: { project: Project; index: number }) {
       className={`property-similar-card project-similar-card reveal reveal-delay-${(index % 3) + 1}`}
     >
       <div className="property-similar-media">
-        <img src={project.image} alt={project.title} style={{ objectPosition: project.imagePosition ?? "center center" }} />
+        <img
+          src={project.cardImage}
+          alt={project.title}
+          width="700"
+          height={project.slug === "tempo-guayabos" ? 543 : project.slug === "vila" ? 804 : 750}
+          loading="lazy"
+          decoding="async"
+          style={{ objectPosition: project.imagePosition ?? "center center" }}
+        />
         <div className="property-similar-badges">
           <span className="property-similar-pill">{project.tag}</span>
         </div>
@@ -258,6 +266,10 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
   }, [project?.slug]);
 
   useEffect(() => {
+    document.title = project ? `Lars | ${project.title}` : "Lars | Proyecto";
+  }, [project]);
+
+  useEffect(() => {
     const elements = Array.from(
       document.querySelectorAll<HTMLElement>(".project-details-page .reveal:not(.is-visible)"),
     );
@@ -352,6 +364,10 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
                 <img
                   src={activeImage.image}
                   alt={activeImage.alt}
+                  width="1400"
+                  height="900"
+                  fetchPriority="high"
+                  decoding="async"
                   style={{ objectPosition: activeImage.objectPosition ?? "center center" }}
                 />
               </button>
@@ -371,8 +387,12 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
                   aria-pressed={index === activeImageIndex}
                 >
                   <img
-                    src={image.image}
+                    src={image.thumbImage ?? image.image}
                     alt=""
+                    width="480"
+                    height="270"
+                    loading="lazy"
+                    decoding="async"
                     style={{ objectPosition: image.objectPosition ?? "center center" }}
                   />
                 </button>

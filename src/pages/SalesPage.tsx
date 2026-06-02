@@ -578,7 +578,7 @@ export default function SalesPage({
               <h2>{resultsTitle}</h2>
             </div>
 
-            <div className="sales-active-filters" aria-label="Filtros activos">
+            <div className="sales-active-filters">
               {activeFilterChips.length ? (
                 activeFilterChips.map((chip) => (
                   <span key={chip} className="sales-filter-chip">
@@ -604,9 +604,13 @@ export default function SalesPage({
 
                   <div className="sales-listing-media">
                     <img
-                      src={property.image}
+                      src={property.cardImage}
                       alt={property.title}
                       className="sales-listing-image"
+                      width="700"
+                      height="394"
+                      loading="lazy"
+                      decoding="async"
                       style={{ objectPosition: property.imagePosition ?? "center center" }}
                     />
 
@@ -631,15 +635,15 @@ export default function SalesPage({
 
                     <div className="sales-listing-stats" aria-label={`Datos de ${property.title}`}>
                       <div className="sales-listing-stat">
-                        <img src="/optimized/home/icon-dorm.webp" alt="" />
+                        <img src="/optimized/home/icon-dorm.webp" alt="" width="40" height="36" />
                         <span>{property.rooms === 0 ? 1 : property.rooms}</span>
                       </div>
                       <div className="sales-listing-stat">
-                        <img src="/optimized/home/icon-banos.webp" alt="" />
+                        <img src="/optimized/home/icon-banos.webp" alt="" width="39" height="40" />
                         <span>{property.bathrooms}</span>
                       </div>
                       <div className="sales-listing-stat">
-                        <img src="/optimized/home/icon-sup.webp" alt="" />
+                        <img src="/optimized/home/icon-sup.webp" alt="" width="40" height="36" />
                         <span>{property.size}</span>
                       </div>
                     </div>

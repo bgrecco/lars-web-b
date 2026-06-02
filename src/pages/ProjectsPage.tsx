@@ -53,17 +53,28 @@ export default function ProjectsPage() {
                 key={project.title}
                 className={`project-card project-results-card reveal reveal-delay-${(index % 4) + 1}`}
               >
+                <a
+                  href={getProjectUrl(project.slug)}
+                  className="project-card-hitarea"
+                  aria-label={`Ver detalles de ${project.title}`}
+                />
                 <div className="project-image-wrap">
-                  <img src={project.image} alt={project.title} className="project-image" />
+                  <img
+                    src={project.cardImage}
+                    alt={project.title}
+                    className="project-image"
+                    width="700"
+                    height={project.slug === "tempo-guayabos" ? 543 : project.slug === "vila" ? 804 : 750}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <span className="sales-listing-pill project-results-pill">{project.tag}</span>
                 </div>
                 <div className="project-body">
                   <h3>{project.title}</h3>
                   <p className="project-meta">{project.location}</p>
                   <p>{project.description}</p>
-                  <a href={getProjectUrl(project.slug)} className="text-link">
-                    Ver proyecto
-                  </a>
+                  <span className="text-link">Ver proyecto</span>
                 </div>
               </article>
             ))}

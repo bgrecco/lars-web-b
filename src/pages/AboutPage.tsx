@@ -84,7 +84,14 @@ export default function AboutPage() {
 
           <aside className="spotlight-panel about-page-pillars-visual reveal reveal-delay-2">
             <div className="spotlight-image-wrap">
-              <img src="/about/about-city.png" alt="Ciudad y edificios gestionados por Lars" />
+              <img
+                src="/optimized/sections/about-city.webp"
+                alt="Ciudad y edificios gestionados por Lars"
+                width="960"
+                height="960"
+                fetchPriority="high"
+                decoding="async"
+              />
             </div>
             <div className="spotlight-body">
               <h3>Servicio integral con mirada actual y una forma de trabajo cercana</h3>

@@ -1,4 +1,6 @@
 import "@fontsource/lato/400.css";
+import "@fontsource/lato/700.css";
+import "@fontsource/poppins/400.css";
 import "@fontsource/poppins/700.css";
 import "./index.css";
 import React from "react";
