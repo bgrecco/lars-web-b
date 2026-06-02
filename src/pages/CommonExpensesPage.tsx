@@ -232,12 +232,6 @@ export default function CommonExpensesPage() {
           <div className="common-expenses-payment-panel reveal">
             <div className="common-expenses-payment-head">
               <h2>Medios de pago</h2>
-              <div className="common-expenses-payment-note common-expenses-payment-note-inline">
-                <strong>Medios de pago sin costo</strong>
-                <span>
-                  Disponible si el edificio posee una cuenta bancaria propia, caja de ahorro o cuenta corriente.
-                </span>
-              </div>
             </div>
 
             <div className="common-expenses-payment-grid">
@@ -265,6 +259,13 @@ export default function CommonExpensesPage() {
                   </div>
                 </article>
               ))}
+            </div>
+
+            <div className="common-expenses-payment-note">
+              <strong>Medios de pago sin costo</strong>
+              <span>
+                Disponible si el edificio posee una cuenta bancaria propia, caja de ahorro o cuenta corriente.
+              </span>
             </div>
 
           </div>

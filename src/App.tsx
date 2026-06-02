@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import ContactSection from "./components/ContactSection";
 import WhatsAppFloatingButton from "./components/WhatsAppFloatingButton";
 import { getProjectBySlug } from "./data/projectsCatalog";
-import { getSalesPropertyById } from "./data/salesCatalog";
+import { getSalesPropertyById, salesCatalog } from "./data/salesCatalog";
 import AboutPage from "./pages/AboutPage";
 import CommonExpensesPage from "./pages/CommonExpensesPage";
 import ProjectDetailsPage from "./pages/ProjectDetailsPage";
@@ -47,6 +47,7 @@ type AppRoute =
 
 type ListingMedia = {
   image: string;
+  thumbImage?: string;
   alt: string;
   objectPosition?: string;
 };
@@ -68,21 +69,25 @@ function buildListingGallery(title: string, primaryImage: string): ListingMedia[
   return [
     {
       image: primaryImage,
+      thumbImage: primaryImage.replace("-main.webp", "-thumb.webp"),
       alt: `${title} vista principal`,
       objectPosition: "center center",
     },
     {
-      image: "/1.png",
+      image: "/optimized/home/1-main.webp",
+      thumbImage: "/optimized/home/1-thumb.webp",
       alt: `${title} fachada y acceso`,
       objectPosition: "center center",
     },
     {
-      image: "/2.png",
+      image: "/optimized/home/2-main.webp",
+      thumbImage: "/optimized/home/2-thumb.webp",
       alt: `${title} ambiente interior complementario`,
       objectPosition: "center center",
     },
     {
-      image: "/3.png",
+      image: "/optimized/home/3-main.webp",
+      thumbImage: "/optimized/home/3-thumb.webp",
       alt: `${title} fachada alternativa`,
       objectPosition: "center center",
     },
@@ -126,6 +131,12 @@ const heroHighlights = [
     icon: "sale",
     href: "/ventas",
   },
+  {
+    title: "Quiero alquilar y/o vender mi propiedad",
+    detail: "Te acompañamos con tasación, difusión comercial y gestión integral de tu inmueble.",
+    icon: "owners",
+    href: "/propietarios",
+  },
 ];
 
 const featuredListings: Listing[] = [
@@ -137,8 +148,8 @@ const featuredListings: Listing[] = [
     rooms: 3,
     bathrooms: 2,
     size: "46 m²",
-    image: "/property-villa-dolores.png",
-    gallery: buildListingGallery("Villa Dolores Loft", "/property-villa-dolores.png"),
+    image: "/optimized/home/property-villa-dolores-main.webp",
+    gallery: buildListingGallery("Villa Dolores Loft", "/optimized/home/property-villa-dolores-main.webp"),
     videoSrc: "/hero-bg.mp4",
   },
   {
@@ -149,8 +160,8 @@ const featuredListings: Listing[] = [
     rooms: 3,
     bathrooms: 2,
     size: "46 m²",
-    image: "/property-pocitos.png",
-    gallery: buildListingGallery("Pocitos Classic", "/property-pocitos.png"),
+    image: "/optimized/home/property-pocitos-main.webp",
+    gallery: buildListingGallery("Pocitos Classic", "/optimized/home/property-pocitos-main.webp"),
   },
   {
     operation: "Venta",
@@ -160,8 +171,8 @@ const featuredListings: Listing[] = [
     rooms: 2,
     bathrooms: 1,
     size: "46 m²",
-    image: "/property-punta-carretas.png",
-    gallery: buildListingGallery("Punta Carretas Loft", "/property-punta-carretas.png"),
+    image: "/optimized/home/property-punta-carretas-main.webp",
+    gallery: buildListingGallery("Punta Carretas Loft", "/optimized/home/property-punta-carretas-main.webp"),
   },
   {
     operation: "Venta",
@@ -171,8 +182,8 @@ const featuredListings: Listing[] = [
     rooms: 2,
     bathrooms: 1,
     size: "46 m²",
-    image: "/property-la-blanqueada.png",
-    gallery: buildListingGallery("La Blanqueada Studio", "/property-la-blanqueada.png"),
+    image: "/optimized/home/property-la-blanqueada-main.webp",
+    gallery: buildListingGallery("La Blanqueada Studio", "/optimized/home/property-la-blanqueada-main.webp"),
   },
 ];
 
@@ -180,16 +191,22 @@ const topbarBranches = [
   {
     office: "Casa central Cordón",
     address: "Minas 1401",
+    mapsHref: "https://www.google.com/maps/search/?api=1&query=Minas+1401,+Montevideo,+Uruguay",
     phone: "2401 01 01",
     phoneHref: "tel:+59824010101",
   },
   {
     office: "Sucursal Pocitos Nuevo",
     address: "Av. Gral Rivera 3471",
+    mapsHref: "https://www.google.com/maps/search/?api=1&query=Av.+Gral+Rivera+3471,+Montevideo,+Uruguay",
     phone: "2622 50 50",
     phoneHref: "tel:+59826225050",
   },
 ];
+
+const searchNeighborhoodOptions = Array.from(new Set(salesCatalog.map((property) => property.location))).sort((left, right) =>
+  left.localeCompare(right, "es"),
+);
 
 function SectionHeader(props: {
   title: string;
@@ -326,6 +343,8 @@ function ListingShowcaseCard(props: ListingShowcaseCardProps) {
             src={currentMedia.image}
             alt={currentMedia.alt}
             className="listing-showcase-main-image"
+            loading="lazy"
+            decoding="async"
             style={{ objectPosition: currentMedia.objectPosition ?? "center center" }}
           />
           {listing.videoSrc ? (
@@ -354,15 +373,15 @@ function ListingShowcaseCard(props: ListingShowcaseCardProps) {
 
           <div className="listing-showcase-stats" aria-label="Detalles de la propiedad">
             <div className="listing-showcase-stat">
-              <img src="/icon-dorm.png" alt="" />
+              <img src="/optimized/home/icon-dorm.webp" alt="" />
               <span>{listing.rooms}</span>
             </div>
             <div className="listing-showcase-stat">
-              <img src="/icon-banos.png" alt="" />
+              <img src="/optimized/home/icon-banos.webp" alt="" />
               <span>{listing.bathrooms}</span>
             </div>
             <div className="listing-showcase-stat">
-              <img src="/icon-sup.png" alt="" />
+              <img src="/optimized/home/icon-sup.webp" alt="" />
               <span>{listing.size}</span>
             </div>
           </div>
@@ -382,10 +401,12 @@ function ListingShowcaseCard(props: ListingShowcaseCardProps) {
                 aria-pressed={index === activeMediaIndex}
               >
                 <img
-                  src={media.image}
+                  src={media.thumbImage ?? media.image}
                   alt=""
                   aria-hidden="true"
                   className="listing-showcase-thumb-image"
+                  loading="lazy"
+                  decoding="async"
                   style={{ objectPosition: media.objectPosition ?? "center center" }}
                 />
               </button>
@@ -396,10 +417,12 @@ function ListingShowcaseCard(props: ListingShowcaseCardProps) {
                 aria-hidden="true"
               >
                 <img
-                  src={media.image}
+                  src={media.thumbImage ?? media.image}
                   alt=""
                   aria-hidden="true"
                   className="listing-showcase-thumb-image"
+                  loading="lazy"
+                  decoding="async"
                   style={{ objectPosition: media.objectPosition ?? "center center" }}
                 />
               </div>
@@ -433,7 +456,14 @@ function ListingShowcasePreview(props: {
           : `Ver propiedad siguiente: ${listing.title}`
       }
     >
-      <img src={listing.image} alt="" aria-hidden="true" className="listing-showcase-preview-image" />
+      <img
+        src={listing.image}
+        alt=""
+        aria-hidden="true"
+        className="listing-showcase-preview-image"
+        loading="lazy"
+        decoding="async"
+      />
     </button>
   );
 }
@@ -467,6 +497,16 @@ function HeroInsightIcon(props: { kind: string }) {
           <path className="hero-insight-icon-detail" d="M14.4 11.1c-.5-.7-1.3-1-2.3-1-1.2 0-2 .6-2 1.5 0 2.2 4.4 1 4.4 3.4 0 .9-.8 1.5-2.1 1.5-1.1 0-2-.4-2.6-1.1" />
         </svg>
       );
+    case "owners":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 20h16" />
+          <path d="M6.5 20v-8.5L12 7l5.5 4.5V20" />
+          <path d="M9.5 13.5h5" />
+          <path d="M9.5 16.5h5" />
+          <path d="M17.2 6.8a2.2 2.2 0 1 1 3.1 3.1l-2.3 2.3-3.1-3.1z" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -477,75 +517,6 @@ function SearchIcon() {
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <circle cx="10.5" cy="10.5" r="5.5" />
       <path d="m15 15 4.5 4.5" />
-    </svg>
-  );
-}
-
-function SearchDemoFilterIcon(props: { kind: "home" | "building" | "bed" | "bath" | "tag" | "arrow" }) {
-  const { kind } = props;
-
-  if (kind === "home") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M3 11.5 12 4l9 7.5" />
-        <path d="M6.5 10.5V20h11v-9.5" />
-        <path d="M10 20v-5h4v5" />
-      </svg>
-    );
-  }
-
-  if (kind === "building") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M5 21V4.8C5 3.8 5.8 3 6.8 3h8.4c1 0 1.8.8 1.8 1.8V21" />
-        <path d="M8.5 7h1" />
-        <path d="M13.5 7h1" />
-        <path d="M8.5 11h1" />
-        <path d="M13.5 11h1" />
-        <path d="M8.5 15h1" />
-        <path d="M13.5 15h1" />
-        <path d="M3 21h18" />
-      </svg>
-    );
-  }
-
-  if (kind === "bed") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 11V5" />
-        <path d="M4 14h16" />
-        <path d="M20 14v5" />
-        <path d="M4 19v-8h13a3 3 0 0 1 3 3" />
-        <path d="M8 11V9.5A1.5 1.5 0 0 1 9.5 8h2A1.5 1.5 0 0 1 13 9.5V11" />
-      </svg>
-    );
-  }
-
-  if (kind === "bath") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M7 12V5.5A2.5 2.5 0 0 1 9.5 3H10" />
-        <path d="M4 12h16" />
-        <path d="M5 12v3a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-3" />
-        <path d="M8 19 7 21" />
-        <path d="m16 19 1 2" />
-      </svg>
-    );
-  }
-
-  if (kind === "tag") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M20.5 13.5 13.5 20.5a2 2 0 0 1-2.8 0L3 12.8V4h8.8l8.7 8.7a2 2 0 0 1 0 2.8z" />
-        <circle cx="7.5" cy="7.5" r=".7" fill="currentColor" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M5 12h14" />
-      <path d="m13 6 6 6-6 6" />
     </svg>
   );
 }
@@ -598,10 +569,10 @@ function TopbarBranchInfo(props: {
   return (
     <>
       <span className="topbar-branch-name">{branch.office}</span>
-      <span className="topbar-info-item">
+      <a className="topbar-info-item topbar-address-link" href={branch.mapsHref} target="_blank" rel="noreferrer">
         <TopbarIcon kind="location" />
         <span>{branch.address}</span>
-      </span>
+      </a>
       <a className="topbar-info-item" href={branch.phoneHref}>
         <TopbarIcon kind="phone" />
         <span>{branch.phone}</span>
@@ -677,80 +648,20 @@ function CarouselArrowIcon(props: { direction: "left" | "right" }) {
   );
 }
 
-type SearchDemoFilterKey = "operation" | "type" | "bedrooms" | "bathrooms" | "price";
+type SearchPriceCurrency = "usd" | "uyu";
 
-type SearchDemoFilter = {
-  key: SearchDemoFilterKey;
-  label: string;
-  icon: "home" | "building" | "bed" | "bath" | "tag";
-  options: Array<{ value: string; label: string }>;
-};
+const searchPriceMinLimit = 0;
+const searchPriceMaxLimit = 500000;
+const searchPriceStep = 10000;
 
-const searchDemoFilters: SearchDemoFilter[] = [
-  {
-    key: "operation",
-    label: "Operación",
-    icon: "home",
-    options: [
-      { value: "venta", label: "Venta" },
-      { value: "alquiler", label: "Alquiler" },
-      { value: "proyectos", label: "Proyectos" },
-    ],
-  },
-  {
-    key: "type",
-    label: "Tipo",
-    icon: "building",
-    options: [
-      { value: "apartamento", label: "Apartamento" },
-      { value: "casa", label: "Casa" },
-      { value: "oficina", label: "Oficina" },
-      { value: "terreno", label: "Terreno" },
-    ],
-  },
-  {
-    key: "bedrooms",
-    label: "Dormitorios",
-    icon: "bed",
-    options: [
-      { value: "", label: "Dormitorios" },
-      { value: "1", label: "1 dormitorio" },
-      { value: "2", label: "2 dormitorios" },
-      { value: "3", label: "3 dormitorios" },
-      { value: "4+", label: "4 o más" },
-    ],
-  },
-  {
-    key: "bathrooms",
-    label: "Baños",
-    icon: "bath",
-    options: [
-      { value: "", label: "Baños" },
-      { value: "1", label: "1 baño" },
-      { value: "2", label: "2 baños" },
-      { value: "3", label: "3 baños" },
-      { value: "4+", label: "4 o más" },
-    ],
-  },
-  {
-    key: "price",
-    label: "Precio",
-    icon: "tag",
-    options: [
-      { value: "mid", label: "US$ 120.000 - 250.000" },
-      { value: "low", label: "Hasta US$ 120.000" },
-      { value: "high", label: "Más de US$ 250.000" },
-    ],
-  },
-];
+function clampSearchPriceValue(value: number) {
+  return Math.min(searchPriceMaxLimit, Math.max(searchPriceMinLimit, value));
+}
 
-const initialSearchDemoFilters: Record<SearchDemoFilterKey, string> = {
-  operation: "venta",
-  type: "apartamento",
-  bedrooms: "",
-  bathrooms: "",
-  price: "mid",
-};
+function formatSearchPriceValue(currency: SearchPriceCurrency, value: number) {
+  const symbol = currency === "usd" ? "US$" : "$";
+  return `${symbol} ${value.toLocaleString("es-UY")}`;
+}
 
 function App() {
   const route = getRouteFromPathname(window.location.pathname);
@@ -775,8 +686,14 @@ function App() {
   const [listingTransitionDirection, setListingTransitionDirection] = useState<"left" | "right" | null>(null);
   const [listingMotionKey, setListingMotionKey] = useState(0);
   const [footerBranchIndex, setFooterBranchIndex] = useState(0);
-  const [searchDemoIndex, setSearchDemoIndex] = useState(0);
-  const [searchDemoValues, setSearchDemoValues] = useState<Record<SearchDemoFilterKey, string>>(initialSearchDemoFilters);
+  const [isSearchPricePopoverOpen, setIsSearchPricePopoverOpen] = useState(false);
+  const [shouldLoadHeroVideo, setShouldLoadHeroVideo] = useState(false);
+  const [searchPriceCurrency, setSearchPriceCurrency] = useState<SearchPriceCurrency>("usd");
+  const [searchPriceMin, setSearchPriceMin] = useState(120000);
+  const [searchPriceMax, setSearchPriceMax] = useState(250000);
+  const [searchPriceMinInput, setSearchPriceMinInput] = useState("120000");
+  const [searchPriceMaxInput, setSearchPriceMaxInput] = useState("250000");
+  const searchPricePopoverRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const elements = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
@@ -879,6 +796,88 @@ function App() {
     return () => window.clearInterval(intervalId);
   }, []);
 
+  useEffect(() => {
+    if (route.name !== "home") {
+      setShouldLoadHeroVideo(false);
+      return;
+    }
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const supportsConnection = "connection" in navigator;
+    const connection = supportsConnection
+      ? (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
+      : undefined;
+
+    if (reducedMotion || connection?.saveData) {
+      return;
+    }
+
+    const browserWindow = window as Window & {
+      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    let timeoutId = 0;
+    let idleId = 0;
+
+    const queueVideoLoad = () => {
+      if (browserWindow.requestIdleCallback) {
+        idleId = browserWindow.requestIdleCallback(
+          () => {
+            setShouldLoadHeroVideo(true);
+          },
+          { timeout: 1800 },
+        );
+        return;
+      }
+
+      timeoutId = window.setTimeout(() => {
+        setShouldLoadHeroVideo(true);
+      }, 900);
+    };
+
+    if (document.readyState === "complete") {
+      queueVideoLoad();
+    } else {
+      window.addEventListener("load", queueVideoLoad, { once: true });
+    }
+
+    return () => {
+      window.removeEventListener("load", queueVideoLoad);
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+      if (idleId && browserWindow.cancelIdleCallback) {
+        browserWindow.cancelIdleCallback(idleId);
+      }
+    };
+  }, [route.name]);
+
+  useEffect(() => {
+    if (!isSearchPricePopoverOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!searchPricePopoverRef.current?.contains(event.target as Node)) {
+        setIsSearchPricePopoverOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsSearchPricePopoverOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isSearchPricePopoverOpen]);
+
   const handlePreviousListings = () => {
     setListingTransitionDirection("left");
     setListingMotionKey((currentKey) => currentKey + 1);
@@ -901,33 +900,60 @@ function App() {
     setListingIndex(index);
   };
 
-  const handlePreviousSearchDemo = () => {
-    setSearchDemoIndex((currentIndex) => getWrappedIndex(currentIndex - 1, 2));
-  };
-
-  const handleNextSearchDemo = () => {
-    setSearchDemoIndex((currentIndex) => getWrappedIndex(currentIndex + 1, 2));
-  };
-
-  const handleSearchDemoFilterChange = (key: SearchDemoFilterKey, value: string) => {
-    setSearchDemoValues((currentValues) => ({
-      ...currentValues,
-      [key]: value,
-    }));
-  };
-
-  const handleClearSearchDemoFilters = () => {
-    setSearchDemoValues({
-      operation: "",
-      type: "",
-      bedrooms: "",
-      bathrooms: "",
-      price: "",
+  const handleSearchPriceMinChange = (value: number) => {
+    const nextMin = clampSearchPriceValue(value);
+    setSearchPriceMin(nextMin);
+    setSearchPriceMinInput(String(nextMin));
+    setSearchPriceMax((currentMax) => {
+      const nextMax = Math.max(currentMax, nextMin);
+      setSearchPriceMaxInput(String(nextMax));
+      return nextMax;
     });
   };
 
+  const handleSearchPriceMaxChange = (value: number) => {
+    const nextMax = clampSearchPriceValue(value);
+    setSearchPriceMax(nextMax);
+    setSearchPriceMaxInput(String(nextMax));
+    setSearchPriceMin((currentMin) => {
+      const nextMin = Math.min(currentMin, nextMax);
+      setSearchPriceMinInput(String(nextMin));
+      return nextMin;
+    });
+  };
+
+  const handleSearchPriceInputChange = (field: "min" | "max", value: string) => {
+    const normalizedValue = value.replace(/\D/g, "");
+
+    if (field === "min") {
+      setSearchPriceMinInput(normalizedValue);
+      if (normalizedValue === "") {
+        return;
+      }
+
+      handleSearchPriceMinChange(Number(normalizedValue));
+      return;
+    }
+
+    setSearchPriceMaxInput(normalizedValue);
+    if (normalizedValue === "") {
+      return;
+    }
+
+    handleSearchPriceMaxChange(Number(normalizedValue));
+  };
+
+  const handleSearchPriceInputBlur = (field: "min" | "max") => {
+    if (field === "min") {
+      handleSearchPriceMinChange(Number(searchPriceMinInput || searchPriceMinLimit));
+      return;
+    }
+
+    handleSearchPriceMaxChange(Number(searchPriceMaxInput || searchPriceMaxLimit));
+  };
+
   const activeFooterBranch = topbarBranches[getWrappedIndex(footerBranchIndex, topbarBranches.length)];
-  const isSearchDemoActive = searchDemoIndex === 1;
+  const searchPriceSummary = `${formatSearchPriceValue(searchPriceCurrency, searchPriceMin)} - ${formatSearchPriceValue(searchPriceCurrency, searchPriceMax)}`;
   const pageShellClassName = [
     "page-shell",
     route.name !== "home" ? "page-shell-sales" : "",
@@ -953,7 +979,7 @@ function App() {
       <header className="site-header">
         <div className="container header-inner">
           <a className="logo-link" href="/#inicio" aria-label="Volver al inicio">
-            <img src="/logo.png" alt="Lars" className="brand-logo" />
+            <img src="/optimized/home/logo.webp" alt="Lars" className="brand-logo" />
           </a>
           <nav className="site-nav" aria-label="Principal">
             {navLinks.map((item) =>
@@ -997,10 +1023,10 @@ function App() {
           </nav>
           <div className="header-actions" aria-label="Accesos directos">
             <button type="button" className="header-action-button">
-              <span>Clientes</span>
+              <span>Sueldos</span>
             </button>
             <button type="button" className="header-action-button">
-              <span>Sueldos</span>
+              <span>Clientes</span>
             </button>
           </div>
         </div>
@@ -1037,9 +1063,10 @@ function App() {
               muted
               loop
               playsInline
-              poster="/hero-building.png"
+              preload="none"
+              poster="/optimized/home/hero-building.webp"
             >
-              <source src="/hero-bg.mp4" type="video/mp4" />
+              {shouldLoadHeroVideo ? <source src="/hero-bg.mp4" type="video/mp4" /> : null}
             </video>
           </div>
           <div className="hero-backdrop" aria-hidden="true" />
@@ -1049,22 +1076,9 @@ function App() {
               <p className="hero-tagline">
                 Más de medio siglo de seriedad brindando un servicio integral y a la vanguardia en el rubro inmobiliario
               </p>
-              <div className="hero-actions">
-                <a className="primary-button search-cta-button" href="#propiedades">
-                  Ver propiedades
-                </a>
-                <a className="hero-link-button" href="/gastos-comunes">
-                  Consultar gastos comunes
-                </a>
-              </div>
             </div>
 
             <aside className="hero-insight-panel reveal reveal-delay-2" aria-label="Resumen de servicios Lars">
-              <div className="hero-insight-heading">
-                <span>Hoy en Lars</span>
-                <strong>Información de interés general</strong>
-              </div>
-
               <div className="hero-insight-list">
                 {heroHighlights.map((item) => (
                   <a key={item.title} className="hero-insight-item" href={item.href}>
@@ -1090,68 +1104,6 @@ function App() {
             <section className="hero-search-band">
           <div className="container search-wrap" id="buscador">
             <div className="search-stack">
-              <div className="search-demo-switch reveal reveal-delay-2" aria-label="Cambiar versión del buscador">
-                <button type="button" onClick={handlePreviousSearchDemo} aria-label="Ver versión anterior del buscador">
-                  <CarouselArrowIcon direction="left" />
-                </button>
-                <span>{isSearchDemoActive ? "Demo nuevo buscador" : "Buscador actual"}</span>
-                <button type="button" onClick={handleNextSearchDemo} aria-label="Ver versión siguiente del buscador">
-                  <CarouselArrowIcon direction="right" />
-                </button>
-              </div>
-
-              {isSearchDemoActive ? (
-                <form className="search-card search-card-demo">
-                  <div className="search-demo-heading">
-                    <div>
-                      <h2>Buscador de propiedades</h2>
-                      <p>Encontrá propiedades según tus preferencias</p>
-                    </div>
-                  </div>
-
-                  <label className="search-demo-query">
-                    <span>
-                      <SearchIcon />
-                    </span>
-                    <input type="text" placeholder="Buscar por zona, barrio o referencia..." />
-                  </label>
-
-                  <div className="search-demo-filters" aria-label="Filtros de búsqueda">
-                    {searchDemoFilters.map((filter) => (
-                      <label
-                        className={`search-demo-filter${searchDemoValues[filter.key] ? " search-demo-filter-active" : ""}`}
-                        key={filter.key}
-                      >
-                        <SearchDemoFilterIcon kind={filter.icon} />
-                        <select
-                          aria-label={filter.label}
-                          value={searchDemoValues[filter.key]}
-                          onChange={(event) => handleSearchDemoFilterChange(filter.key, event.currentTarget.value)}
-                        >
-                          {filter.options.map((option) => (
-                            <option value={option.value} key={`${filter.key}-${option.value}`}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="m6 9 6 6 6-6" />
-                        </svg>
-                      </label>
-                    ))}
-                  </div>
-
-                  <div className="search-demo-actions">
-                    <button type="button" className="search-demo-clear" onClick={handleClearSearchDemoFilters}>
-                      Limpiar filtros
-                    </button>
-                    <button type="button" className="search-demo-submit">
-                      Buscar propiedades
-                      <SearchDemoFilterIcon kind="arrow" />
-                    </button>
-                  </div>
-                </form>
-              ) : (
                 <form className="search-card">
                   <div className="search-header">
                     <div>
@@ -1183,8 +1135,15 @@ function App() {
                       </select>
                     </label>
                     <label className="search-field-standard search-field-zone">
-                      Zona
-                      <input type="text" placeholder="Ej: Pocitos, Carrasco o referencia" />
+                      Barrio
+                      <select defaultValue="">
+                        <option value="">Todos</option>
+                        {searchNeighborhoodOptions.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
                     </label>
                     <label className="search-field-compact">
                       Dormitorios
@@ -1196,31 +1155,98 @@ function App() {
                         <option value="4+">4 o más</option>
                       </select>
                     </label>
-                    <label className="search-field-compact">
-                      Baños
-                      <select defaultValue="">
-                        <option value="" />
-                        <option value="1">1 baño</option>
-                        <option value="2">2 baños</option>
-                        <option value="3">3 baños</option>
-                        <option value="4+">4 o más</option>
-                      </select>
-                    </label>
                     <label className="search-field-compact search-field-reference">
                       Nº de ref.
                       <input type="text" placeholder="Ej: 1234" />
                     </label>
-                    <label className="search-field-standard">
-                      Precio
-                      <select defaultValue="mid">
-                        <option value="mid">US$ 120.000 - 250.000</option>
-                        <option value="low">Hasta US$ 120.000</option>
-                        <option value="high">Más de US$ 250.000</option>
-                      </select>
-                    </label>
-                  </div>
+                    <div className="search-field-standard search-field-price" ref={searchPricePopoverRef}>
+                      <span className="search-field-label">Precio</span>
+                      <button
+                        type="button"
+                        className={`search-price-trigger${isSearchPricePopoverOpen ? " is-open" : ""}`}
+                        onClick={() => setIsSearchPricePopoverOpen((currentValue) => !currentValue)}
+                        aria-expanded={isSearchPricePopoverOpen}
+                        aria-haspopup="dialog"
+                      >
+                        <span>{searchPriceSummary}</span>
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </button>
+                      {isSearchPricePopoverOpen ? (
+                        <div className="search-price-popover" role="dialog" aria-label="Seleccionar rango de precio">
+                          <div className="search-price-currency-row">
+                            <span className="search-price-popover-title">Moneda</span>
+                            <div className="search-price-currency-toggle" aria-label="Seleccionar moneda">
+                              <button
+                                type="button"
+                                className={searchPriceCurrency === "usd" ? "is-active" : undefined}
+                                onClick={() => setSearchPriceCurrency("usd")}
+                              >
+                                US$
+                              </button>
+                              <button
+                                type="button"
+                                className={searchPriceCurrency === "uyu" ? "is-active" : undefined}
+                                onClick={() => setSearchPriceCurrency("uyu")}
+                              >
+                                $
+                              </button>
+                            </div>
+                          </div>
 
-                  <div className="search-actions">
+                          <div className="search-price-slider-group">
+                            <div className="search-price-slider-head">
+                              <span>Mínimo</span>
+                              <strong>{formatSearchPriceValue(searchPriceCurrency, searchPriceMin)}</strong>
+                            </div>
+                            <label className="search-price-number-field">
+                              <span>Valor mínimo</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={searchPriceMinInput}
+                                onChange={(event) => handleSearchPriceInputChange("min", event.currentTarget.value)}
+                                onBlur={() => handleSearchPriceInputBlur("min")}
+                              />
+                            </label>
+                            <input
+                              type="range"
+                              min={searchPriceMinLimit}
+                              max={searchPriceMaxLimit}
+                              step={searchPriceStep}
+                              value={searchPriceMin}
+                              onChange={(event) => handleSearchPriceMinChange(Number(event.currentTarget.value))}
+                            />
+                          </div>
+
+                          <div className="search-price-slider-group">
+                            <div className="search-price-slider-head">
+                              <span>Máximo</span>
+                              <strong>{formatSearchPriceValue(searchPriceCurrency, searchPriceMax)}</strong>
+                            </div>
+                            <label className="search-price-number-field">
+                              <span>Valor máximo</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={searchPriceMaxInput}
+                                onChange={(event) => handleSearchPriceInputChange("max", event.currentTarget.value)}
+                                onBlur={() => handleSearchPriceInputBlur("max")}
+                              />
+                            </label>
+                            <input
+                              type="range"
+                              min={searchPriceMinLimit}
+                              max={searchPriceMaxLimit}
+                              step={searchPriceStep}
+                              value={searchPriceMax}
+                              onChange={(event) => handleSearchPriceMaxChange(Number(event.currentTarget.value))}
+                            />
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
                     <div className="search-action-buttons">
                       <button type="button" className="primary-button search-cta-button">
                         Buscar
@@ -1228,7 +1254,6 @@ function App() {
                     </div>
                   </div>
                 </form>
-              )}
             </div>
           </div>
         </section>
@@ -1325,7 +1350,7 @@ function App() {
             <span className="footer-branch-name">{activeFooterBranch.office}</span>
             <span className="footer-branch-separator" aria-hidden="true">-</span>
             <span className="footer-branch-details">
-              <span>{activeFooterBranch.address}</span>
+              <a href={activeFooterBranch.mapsHref} target="_blank" rel="noreferrer">{activeFooterBranch.address}</a>
               <span className="footer-branch-separator" aria-hidden="true">-</span>
               <a href={activeFooterBranch.phoneHref}>{activeFooterBranch.phone}</a>
             </span>

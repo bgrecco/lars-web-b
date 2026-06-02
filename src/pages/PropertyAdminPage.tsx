@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 type OwnerIconKind =
@@ -445,6 +445,27 @@ function OwnerSectionHeader(props: { eyebrow?: string; title: string; descriptio
 }
 
 export default function PropertyAdminPage() {
+  useEffect(() => {
+    const page = document.querySelector<HTMLElement>(".owners-page");
+    const header = document.querySelector<HTMLElement>(".site-header");
+
+    if (!page || !header) {
+      return;
+    }
+
+    const updateStickyOffset = () => {
+      page.style.setProperty("--owners-sticky-offset", `${header.offsetHeight}px`);
+    };
+
+    updateStickyOffset();
+    window.addEventListener("resize", updateStickyOffset);
+
+    return () => {
+      window.removeEventListener("resize", updateStickyOffset);
+      page.style.removeProperty("--owners-sticky-offset");
+    };
+  }, []);
+
   return (
     <div className="owners-page">
       <section className="owners-hero">

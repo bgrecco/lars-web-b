@@ -341,12 +341,6 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
     <div className="property-details-page project-details-page">
       <section className="property-details-hero project-details-hero">
         <div className="container">
-          <div className="property-breadcrumb reveal">
-            <a href="/proyectos" className="property-back-link" aria-label="Volver a proyectos">
-              <BackArrowIcon />
-            </a>
-          </div>
-
           <div className="property-gallery-shell project-gallery-shell reveal reveal-delay-1" id="galeria">
             <div className="property-gallery-main">
               <button

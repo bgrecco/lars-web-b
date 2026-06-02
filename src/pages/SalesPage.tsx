@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useState, type FormEvent } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import ContactSection from "../components/ContactSection";
 import LarsLogoLoader from "../components/LarsLogoLoader";
 import { getSalesPropertyUrl, salesCatalog, type SalesProperty } from "../data/salesCatalog";
@@ -7,8 +7,9 @@ type SalesFilters = {
   tipo: string;
   barrio: string;
   dormitorios: string;
-  banos: string;
-  minimoUsd: string;
+  precioMoneda: "usd" | "uyu";
+  precioMinimo: string;
+  precioMaximo: string;
   ref: string;
   orden: string;
 };
@@ -17,8 +18,9 @@ const initialFilters: SalesFilters = {
   tipo: "",
   barrio: "",
   dormitorios: "",
-  banos: "",
-  minimoUsd: "",
+  precioMoneda: "usd",
+  precioMinimo: "",
+  precioMaximo: "",
   ref: "",
   orden: "",
 };
@@ -30,8 +32,19 @@ const sortOptions = [
   { value: "dorms-desc", label: "Dormitorios: mayor a menor" },
 ];
 
-const currencyFormatter = new Intl.NumberFormat("es-UY");
 const pageSize = 6;
+const salesPriceMinLimit = 0;
+const salesPriceMaxLimit = 500000;
+const salesPriceStep = 10000;
+
+function clampSalesPriceValue(value: number) {
+  return Math.min(salesPriceMaxLimit, Math.max(salesPriceMinLimit, value));
+}
+
+function formatSalesPriceValue(currency: SalesFilters["precioMoneda"], value: number) {
+  const symbol = currency === "usd" ? "US$" : "$";
+  return `${symbol} ${value.toLocaleString("es-UY")}`;
+}
 
 function getInitialFiltersFromUrl(): SalesFilters {
   if (typeof window === "undefined") {
@@ -45,7 +58,9 @@ function getInitialFiltersFromUrl(): SalesFilters {
     tipo: searchParams.get("tipo") ?? "",
     barrio: searchParams.get("barrio") ?? "",
     dormitorios: searchParams.get("dormitorios") ?? "",
-    banos: searchParams.get("banos") ?? "",
+    precioMoneda: (searchParams.get("precioMoneda") as SalesFilters["precioMoneda"]) ?? "usd",
+    precioMinimo: searchParams.get("precioMinimo") ?? "",
+    precioMaximo: searchParams.get("precioMaximo") ?? "",
   };
 }
 
@@ -63,18 +78,6 @@ function matchesBedrooms(property: SalesProperty, dormitorios: string) {
   }
 
   return String(property.rooms) === dormitorios;
-}
-
-function matchesBathrooms(property: SalesProperty, banos: string) {
-  if (!banos) {
-    return true;
-  }
-
-  if (banos === "4+") {
-    return property.bathrooms >= 4;
-  }
-
-  return String(property.bathrooms) === banos;
 }
 
 function PaginationArrowIcon(props: { direction: "left" | "right" }) {
@@ -109,12 +112,10 @@ function getActiveFilterChips(filters: SalesFilters) {
     chips.push(`Dormitorios: ${filters.dormitorios}`);
   }
 
-  if (filters.banos) {
-    chips.push(`Baños: ${filters.banos}`);
-  }
-
-  if (filters.minimoUsd) {
-    chips.push(`Desde US$ ${currencyFormatter.format(Number(filters.minimoUsd))}`);
+  if (filters.precioMinimo || filters.precioMaximo) {
+    const minimum = filters.precioMinimo ? Number(filters.precioMinimo) : salesPriceMinLimit;
+    const maximum = filters.precioMaximo ? Number(filters.precioMaximo) : salesPriceMaxLimit;
+    chips.push(`Precio: ${formatSalesPriceValue(filters.precioMoneda, minimum)} - ${formatSalesPriceValue(filters.precioMoneda, maximum)}`);
   }
 
   if (filters.ref) {
@@ -143,6 +144,10 @@ export default function SalesPage({
   const [appliedFilters, setAppliedFilters] = useState<SalesFilters>(() => getInitialFiltersFromUrl());
   const [isLoaderVisible, setIsLoaderVisible] = useState(showLoaderDemo);
   const [page, setPage] = useState(1);
+  const [isPricePopoverOpen, setIsPricePopoverOpen] = useState(false);
+  const [salesPriceMinInput, setSalesPriceMinInput] = useState(() => getInitialFiltersFromUrl().precioMinimo || "120000");
+  const [salesPriceMaxInput, setSalesPriceMaxInput] = useState(() => getInitialFiltersFromUrl().precioMaximo || "250000");
+  const pricePopoverRef = useRef<HTMLDivElement | null>(null);
 
   const typeOptions = useMemo(
     () => Array.from(new Set(salesCatalog.map((property) => property.type))).sort((left, right) => left.localeCompare(right, "es")),
@@ -159,7 +164,8 @@ export default function SalesPage({
 
   const filteredProperties = useMemo(() => {
     const normalizedRef = appliedFilters.ref.trim();
-    const minimumUsd = Number(appliedFilters.minimoUsd || 0);
+    const minimumPrice = Number(appliedFilters.precioMinimo || 0);
+    const maximumPrice = Number(appliedFilters.precioMaximo || salesPriceMaxLimit);
 
     const filtered = salesCatalog.filter((property) => {
       const matchesType = appliedFilters.tipo ? property.type === appliedFilters.tipo : true;
@@ -167,14 +173,15 @@ export default function SalesPage({
       const matchesRef = normalizedRef
         ? property.ref.includes(normalizedRef) || String(property.id).includes(normalizedRef)
         : true;
-      const matchesMinimum = minimumUsd ? property.priceValue >= minimumUsd : true;
+      const matchesMinimum = appliedFilters.precioMinimo ? property.priceValue >= minimumPrice : true;
+      const matchesMaximum = appliedFilters.precioMaximo ? property.priceValue <= maximumPrice : true;
 
       return (
         matchesType &&
         matchesLocation &&
         matchesBedrooms(property, appliedFilters.dormitorios) &&
-        matchesBathrooms(property, appliedFilters.banos) &&
         matchesMinimum &&
+        matchesMaximum &&
         matchesRef
       );
     });
@@ -208,6 +215,32 @@ export default function SalesPage({
 
     return () => window.clearTimeout(timeoutId);
   }, [showLoaderDemo]);
+
+  useEffect(() => {
+    if (!isPricePopoverOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!pricePopoverRef.current?.contains(event.target as Node)) {
+        setIsPricePopoverOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsPricePopoverOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPricePopoverOpen]);
 
   useEffect(() => {
     if (isLoaderVisible) {
@@ -260,8 +293,62 @@ export default function SalesPage({
   const handleDraftFilterChange = (field: keyof SalesFilters, value: string) => {
     setDraftFilters((currentFilters) => ({
       ...currentFilters,
-      [field]: field === "minimoUsd" ? value.replace(/[^\d]/g, "") : value,
+      [field]: value,
     }));
+  };
+
+  const handleSalesPriceMinChange = (value: number) => {
+    const nextMin = clampSalesPriceValue(value);
+    const nextMax = Math.max(Number(draftFilters.precioMaximo || salesPriceMaxLimit), nextMin);
+
+    setSalesPriceMinInput(String(nextMin));
+    setSalesPriceMaxInput(String(nextMax));
+    setDraftFilters((currentFilters) => ({
+      ...currentFilters,
+      precioMinimo: String(nextMin),
+      precioMaximo: String(nextMax),
+    }));
+  };
+
+  const handleSalesPriceMaxChange = (value: number) => {
+    const nextMax = clampSalesPriceValue(value);
+    const nextMin = Math.min(Number(draftFilters.precioMinimo || salesPriceMinLimit), nextMax);
+
+    setSalesPriceMinInput(String(nextMin));
+    setSalesPriceMaxInput(String(nextMax));
+    setDraftFilters((currentFilters) => ({
+      ...currentFilters,
+      precioMinimo: String(nextMin),
+      precioMaximo: String(nextMax),
+    }));
+  };
+
+  const handleSalesPriceInputChange = (field: "min" | "max", value: string) => {
+    const normalizedValue = value.replace(/\D/g, "");
+
+    if (field === "min") {
+      setSalesPriceMinInput(normalizedValue);
+      setDraftFilters((currentFilters) => ({ ...currentFilters, precioMinimo: normalizedValue }));
+      if (normalizedValue) {
+        handleSalesPriceMinChange(Number(normalizedValue));
+      }
+      return;
+    }
+
+    setSalesPriceMaxInput(normalizedValue);
+    setDraftFilters((currentFilters) => ({ ...currentFilters, precioMaximo: normalizedValue }));
+    if (normalizedValue) {
+      handleSalesPriceMaxChange(Number(normalizedValue));
+    }
+  };
+
+  const handleSalesPriceInputBlur = (field: "min" | "max") => {
+    if (field === "min") {
+      handleSalesPriceMinChange(Number(salesPriceMinInput || salesPriceMinLimit));
+      return;
+    }
+
+    handleSalesPriceMaxChange(Number(salesPriceMaxInput || salesPriceMaxLimit));
   };
 
   const handleApplyFilters = (event: FormEvent<HTMLFormElement>) => {
@@ -277,6 +364,8 @@ export default function SalesPage({
     startTransition(() => {
       setDraftFilters(initialFilters);
       setAppliedFilters(initialFilters);
+      setSalesPriceMinInput("120000");
+      setSalesPriceMaxInput("250000");
       setPage(1);
     });
   };
@@ -295,12 +384,6 @@ export default function SalesPage({
       <section className="sales-filter-band" id="ventas-filtros">
         <div className="container">
           <form className="sales-filter-card reveal" onSubmit={handleApplyFilters}>
-            <div className="sales-filter-header">
-              <div>
-                <h2>Filtros</h2>
-              </div>
-            </div>
-
             <div className="sales-filter-grid">
               <label className="sales-filter-field">
                 <span>Tipo</span>
@@ -347,33 +430,107 @@ export default function SalesPage({
                 </select>
               </label>
 
-              <label className="sales-filter-field">
-                <span>Baños</span>
-                <select
-                  value={draftFilters.banos}
-                  onChange={(event) => handleDraftFilterChange("banos", event.target.value)}
+              <div className="sales-filter-field sales-filter-field-price" ref={pricePopoverRef}>
+                <span>Precio</span>
+                <button
+                  type="button"
+                  className={`search-price-trigger${isPricePopoverOpen ? " is-open" : ""}`}
+                  onClick={() => setIsPricePopoverOpen((currentValue) => !currentValue)}
+                  aria-expanded={isPricePopoverOpen}
+                  aria-haspopup="dialog"
                 >
-                  <option value="">Todos</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4+">4+</option>
-                </select>
-              </label>
+                  <span>
+                    {formatSalesPriceValue(
+                      draftFilters.precioMoneda,
+                      Number(draftFilters.precioMinimo || salesPriceMinInput || 120000),
+                    )}{" "}
+                    -{" "}
+                    {formatSalesPriceValue(
+                      draftFilters.precioMoneda,
+                      Number(draftFilters.precioMaximo || salesPriceMaxInput || 250000),
+                    )}
+                  </span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+                {isPricePopoverOpen ? (
+                  <div className="search-price-popover" role="dialog" aria-label="Seleccionar rango de precio">
+                    <div className="search-price-currency-row">
+                      <span className="search-price-popover-title">Moneda</span>
+                      <div className="search-price-currency-toggle" aria-label="Seleccionar moneda">
+                        <button
+                          type="button"
+                          className={draftFilters.precioMoneda === "usd" ? "is-active" : undefined}
+                          onClick={() => handleDraftFilterChange("precioMoneda", "usd")}
+                        >
+                          US$
+                        </button>
+                        <button
+                          type="button"
+                          className={draftFilters.precioMoneda === "uyu" ? "is-active" : undefined}
+                          onClick={() => handleDraftFilterChange("precioMoneda", "uyu")}
+                        >
+                          $
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="search-price-slider-group">
+                      <div className="search-price-slider-head">
+                        <span>Mínimo</span>
+                        <strong>{formatSalesPriceValue(draftFilters.precioMoneda, Number(draftFilters.precioMinimo || salesPriceMinInput || 120000))}</strong>
+                      </div>
+                      <label className="search-price-number-field">
+                        <span>Valor mínimo</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={salesPriceMinInput}
+                          onChange={(event) => handleSalesPriceInputChange("min", event.currentTarget.value)}
+                          onBlur={() => handleSalesPriceInputBlur("min")}
+                        />
+                      </label>
+                      <input
+                        type="range"
+                        min={salesPriceMinLimit}
+                        max={salesPriceMaxLimit}
+                        step={salesPriceStep}
+                        value={Number(draftFilters.precioMinimo || salesPriceMinInput || 120000)}
+                        onChange={(event) => handleSalesPriceMinChange(Number(event.currentTarget.value))}
+                      />
+                    </div>
+
+                    <div className="search-price-slider-group">
+                      <div className="search-price-slider-head">
+                        <span>Máximo</span>
+                        <strong>{formatSalesPriceValue(draftFilters.precioMoneda, Number(draftFilters.precioMaximo || salesPriceMaxInput || 250000))}</strong>
+                      </div>
+                      <label className="search-price-number-field">
+                        <span>Valor máximo</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={salesPriceMaxInput}
+                          onChange={(event) => handleSalesPriceInputChange("max", event.currentTarget.value)}
+                          onBlur={() => handleSalesPriceInputBlur("max")}
+                        />
+                      </label>
+                      <input
+                        type="range"
+                        min={salesPriceMinLimit}
+                        max={salesPriceMaxLimit}
+                        step={salesPriceStep}
+                        value={Number(draftFilters.precioMaximo || salesPriceMaxInput || 250000)}
+                        onChange={(event) => handleSalesPriceMaxChange(Number(event.currentTarget.value))}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+              </div>
 
               <label className="sales-filter-field">
-                <span>Mínimo US$</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Ej: 180000"
-                  value={draftFilters.minimoUsd}
-                  onChange={(event) => handleDraftFilterChange("minimoUsd", event.target.value)}
-                />
-              </label>
-
-              <label className="sales-filter-field">
-                <span>Nro. ref</span>
+                <span>Nº de ref.</span>
                 <input
                   type="text"
                   placeholder="Ej: 013"
@@ -395,6 +552,12 @@ export default function SalesPage({
                   ))}
                 </select>
               </label>
+
+              <div className="sales-filter-buttons">
+                <button type="submit" className="primary-button search-cta-button">
+                  Buscar
+                </button>
+              </div>
             </div>
 
             <div className="sales-filter-actions">
@@ -402,12 +565,6 @@ export default function SalesPage({
                 {activeFilterChips.length ? (
                   <span>Los filtros aplicados aparecen destacados abajo.</span>
                 ) : null}
-              </div>
-
-              <div className="sales-filter-buttons">
-                <button type="submit" className="primary-button search-cta-button">
-                  Buscar
-                </button>
               </div>
             </div>
           </form>
@@ -474,15 +631,15 @@ export default function SalesPage({
 
                     <div className="sales-listing-stats" aria-label={`Datos de ${property.title}`}>
                       <div className="sales-listing-stat">
-                        <img src="/icon-dorm.png" alt="" />
+                        <img src="/optimized/home/icon-dorm.webp" alt="" />
                         <span>{property.rooms === 0 ? 1 : property.rooms}</span>
                       </div>
                       <div className="sales-listing-stat">
-                        <img src="/icon-banos.png" alt="" />
+                        <img src="/optimized/home/icon-banos.webp" alt="" />
                         <span>{property.bathrooms}</span>
                       </div>
                       <div className="sales-listing-stat">
-                        <img src="/icon-sup.png" alt="" />
+                        <img src="/optimized/home/icon-sup.webp" alt="" />
                         <span>{property.size}</span>
                       </div>
                     </div>
@@ -514,15 +671,16 @@ export default function SalesPage({
 
           {totalPages > 1 ? (
             <div className="sales-pagination reveal reveal-delay-2" aria-label="Paginación de propiedades">
-              <button
-                type="button"
-                className="sales-page-button sales-page-arrow-button"
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page === 1}
-                aria-label="Página anterior"
-              >
-                <PaginationArrowIcon direction="left" />
-              </button>
+              {page > 1 ? (
+                <button
+                  type="button"
+                  className="sales-page-button sales-page-arrow-button"
+                  onClick={() => handlePageChange(page - 1)}
+                  aria-label="Página anterior"
+                >
+                  <PaginationArrowIcon direction="left" />
+                </button>
+              ) : null}
 
               <div className="sales-page-numbers">
                 {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
@@ -538,15 +696,16 @@ export default function SalesPage({
                 ))}
               </div>
 
-              <button
-                type="button"
-                className="sales-page-button sales-page-arrow-button"
-                onClick={() => handlePageChange(page + 1)}
-                disabled={page === totalPages}
-                aria-label="Página siguiente"
-              >
-                <PaginationArrowIcon direction="right" />
-              </button>
+              {page < totalPages ? (
+                <button
+                  type="button"
+                  className="sales-page-button sales-page-arrow-button"
+                  onClick={() => handlePageChange(page + 1)}
+                  aria-label="Página siguiente"
+                >
+                  <PaginationArrowIcon direction="right" />
+                </button>
+              ) : null}
             </div>
           ) : null}
         </div>
