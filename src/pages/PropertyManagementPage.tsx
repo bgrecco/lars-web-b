@@ -9,34 +9,47 @@ type ManagementService = {
 
 const managementServices: ManagementService[] = [
 	{
-		title: "Atención a propietarios e inquilinos",
-		body: "Centralizamos consultas, solicitudes y seguimiento cotidiano para que cada parte tenga respuestas claras y trazables.",
+		title: "Marketing y promoción del inmueble",
+		body: "Aseguramos la máxima visibilidad de su inmueble, comenzando desde la tasación y producción fotográfica, hasta su publicación estratégica en los principales portales y redes sociales. Coordinamos y acompañamos personalmente a cada visita, realizando un seguimiento exhaustivo.",
 	},
 	{
-		title: "Cobranza y liquidación mensual",
-		body: "Gestionamos el cobro del alquiler, controlamos pagos asociados y entregamos liquidaciones ordenadas mes a mes.",
+		title: "Asesoramiento y Gestión de Garantías",
+		body: "Brindamos asesoramiento integral sobre las diferentes garantías (CGN, ANDA, Porto Seguro y Sura). Mantenemos con cada una de ellas una relación de confianza avalada por años de trabajo conjunto.",
 	},
 	{
-		title: "Control documental",
-		body: "Acompañamos contratos, garantías, vencimientos, inventarios y respaldos administrativos vinculados a cada propiedad.",
+		title: "Rentabilidad Garantizada",
+		body: "Nuestro compromiso es maximizar la rentabilidad de su inversión inmobiliaria, asegurando una gestión eficiente y efectiva.",
 	},
 	{
-		title: "Mantenimiento coordinado",
-		body: "Recibimos incidencias, coordinamos técnicos y damos seguimiento a reparaciones para cuidar el estado del inmueble.",
+		title: "Gestión del Contrato",
+		body: "Nos encargamos de la elaboración del contrato de arrendamiento y el inventario de la propiedad, respaldado con documentación fotográfica para una mayor transparencia y seguridad.",
 	},
 	{
-		title: "Comunicación permanente",
-		body: "Mantenemos informado al propietario sobre novedades relevantes, atrasos, solicitudes y decisiones operativas.",
+		title: "Gestión Tributaria y Respaldo General",
+		body: "Nos ocupamos de la gestión integral y el pago, sin costos adicionales, de tributos clave como el Fondo de Reserva, Impuesto de Primaria, Contribución Inmobiliaria y demás obligaciones fiscales.",
 	},
 	{
-		title: "Respaldo profesional",
-		body: "Un equipo con experiencia inmobiliaria y administrativa sostiene la operación con criterio, seriedad y continuidad.",
+		title: "Control de Pagos",
+		body: "Implementamos un seguimiento riguroso del pago de los gastos a cargo del arrendatario, garantizando el cumplimiento efectivo de sus obligaciones financieras.",
 	},
 	{
-		title: "Respaldo operativo",
-		body: "Acompañamos cada etapa con control, comunicación y capacidad de respuesta para reducir fricciones y sostener el valor del inmueble.",
+		title: "Agentes de Retención",
+		body: "Brindamos asesoría especializada y gestionamos el trámite de exoneración de IRPF.",
+	},
+	{
+		title: "Estado de Cuenta y Pagos Simplificados",
+		body: "Desde nuestro sitio web podrá visualizar su estado de cuenta 24/7. En la cuenta bancaria de su preferencia podrá realizar directamente el pago de alquiler.",
+	},
+	{
+		title: "Rescisiones Supervisadas",
+		body: "Al finalizar el contrato, supervisamos personalmente la desocupación del inmueble, asegurando su concordancia con el inventario original.",
+	},
+	{
+		title: "Acondicionamiento de la Propiedad",
+		body: "Facilitamos diversos presupuestos sin costo, ofreciendo opciones para optimizar el estado de su propiedad.",
 	},
 ];
+const managementServicesSplitIndex = Math.ceil(managementServices.length / 2);
 
 function ManagementServiceCard(props: { item: ManagementService; index: number }) {
 	const { item, index } = props;
@@ -107,15 +120,11 @@ export default function PropertyManagementPage() {
 				<div className="container common-expenses-management-layout">
 					<div className="common-expenses-management-copy">
 						<div className="common-expenses-section-head reveal">
-							<h2>Administramos tu propiedad con seguimiento integral</h2>
-							<p>
-								Desde la cobranza mensual hasta el mantenimiento y la comunicación con inquilinos,
-								reunimos la operación administrativa en un servicio claro, ordenado y profesional.
-							</p>
+							<h2>Administramos tu propiedad de forma integral</h2>
 						</div>
 
 						<div className="common-expenses-card-grid">
-							{managementServices.map((item, index) => (
+							{managementServices.slice(0, managementServicesSplitIndex).map((item, index) => (
 								<ManagementServiceCard key={item.title} item={item} index={index} />
 							))}
 						</div>
@@ -124,7 +133,7 @@ export default function PropertyManagementPage() {
 					<aside className="spotlight-panel common-expenses-management-visual property-management-visual reveal reveal-delay-2">
 						<div className="spotlight-image-wrap">
 							<img
-								src="/optimized/sections/rent-city.webp"
+								src="/rent-city.jpg"
 								alt="Edificios residenciales administrados por Lars"
 								width="840"
 								height="1722"
@@ -140,6 +149,16 @@ export default function PropertyManagementPage() {
 							</p>
 						</div>
 					</aside>
+
+					<div className="common-expenses-card-grid common-expenses-card-grid-secondary">
+						{managementServices.slice(managementServicesSplitIndex).map((item, index) => (
+							<ManagementServiceCard
+								key={item.title}
+								item={item}
+								index={index + managementServicesSplitIndex}
+							/>
+						))}
+					</div>
 				</div>
 			</section>
 

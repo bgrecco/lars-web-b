@@ -7,50 +7,31 @@ type Pillar = {
 
 const pillars: Pillar[] = [
   {
-    title: "Servicio integral con mirada actual",
+    title: "NOSOTROS",
     description:
-      "Brindamos administración de gastos comunes, ventas, alquileres y administración de propiedades con un equipo especializado y foco real en cada necesidad.",
+      "Somos una empresa familiar con más de medio siglo de trayectoria, manteniéndonos a la vanguardia gracias a una visión innovadora y continuidad generacional. Nuestra seriedad, transparencia y dedicación son los pilares que han forjado una sólida reputación, merecedora del reconocimiento de clientes y del sector, brindando soluciones respaldadas por décadas de experiencia.\n\nAdemás, nuestra ética empresarial incluye ser una empresa pet-friendly y animalista, reflejando un compromiso integral que va más allá de lo comercial.",
   },
   {
-    title: "Atención personalizada",
+    title: "SERVICIO INTEGRAL",
     description:
-      "Acompañamos procesos personales y empresariales con una forma de trabajo cercana, resolutiva y presente en cada etapa.",
+      "Abarcamos todas las áreas del rubro inmobiliario: Ventas, Alquileres y Administración de gastos comunes. Contamos con un capital humano de primera línea y altamente especializado.",
   },
   {
-    title: "Compromiso que construye vínculos",
+    title: "COMPROMISO",
     description:
-      "Buscamos superar expectativas y sostener relaciones de confianza con la misma seriedad y transparencia que definieron la historia de Lars.",
-  },
-  {
-    title: "Inmediatez sin perder calidez",
-    description:
-      "Contamos con diversas vías de comunicación para responder con agilidad y acompañar con criterio, no solo con velocidad.",
+      "Nuestro objetivo es superar las expectativas de nuestros clientes y establecer vínculos sólidos y de confianza.",
   },
   {
     title: "Red de atención estratégica",
     description:
-      "Nuestras oficinas operativas están conectadas para dar más cobertura, mejor disponibilidad y una experiencia de atención más sólida.",
+      "Oficinas operativas estratégicamente ubicadas e interconectadas, con amplio horario de atención, para brindarle más y mejores prestaciones.",
   },
   {
-    title: "Vinculación y liderazgo",
+    title: "VINCULACIÓN Y LIDERAZGO",
     description:
-      "La participación activa en el Colegio de Administradores de Propiedad Horizontal y en la Cámara Inmobiliaria del Uruguay refuerza nuestro compromiso con el rubro.",
+      "Como miembros activos del Colegio de Administradores de Propiedad Horizontal, como también de la Cámara Inmobiliaria del Uruguay, reafirmamos nuestro compromiso con el desarrollo responsable del rubro inmobiliario.",
   },
 ];
-
-const closingPillars: Pillar[] = [
-  {
-    title: "Compromiso que también es humano",
-    description:
-      "La ética empresarial de Lars incluye una mirada pet-friendly y animalista, como parte de una forma de vincularnos que pone en valor el cuidado y la sensibilidad.",
-  },
-  {
-    title: "Presencia activa en los espacios que mueven al sector",
-    description:
-      "Reforzamos nuestro compromiso profesional participando en instituciones clave del rubro inmobiliario y de administración de propiedad horizontal.",
-  },
-];
-
 export default function AboutPage() {
   return (
     <div className="about-page">
@@ -59,22 +40,11 @@ export default function AboutPage() {
           <div className="about-page-pillars-copy">
             <div className="about-page-section-head reveal">
               <h2>Los pilares que sostienen la experiencia Lars</h2>
-              <p>
-                De la atención personalizada al compromiso con el sector, esta sección resume la forma
-                en que trabajamos: servicio integral, cercanía, respuesta ágil, cobertura y confianza
-                construida en el tiempo.
-              </p>
             </div>
 
             <div className="about-page-pillar-grid">
               {pillars.map((pillar, index) => (
                 <article key={pillar.title} className={`about-page-pillar-card reveal reveal-delay-${(index % 4) + 1}`}>
-                  <h3>{pillar.title}</h3>
-                  <p>{pillar.description}</p>
-                </article>
-              ))}
-              {closingPillars.map((pillar) => (
-                <article key={pillar.title} className="about-page-pillar-card about-page-pillar-card-featured">
                   <h3>{pillar.title}</h3>
                   <p>{pillar.description}</p>
                 </article>

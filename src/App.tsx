@@ -9,6 +9,7 @@ import PropertyDetailsPage from "./pages/PropertyDetailsPage";
 import PropertyManagementPage from "./pages/PropertyManagementPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import SalesPage from "./pages/SalesPage";
+import { getSalesPropertyUrl } from "./data/salesCatalog";
 
 type NavRoute =
   | "home"
@@ -51,6 +52,8 @@ type ListingMedia = {
 };
 
 type Listing = {
+  id: number;
+  origin?: "ventas" | "alquileres";
   operation: string;
   title: string;
   price: string;
@@ -61,6 +64,21 @@ type Listing = {
   image: string;
   gallery: ListingMedia[];
   videoSrc?: string;
+};
+
+type SearchDropdownOption = {
+  value: string;
+  label: string;
+};
+
+type SearchDropdownFieldProps = {
+  active: boolean;
+  className: string;
+  label: string;
+  onSelect: (value: string) => void;
+  onToggle: () => void;
+  options: SearchDropdownOption[];
+  value: string;
 };
 
 function buildListingGallery(title: string, primaryImage: string): ListingMedia[] {
@@ -92,6 +110,44 @@ function buildListingGallery(title: string, primaryImage: string): ListingMedia[
   ];
 }
 
+function SearchDropdownField(props: SearchDropdownFieldProps) {
+  const { active, className, label, onSelect, onToggle, options, value } = props;
+  const selectedOption = options.find((option) => option.value === value) ?? options[0];
+
+  return (
+    <label className={`${className} search-field-select`}>
+      {label}
+      <button
+        type="button"
+        className={`search-select-trigger${active ? " is-open" : ""}`}
+        aria-expanded={active}
+        aria-haspopup="listbox"
+        onClick={onToggle}
+      >
+        <span>{selectedOption.label}</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+      {active ? (
+        <div className="search-select-popover" role="listbox" aria-label={label}>
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`search-select-option${option.value === value ? " is-active" : ""}`}
+              aria-selected={option.value === value}
+              onClick={() => onSelect(option.value)}
+            >
+              <span>{option.label}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </label>
+  );
+}
+
 const navLinks: NavLink[] = [
   { label: "Gastos Comunes", href: "/gastos-comunes", route: "gastos" },
   { label: "Ventas", href: "/ventas", route: "ventas" },
@@ -110,35 +166,10 @@ const navLinks: NavLink[] = [
   { label: "Contacto", href: "/contacto", route: "contacto" },
 ];
 
-const heroHighlights = [
-  {
-    title: "Consultar por gastos comunes",
-    detail: "Administración, liquidación mensual y respaldo operativo para edificios.",
-    icon: "expenses",
-    href: "/gastos-comunes",
-  },
-  {
-    title: "Propiedades en alquiler",
-    detail: "Visualizá todas nuestras propiedades disponibles para alquiler.",
-    icon: "rent",
-    href: "/alquileres",
-  },
-  {
-    title: "Propiedades en venta",
-    detail: "Visualizá todas nuestras propiedades disponibles para venta.",
-    icon: "sale",
-    href: "/ventas",
-  },
-  {
-    title: "Quiero alquilar y/o vender mi propiedad",
-    detail: "Te acompañamos con tasación, difusión comercial y gestión integral de tu inmueble.",
-    icon: "owners",
-    href: "/propietarios",
-  },
-];
-
 const featuredListings: Listing[] = [
   {
+    id: 4,
+    origin: "alquileres",
     operation: "Alquiler",
     title: "Villa Dolores Loft",
     price: "$ 171.000",
@@ -151,6 +182,7 @@ const featuredListings: Listing[] = [
     videoSrc: "/hero-bg.mp4",
   },
   {
+    id: 1,
     operation: "Venta",
     title: "Pocitos Classic",
     price: "US$ 321.000",
@@ -162,6 +194,7 @@ const featuredListings: Listing[] = [
     gallery: buildListingGallery("Pocitos Classic", "/optimized/home/property-pocitos-main.webp"),
   },
   {
+    id: 2,
     operation: "Venta",
     title: "Punta Carretas Loft",
     price: "US$ 121.000",
@@ -173,6 +206,7 @@ const featuredListings: Listing[] = [
     gallery: buildListingGallery("Punta Carretas Loft", "/optimized/home/property-punta-carretas-main.webp"),
   },
   {
+    id: 3,
     operation: "Venta",
     title: "La Blanqueada Studio",
     price: "US$ 121.000",
@@ -216,17 +250,44 @@ const searchNeighborhoodOptions = [
   "Villa Dolores",
 ];
 
+const searchOperationOptions: SearchDropdownOption[] = [
+  { value: "venta", label: "Venta" },
+  { value: "alquiler", label: "Alquiler" },
+  { value: "proyectos", label: "Proyectos" },
+];
+
+const searchTypeOptions: SearchDropdownOption[] = [
+  { value: "apartamento", label: "Apartamento" },
+  { value: "casa", label: "Casa" },
+  { value: "oficina", label: "Oficina" },
+  { value: "terreno", label: "Terreno" },
+];
+
+const searchBedroomOptions: SearchDropdownOption[] = [
+  { value: "1", label: "1" },
+  { value: "2", label: "2" },
+  { value: "3", label: "3" },
+  { value: "4+", label: "4 +" },
+];
+
+const searchZoneDropdownOptions: SearchDropdownOption[] = [
+  { value: "", label: "Todos" },
+  ...searchNeighborhoodOptions.map((option) => ({ value: option, label: option })),
+];
+
 function SectionHeader(props: {
   title: string;
   description: string;
+  className?: string;
   inverse?: boolean;
 }) {
-  const { title, description, inverse = false } = props;
+  const { title, description, className = "", inverse = false } = props;
+  const hasDescription = description.trim().length > 0;
 
   return (
-    <div className={`section-heading reveal${inverse ? " section-heading-inverse" : ""}`}>
+    <div className={`section-heading section-title-frame reveal${className ? ` ${className}` : ""}${inverse ? " section-heading-inverse" : ""}`}>
       <h2>{title}</h2>
-      <p>{description}</p>
+      {hasDescription ? <p>{description}</p> : null}
     </div>
   );
 }
@@ -235,8 +296,12 @@ function getWrappedIndex(index: number, length: number) {
   return ((index % length) + length) % length;
 }
 
+function normalizePathname(pathname: string) {
+  return pathname.replace(/\/+$/, "") || "/";
+}
+
 function getRouteFromPathname(pathname: string): AppRoute {
-  const normalizedPathname = pathname.replace(/\/+$/, "") || "/";
+  const normalizedPathname = normalizePathname(pathname);
 
   if (normalizedPathname === "/gastos-comunes") {
     return { name: "gastos" };
@@ -309,6 +374,7 @@ function ListingShowcaseCard(props: ListingShowcaseCardProps) {
   } = props;
 
   const currentMedia = listing.gallery[getWrappedIndex(activeMediaIndex, listing.gallery.length)];
+  const listingHref = getSalesPropertyUrl(listing.id, listing.origin);
   const [isVideoPreviewActive, setIsVideoPreviewActive] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hasVideoPreview = Boolean(listing.videoSrc);
@@ -341,10 +407,12 @@ function ListingShowcaseCard(props: ListingShowcaseCardProps) {
       aria-live={ariaLive}
     >
       <div className="listing-showcase-media">
-        <div
+        <a
+          href={listingHref}
           className={`listing-showcase-main-image-wrap${hasVideoPreview ? " has-video-preview" : ""}${isVideoPreviewActive ? " is-video-active" : ""}`}
           onMouseEnter={hasVideoPreview ? () => setIsVideoPreviewActive(true) : undefined}
           onMouseLeave={hasVideoPreview ? () => setIsVideoPreviewActive(false) : undefined}
+          aria-label={`Ver detalles de ${listing.title}`}
         >
           <span className="listing-operation-chip">{listing.operation}</span>
           <img
@@ -369,7 +437,7 @@ function ListingShowcaseCard(props: ListingShowcaseCardProps) {
               <source src={listing.videoSrc} type="video/mp4" />
             </video>
           ) : null}
-        </div>
+        </a>
       </div>
 
       <div className="listing-showcase-side">
@@ -440,6 +508,9 @@ function ListingShowcaseCard(props: ListingShowcaseCardProps) {
 
         <div className="listing-showcase-footer">
           <div className="listing-showcase-price">{listing.price}</div>
+          <a href={listingHref} className="sales-listing-link listing-showcase-link">
+            Consultar
+          </a>
         </div>
       </div>
     </article>
@@ -473,59 +544,6 @@ function ListingShowcasePreview(props: {
         decoding="async"
       />
     </button>
-  );
-}
-
-function HeroInsightIcon(props: { kind: string }) {
-  switch (props.kind) {
-    case "expenses":
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6.5 4.5h11v15h-11z" />
-          <path d="M9 8h6" />
-          <path d="M9 11.5h6" />
-          <path d="M9 15h3" />
-        </svg>
-      );
-    case "rent":
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4.5 11.5 12 5l7.5 6.5" />
-          <path d="M6.5 10.5v8h11v-8" />
-          <path d="M10 18.5v-5h4v5" />
-          <path d="M16.5 6.5h2v3" />
-        </svg>
-      );
-    case "sale":
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4.5 11.5 12 5l7.5 6.5" />
-          <path d="M6.5 10.5v9h11v-9" />
-          <path className="hero-insight-icon-detail" d="M12 9.6v7.3" />
-          <path className="hero-insight-icon-detail" d="M14.4 11.1c-.5-.7-1.3-1-2.3-1-1.2 0-2 .6-2 1.5 0 2.2 4.4 1 4.4 3.4 0 .9-.8 1.5-2.1 1.5-1.1 0-2-.4-2.6-1.1" />
-        </svg>
-      );
-    case "owners":
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 20h16" />
-          <path d="M6.5 20v-8.5L12 7l5.5 4.5V20" />
-          <path d="M9.5 13.5h5" />
-          <path d="M9.5 16.5h5" />
-          <path d="M17.2 6.8a2.2 2.2 0 1 1 3.1 3.1l-2.3 2.3-3.1-3.1z" />
-        </svg>
-      );
-    default:
-      return null;
-  }
-}
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="10.5" cy="10.5" r="5.5" />
-      <path d="m15 15 4.5 4.5" />
-    </svg>
   );
 }
 
@@ -586,6 +604,27 @@ function TopbarBranchInfo(props: {
         <span>{branch.phone}</span>
       </a>
     </>
+  );
+}
+
+function HamburgerIcon(props: { isOpen: boolean }) {
+  const { isOpen } = props;
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      {isOpen ? (
+        <>
+          <path d="M6 6 18 18" />
+          <path d="M18 6 6 18" />
+        </>
+      ) : (
+        <>
+          <path d="M4 7h16" />
+          <path d="M4 12h16" />
+          <path d="M4 17h16" />
+        </>
+      )}
+    </svg>
   );
 }
 
@@ -660,19 +699,14 @@ type SearchPriceCurrency = "usd" | "uyu";
 
 const searchPriceMinLimit = 0;
 const searchPriceMaxLimit = 500000;
-const searchPriceStep = 10000;
 
 function clampSearchPriceValue(value: number) {
   return Math.min(searchPriceMaxLimit, Math.max(searchPriceMinLimit, value));
 }
 
-function formatSearchPriceValue(currency: SearchPriceCurrency, value: number) {
-  const symbol = currency === "usd" ? "US$" : "$";
-  return `${symbol} ${value.toLocaleString("es-UY")}`;
-}
-
 function App() {
-  const route = getRouteFromPathname(window.location.pathname);
+  const pathname = normalizePathname(window.location.pathname);
+  const route = getRouteFromPathname(pathname);
   const activeNavRoute: NavRoute =
     route.name === "propiedad"
       ? "ventas"
@@ -681,21 +715,88 @@ function App() {
         : route.name === "administracion-propiedades"
           ? "alquileres"
           : route.name === "propietarios"
-          ? "propietarios"
-          : route.name;
+            ? "propietarios"
+            : route.name;
   const [listingIndex, setListingIndex] = useState(0);
   const [listingMediaIndex, setListingMediaIndex] = useState(0);
   const [listingTransitionDirection, setListingTransitionDirection] = useState<"left" | "right" | null>(null);
   const [listingMotionKey, setListingMotionKey] = useState(0);
   const [footerBranchIndex, setFooterBranchIndex] = useState(0);
-  const [isSearchPricePopoverOpen, setIsSearchPricePopoverOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileRentMenuOpen, setIsMobileRentMenuOpen] = useState(false);
+  const [isMobileSearchFiltersOpen, setIsMobileSearchFiltersOpen] = useState(false);
   const [shouldLoadHeroVideo, setShouldLoadHeroVideo] = useState(false);
-  const [searchPriceCurrency, setSearchPriceCurrency] = useState<SearchPriceCurrency>("usd");
-  const [searchPriceMin, setSearchPriceMin] = useState(120000);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [isHomeHeroLogoInView, setIsHomeHeroLogoInView] = useState(true);
   const [searchPriceMax, setSearchPriceMax] = useState(250000);
-  const [searchPriceMinInput, setSearchPriceMinInput] = useState("120000");
-  const [searchPriceMaxInput, setSearchPriceMaxInput] = useState("250000");
-  const searchPricePopoverRef = useRef<HTMLDivElement | null>(null);
+  const [hasSearchPriceRange, setHasSearchPriceRange] = useState(false);
+  const [searchPriceFieldValue, setSearchPriceFieldValue] = useState("");
+  const [isSearchPriceFieldEditing, setIsSearchPriceFieldEditing] = useState(false);
+  const [searchOperation, setSearchOperation] = useState("venta");
+  const [searchType, setSearchType] = useState("apartamento");
+  const [searchBedrooms, setSearchBedrooms] = useState("");
+  const [searchZone, setSearchZone] = useState("");
+  const [activeSearchDropdown, setActiveSearchDropdown] = useState<"operation" | "type" | "zone" | "bedrooms" | null>(null);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
+  const homeSearchFormRef = useRef<HTMLFormElement | null>(null);
+  const homeHeroLogoRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 480px)");
+
+    const handleChange = (event: MediaQueryListEvent | MediaQueryList) => {
+      setIsSmallScreen(event.matches);
+    };
+
+    handleChange(mediaQuery);
+
+    if ("addEventListener" in mediaQuery) {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+
+    const legacyMediaQuery = mediaQuery as MediaQueryList & {
+      addListener: (listener: (event: MediaQueryListEvent) => void) => void;
+      removeListener: (listener: (event: MediaQueryListEvent) => void) => void;
+    };
+
+    legacyMediaQuery.addListener(handleChange);
+    return () => legacyMediaQuery.removeListener(handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (route.name !== "home" || !isSmallScreen) {
+      setIsHomeHeroLogoInView(false);
+      return;
+    }
+
+    const target = homeHeroLogoRef.current;
+
+    if (!target) {
+      setIsHomeHeroLogoInView(false);
+      return;
+    }
+
+    if (!("IntersectionObserver" in window)) {
+      setIsHomeHeroLogoInView(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        setIsHomeHeroLogoInView(entry?.isIntersecting ?? false);
+      },
+      {
+        threshold: 0.35,
+        rootMargin: "-72px 0px 0px 0px",
+      },
+    );
+
+    observer.observe(target);
+
+    return () => observer.disconnect();
+  }, [isSmallScreen, route.name]);
 
   useEffect(() => {
     const elements = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
@@ -781,6 +882,11 @@ function App() {
     document.title = "Lars";
   }, [route.name]);
 
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsMobileRentMenuOpen(false);
+  }, [pathname]);
+
   const listingCount = featuredListings.length;
   const activeListing = featuredListings[getWrappedIndex(listingIndex, listingCount)];
   const previousPreviewListing = featuredListings[getWrappedIndex(listingIndex - 1, listingCount)];
@@ -855,19 +961,21 @@ function App() {
   }, [route.name]);
 
   useEffect(() => {
-    if (!isSearchPricePopoverOpen) {
+    if (!activeSearchDropdown) {
       return;
     }
 
     const handlePointerDown = (event: MouseEvent) => {
-      if (!searchPricePopoverRef.current?.contains(event.target as Node)) {
-        setIsSearchPricePopoverOpen(false);
+      const target = event.target as Node;
+
+      if (!homeSearchFormRef.current?.contains(target)) {
+        setActiveSearchDropdown(null);
       }
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setIsSearchPricePopoverOpen(false);
+        setActiveSearchDropdown(null);
       }
     };
 
@@ -878,7 +986,61 @@ function App() {
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isSearchPricePopoverOpen]);
+  }, [activeSearchDropdown]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 1081px)");
+
+    const handleChange = (event: MediaQueryListEvent | MediaQueryList) => {
+      if (event.matches) {
+        setIsMobileMenuOpen(false);
+        setIsMobileRentMenuOpen(false);
+      }
+    };
+
+    handleChange(mediaQuery);
+
+    if ("addEventListener" in mediaQuery) {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+
+    const legacyMediaQuery = mediaQuery as MediaQueryList & {
+      addListener: (listener: (event: MediaQueryListEvent) => void) => void;
+      removeListener: (listener: (event: MediaQueryListEvent) => void) => void;
+    };
+
+    legacyMediaQuery.addListener(handleChange);
+    return () => legacyMediaQuery.removeListener(handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!mobileMenuRef.current?.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+        setIsMobileRentMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMobileMenuOpen(false);
+        setIsMobileRentMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMobileMenuOpen]);
 
   const handlePreviousListings = () => {
     setListingTransitionDirection("left");
@@ -902,66 +1064,46 @@ function App() {
     setListingIndex(index);
   };
 
-  const handleSearchPriceMinChange = (value: number) => {
-    const nextMin = clampSearchPriceValue(value);
-    setSearchPriceMin(nextMin);
-    setSearchPriceMinInput(String(nextMin));
-    setSearchPriceMax((currentMax) => {
-      const nextMax = Math.max(currentMax, nextMin);
-      setSearchPriceMaxInput(String(nextMax));
-      return nextMax;
-    });
+  const handleSearchPriceFieldFocus = () => {
+    setActiveSearchDropdown(null);
+    setIsSearchPriceFieldEditing(true);
+    setSearchPriceFieldValue(hasSearchPriceRange ? String(searchPriceMax) : "");
   };
 
-  const handleSearchPriceMaxChange = (value: number) => {
-    const nextMax = clampSearchPriceValue(value);
+  const handleSearchPriceFieldChange = (value: string) => {
+    setSearchPriceFieldValue(value.replace(/\D/g, ""));
+  };
+
+  const handleSearchPriceFieldBlur = () => {
+    setIsSearchPriceFieldEditing(false);
+
+    if (!searchPriceFieldValue) {
+      setHasSearchPriceRange(false);
+      setSearchPriceFieldValue("");
+      return;
+    }
+
+    const nextMax = clampSearchPriceValue(Number(searchPriceFieldValue));
+    setHasSearchPriceRange(true);
     setSearchPriceMax(nextMax);
-    setSearchPriceMaxInput(String(nextMax));
-    setSearchPriceMin((currentMin) => {
-      const nextMin = Math.min(currentMin, nextMax);
-      setSearchPriceMinInput(String(nextMin));
-      return nextMin;
-    });
   };
 
-  const handleSearchPriceInputChange = (field: "min" | "max", value: string) => {
-    const normalizedValue = value.replace(/\D/g, "");
+  const searchPriceCurrency: SearchPriceCurrency = searchOperation === "venta" ? "usd" : "uyu";
 
-    if (field === "min") {
-      setSearchPriceMinInput(normalizedValue);
-      if (normalizedValue === "") {
-        return;
-      }
-
-      handleSearchPriceMinChange(Number(normalizedValue));
-      return;
+  useEffect(() => {
+    if (!isSearchPriceFieldEditing) {
+      setSearchPriceFieldValue(hasSearchPriceRange ? String(searchPriceMax) : "");
     }
-
-    setSearchPriceMaxInput(normalizedValue);
-    if (normalizedValue === "") {
-      return;
-    }
-
-    handleSearchPriceMaxChange(Number(normalizedValue));
-  };
-
-  const handleSearchPriceInputBlur = (field: "min" | "max") => {
-    if (field === "min") {
-      handleSearchPriceMinChange(Number(searchPriceMinInput || searchPriceMinLimit));
-      return;
-    }
-
-    handleSearchPriceMaxChange(Number(searchPriceMaxInput || searchPriceMaxLimit));
-  };
+  }, [hasSearchPriceRange, isSearchPriceFieldEditing, searchPriceMax]);
 
   const activeFooterBranch = topbarBranches[getWrappedIndex(footerBranchIndex, topbarBranches.length)];
-  const searchPriceSummary = `${formatSearchPriceValue(searchPriceCurrency, searchPriceMin)} - ${formatSearchPriceValue(searchPriceCurrency, searchPriceMax)}`;
   const pageShellClassName = [
     "page-shell",
     route.name !== "home" ? "page-shell-sales" : "",
   ]
     .filter(Boolean)
     .join(" ");
+  const shouldHideHeaderLogoOnHomeTop = route.name === "home" && isSmallScreen && isHomeHeroLogoInView;
 
   return (
     <div className={pageShellClassName}>
@@ -978,8 +1120,8 @@ function App() {
         </div>
       </div>
 
-      <header className="site-header">
-        <div className="container header-inner">
+      <header className={`site-header${isMobileMenuOpen ? " is-mobile-menu-open" : ""}${shouldHideHeaderLogoOnHomeTop ? " is-home-hero-logo-visible" : ""}`}>
+        <div className="container header-inner" ref={mobileMenuRef}>
           <a className="logo-link" href="/#inicio" aria-label="Volver al inicio">
             <img src="/optimized/home/logo.webp" alt="Lars" className="brand-logo" width="352" height="93" />
           </a>
@@ -1031,6 +1173,83 @@ function App() {
               <span>Clientes</span>
             </button>
           </div>
+          <button
+            type="button"
+            className={`mobile-menu-toggle${isMobileMenuOpen ? " is-open" : ""}`}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-site-nav"
+            aria-label={isMobileMenuOpen ? "Cerrar menu principal" : "Abrir menu principal"}
+            onClick={() => setIsMobileMenuOpen((currentValue) => !currentValue)}
+          >
+            <HamburgerIcon isOpen={isMobileMenuOpen} />
+            <span className="sr-only">{isMobileMenuOpen ? "Cerrar menu" : "Abrir menu"}</span>
+          </button>
+          <nav
+            id="mobile-site-nav"
+            className={`mobile-menu-panel${isMobileMenuOpen ? " is-open" : ""}`}
+            aria-label="Principal"
+            aria-hidden={!isMobileMenuOpen}
+          >
+            {navLinks.map((item) => (
+              <div
+                key={`mobile-${item.label}`}
+                className={`mobile-menu-item${item.route === activeNavRoute ? " is-active" : ""}`}
+              >
+                {item.children ? (
+                  <div className="mobile-menu-row">
+                    <button
+                      type="button"
+                      className="mobile-menu-link mobile-menu-link-button"
+                      aria-expanded={isMobileRentMenuOpen}
+                      aria-controls="mobile-alquileres-subnav"
+                      aria-current={item.route === activeNavRoute ? "page" : undefined}
+                      onClick={() => setIsMobileRentMenuOpen((currentValue) => !currentValue)}
+                    >
+                      <span>{item.label}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`mobile-menu-expand-toggle${isMobileRentMenuOpen ? " is-open" : ""}`}
+                      aria-expanded={isMobileRentMenuOpen}
+                      aria-controls="mobile-alquileres-subnav"
+                      aria-label={isMobileRentMenuOpen ? "Cerrar submenu de alquileres" : "Abrir submenu de alquileres"}
+                      onClick={() => setIsMobileRentMenuOpen((currentValue) => !currentValue)}
+                    >
+                      <span className="mobile-menu-link-badge" aria-hidden="true">
+                        +
+                      </span>
+                    </button>
+                  </div>
+                ) : (
+                  <a
+                    href={item.href}
+                    className="mobile-menu-link"
+                    aria-current={item.route === activeNavRoute ? "page" : undefined}
+                  >
+                    <span>{item.label}</span>
+                  </a>
+                )}
+                {item.children ? (
+                  <div
+                    id="mobile-alquileres-subnav"
+                    className={`mobile-menu-subnav${isMobileRentMenuOpen ? " is-open" : ""}`}
+                    aria-hidden={!isMobileRentMenuOpen}
+                  >
+                    {item.children.map((child) => (
+                      <a
+                        key={child.label}
+                        href={child.href}
+                        className={normalizePathname(child.href) === pathname ? "is-active" : undefined}
+                        aria-current={normalizePathname(child.href) === pathname ? "page" : undefined}
+                      >
+                        {child.label}
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </nav>
         </div>
       </header>
 
@@ -1042,7 +1261,7 @@ function App() {
         ) : route.name === "ventas" ? (
           <SalesPage showLoaderDemo />
         ) : route.name === "alquileres" ? (
-          <SalesPage listingContext="alquileres" resultsTitle="Propiedades en alquiler" />
+          <SalesPage listingContext="alquileres" resultsTitle="Alquileres" />
         ) : route.name === "administracion-propiedades" ? (
           <PropertyManagementPage />
         ) : route.name === "propietarios" ? (
@@ -1074,195 +1293,148 @@ function App() {
           <div className="hero-backdrop" aria-hidden="true" />
           <div className="container hero-stage">
             <div className="hero-content reveal">
+              <div className="hero-brand-mark" ref={homeHeroLogoRef} aria-hidden={!isSmallScreen}>
+                <img src="/optimized/home/logo.webp" alt="Lars" className="hero-brand-logo" width="352" height="93" />
+              </div>
               <h1>"Servimos bien para servir siempre"</h1>
-              <p className="hero-tagline">
-                Más de medio siglo de seriedad brindando un servicio integral y a la vanguardia en el rubro inmobiliario
-              </p>
+              <div className="hero-actions">
+                <a className="primary-button" href="#propiedades">
+                  Ver propiedades
+                </a>
+                <a className="hero-link-button" href="/gastos-comunes">
+                  Consultar por gastos comunes
+                </a>
+              </div>
             </div>
 
-            <aside className="hero-insight-panel reveal reveal-delay-2" aria-label="Resumen de servicios Lars">
-              <div className="hero-insight-list">
-                {heroHighlights.map((item) => (
-                  <a key={item.title} className="hero-insight-item" href={item.href}>
-                    <span className="hero-insight-icon">
-                      <HeroInsightIcon kind={item.icon} />
-                    </span>
-                    <div>
-                      <h2>{item.title}</h2>
-                      <p>{item.detail}</p>
-                    </div>
-                  </a>
-                ))}
-              </div>
-
-              <a className="hero-panel-link" href="#contacto">
-                Contactarme
-              </a>
-            </aside>
-
-          </div>
-        </section>
-
-            <section className="hero-search-band">
-          <div className="container search-wrap" id="buscador">
-            <div className="search-stack">
-                <form className="search-card">
-                  <div className="search-header">
-                    <div>
-                      <h2>
-                        <span className="search-title-icon">
-                          <SearchIcon />
-                        </span>
-                        Buscador de propiedades
-                      </h2>
-                    </div>
-                </div>
-
-                  <div className="search-grid">
-                    <label className="search-field-compact">
-                      Operación
-                      <select defaultValue="venta">
-                        <option value="venta">Venta</option>
-                        <option value="alquiler">Alquiler</option>
-                        <option value="proyectos">Proyectos</option>
-                      </select>
-                    </label>
-                    <label className="search-field-compact">
-                      Tipo
-                      <select defaultValue="apartamento">
-                        <option value="apartamento">Apartamento</option>
-                        <option value="casa">Casa</option>
-                        <option value="oficina">Oficina</option>
-                        <option value="terreno">Terreno</option>
-                      </select>
-                    </label>
-                    <label className="search-field-standard search-field-zone">
-                      Barrio
-                      <select defaultValue="">
-                        <option value="">Todos</option>
-                        {searchNeighborhoodOptions.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="search-field-compact">
-                      Dormitorios
-                      <select defaultValue="">
-                        <option value="" />
-                        <option value="1">1 dormitorio</option>
-                        <option value="2">2 dormitorios</option>
-                        <option value="3">3 dormitorios</option>
-                        <option value="4+">4 o más</option>
-                      </select>
-                    </label>
-                    <label className="search-field-compact search-field-reference">
-                      Nº de ref.
-                      <input type="text" placeholder="Ej: 1234" />
-                    </label>
-                    <div className="search-field-standard search-field-price" ref={searchPricePopoverRef}>
-                      <span className="search-field-label">Precio</span>
+            <section className="hero-search-band" id="buscador">
+              <div className="search-wrap">
+                <div className="search-stack">
+                  <form className="search-card" ref={homeSearchFormRef}>
+                    <div className="search-grid">
+                      <SearchDropdownField
+                        active={activeSearchDropdown === "operation"}
+                        className="search-field-compact search-field-operation"
+                        label="Operación"
+                        onSelect={(value) => {
+                          setSearchOperation(value);
+                          setActiveSearchDropdown(null);
+                        }}
+                        onToggle={() => {
+                          setActiveSearchDropdown((currentValue) =>
+                            currentValue === "operation" ? null : "operation",
+                          );
+                        }}
+                        options={searchOperationOptions}
+                        value={searchOperation}
+                      />
+                      <SearchDropdownField
+                        active={activeSearchDropdown === "type"}
+                        className={`search-field-compact search-field-type${
+                          searchType === "casa" ? " search-field-type-house" : " search-field-type-building"
+                        }`}
+                        label="Tipo"
+                        onSelect={(value) => {
+                          setSearchType(value);
+                          setActiveSearchDropdown(null);
+                        }}
+                        onToggle={() => {
+                          setActiveSearchDropdown((currentValue) =>
+                            currentValue === "type" ? null : "type",
+                          );
+                        }}
+                        options={searchTypeOptions}
+                        value={searchType}
+                      />
+                      <SearchDropdownField
+                        active={activeSearchDropdown === "bedrooms"}
+                        className="search-field-compact search-field-bedrooms"
+                        label="Dormitorios"
+                        onSelect={(value) => {
+                          setSearchBedrooms(value);
+                          setActiveSearchDropdown(null);
+                        }}
+                        onToggle={() => {
+                          setActiveSearchDropdown((currentValue) =>
+                            currentValue === "bedrooms" ? null : "bedrooms",
+                          );
+                        }}
+                        options={searchBedroomOptions}
+                        value={searchBedrooms}
+                      />
                       <button
                         type="button"
-                        className={`search-price-trigger${isSearchPricePopoverOpen ? " is-open" : ""}`}
-                        onClick={() => setIsSearchPricePopoverOpen((currentValue) => !currentValue)}
-                        aria-expanded={isSearchPricePopoverOpen}
-                        aria-haspopup="dialog"
+                        className={`search-mobile-more-toggle${isMobileSearchFiltersOpen ? " is-open" : ""}`}
+                        aria-expanded={isMobileSearchFiltersOpen}
+                        aria-controls="search-mobile-advanced-fields"
+                        onClick={() => setIsMobileSearchFiltersOpen((currentValue) => !currentValue)}
                       >
-                        <span>{searchPriceSummary}</span>
+                        <span>Más filtros</span>
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                           <path d="m6 9 6 6 6-6" />
                         </svg>
                       </button>
-                      {isSearchPricePopoverOpen ? (
-                        <div className="search-price-popover" role="dialog" aria-label="Seleccionar rango de precio">
-                          <div className="search-price-currency-row">
-                            <span className="search-price-popover-title">Moneda</span>
-                            <div className="search-price-currency-toggle" aria-label="Seleccionar moneda">
-                              <button
-                                type="button"
-                                className={searchPriceCurrency === "usd" ? "is-active" : undefined}
-                                onClick={() => setSearchPriceCurrency("usd")}
-                              >
-                                US$
-                              </button>
-                              <button
-                                type="button"
-                                className={searchPriceCurrency === "uyu" ? "is-active" : undefined}
-                                onClick={() => setSearchPriceCurrency("uyu")}
-                              >
-                                $
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="search-price-slider-group">
-                            <div className="search-price-slider-head">
-                              <span>Mínimo</span>
-                              <strong>{formatSearchPriceValue(searchPriceCurrency, searchPriceMin)}</strong>
-                            </div>
-                            <label className="search-price-number-field">
-                              <span>Valor mínimo</span>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={searchPriceMinInput}
-                                onChange={(event) => handleSearchPriceInputChange("min", event.currentTarget.value)}
-                                onBlur={() => handleSearchPriceInputBlur("min")}
-                              />
-                            </label>
+                      <div
+                        className={`search-mobile-advanced-panel${isMobileSearchFiltersOpen ? " is-open" : ""}`}
+                        id="search-mobile-advanced-fields"
+                        aria-hidden={!isMobileSearchFiltersOpen}
+                      >
+                        <SearchDropdownField
+                          active={activeSearchDropdown === "zone"}
+                          className="search-field-standard search-field-zone search-mobile-advanced-field"
+                          label="Barrio"
+                          onSelect={(value) => {
+                            setSearchZone(value);
+                            setActiveSearchDropdown(null);
+                          }}
+                          onToggle={() => {
+                            setActiveSearchDropdown((currentValue) =>
+                              currentValue === "zone" ? null : "zone",
+                            );
+                          }}
+                          options={searchZoneDropdownOptions}
+                          value={searchZone}
+                        />
+                        <div className="search-field-standard search-field-price search-mobile-advanced-field">
+                          <span className="search-field-label search-field-label-titlecase">Precio</span>
+                          <div className="search-price-trigger-input-shell">
+                            <span className="search-price-trigger-prefix">
+                              {`Hasta ${searchPriceCurrency === "usd" ? "US$" : "$"}`}
+                            </span>
                             <input
-                              type="range"
-                              min={searchPriceMinLimit}
-                              max={searchPriceMaxLimit}
-                              step={searchPriceStep}
-                              value={searchPriceMin}
-                              onChange={(event) => handleSearchPriceMinChange(Number(event.currentTarget.value))}
-                            />
-                          </div>
-
-                          <div className="search-price-slider-group">
-                            <div className="search-price-slider-head">
-                              <span>Máximo</span>
-                              <strong>{formatSearchPriceValue(searchPriceCurrency, searchPriceMax)}</strong>
-                            </div>
-                            <label className="search-price-number-field">
-                              <span>Valor máximo</span>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={searchPriceMaxInput}
-                                onChange={(event) => handleSearchPriceInputChange("max", event.currentTarget.value)}
-                                onBlur={() => handleSearchPriceInputBlur("max")}
-                              />
-                            </label>
-                            <input
-                              type="range"
-                              min={searchPriceMinLimit}
-                              max={searchPriceMaxLimit}
-                              step={searchPriceStep}
-                              value={searchPriceMax}
-                              onChange={(event) => handleSearchPriceMaxChange(Number(event.currentTarget.value))}
+                              className="search-price-trigger-input"
+                              type="text"
+                              inputMode="numeric"
+                              value={searchPriceFieldValue}
+                              placeholder=""
+                              onFocus={handleSearchPriceFieldFocus}
+                              onChange={(event) => handleSearchPriceFieldChange(event.currentTarget.value)}
+                              onBlur={handleSearchPriceFieldBlur}
                             />
                           </div>
                         </div>
-                      ) : null}
+                      </div>
+                      <label className="search-field-compact search-field-reference">
+                        Referencia
+                        <input type="text" placeholder="Ej: 1234" maxLength={4} inputMode="numeric" />
+                      </label>
+                      <div className="search-action-buttons">
+                        <button type="button" className="primary-button search-cta-button">
+                          <span>Buscar</span>
+                        </button>
+                      </div>
                     </div>
-                    <div className="search-action-buttons">
-                      <button type="button" className="primary-button search-cta-button">
-                        Buscar
-                      </button>
-                    </div>
-                  </div>
-                </form>
-            </div>
+                  </form>
+                </div>
+              </div>
+            </section>
           </div>
         </section>
 
             <section className="section section-listings" id="propiedades">
           <div className="container">
             <SectionHeader
+              className="section-heading-featured"
               title="Propiedades destacadas"
               description=""
             />

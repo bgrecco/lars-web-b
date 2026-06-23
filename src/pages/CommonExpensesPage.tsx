@@ -23,17 +23,25 @@ const serviceGroups: ServiceGroup[] = [
       "Cada edificio cuenta con interlocutores reales, seguimiento continuo y acompañamiento cuando la situación lo requiere.",
     items: [
       {
-        title: "Atención personalizada",
-        body: "Dos ejecutivos de referencia guían el proceso y brindan soluciones adaptadas a cada copropiedad.",
+        title: "ATENCIÓN PERSONALIZADA",
+        body: "Nuestro compromiso es brindar soluciones personalizadas, avaladas por nuestra trayectoria y solidez empresarial, con el objetivo de construir relaciones sólidas. Su edificio contará con la atención directa de dos ejecutivos, quienes los asistirán en todos sus requerimientos.",
       },
       {
-        title: "Acompañamiento directo",
-        body: "Coordinamos visitas y seguimiento individualizado para temas que necesitan una presencia más cercana.",
+        title: "RED DE ATENCIÓN ESTRATÉGICA",
+        body: "Contamos con oficinas operativas estratégicamente ubicadas e interconectadas, con amplio horario de atención, para brindarle más y mejores prestaciones, como abonar de forma online su liquidación de gastos comunes ingresando con su usuario a nuestro sitio web.",
       },
       {
-        title: "Red estratégica",
-        body: "Oficinas interconectadas y amplio horario de atención para responder con mayor cobertura.",
+        title: "ASAMBLEAS",
+        body: "Sus ejecutivos asistirán sin costo a la asamblea anual; se labrará y firmará de forma digital el acta en la propia instancia de reunión.",
       },
+      {
+        title: "VISITAS PERSONALIZADAS",
+        body: "Se coordinará una visita con los referentes de la copropiedad ante temáticas que requieran la presencia de los ejecutivos.",
+      },
+      {
+        title: "REUNIONES",
+        body: "Toda reunión dentro del horario de oficina, ya sea presencial o virtual, contará con el apoyo de sus ejecutivos y la misma será sin costo.",
+      }
     ],
   },
   {
@@ -42,16 +50,16 @@ const serviceGroups: ServiceGroup[] = [
       "La administración combina procesos claros, soporte profesional y visibilidad permanente para los copropietarios.",
     items: [
       {
-        title: "Acceso permanente",
-        body: "La liquidación mensual, la descarga, la impresión y el pago online quedan disponibles desde cualquier dispositivo.",
+        title: "DEPARTAMENTO CONTABLE INTERNO",
+        body: "Gestionamos con total transparencia las obligaciones laborales (BPS, MTSS y BSE). En cuanto al personal dependiente, brindamos un servicio integral conforme a la normativa vigente.",
       },
       {
-        title: "Gestión optimizada",
-        body: "Procesos tecnológicos y un equipo administrativo calificado sostienen una operación minuciosa y ordenada.",
+        title: "TERCERIZACIÓN",
+        body: "Gestionamos la contratación de servicios bajo estrícto control documental (Leyes 18.099 y 18.251) supervisando el cumplimiento legal de los distintos servicios.",
       },
       {
-        title: "Departamento contable propio",
-        body: "Gestionamos BPS, MTSS, BSE y la administración del personal del edificio conforme a la normativa vigente.",
+        title: "SEGUROS",
+        body: "Brindamos asesoramiento y gestión integral en contratación, seguimiento y renovación de pólizas, asegurando las condiciones más adecuadas para el edificio.",
       },
     ],
   },
@@ -61,16 +69,12 @@ const serviceGroups: ServiceGroup[] = [
       "Supervisamos servicios, contratos y coberturas para reducir fricciones y mantener la operación del edificio bajo control.",
     items: [
       {
-        title: "Tercerización bajo control documental",
-        body: "Monitoreamos proveedores y empresas con seguimiento estricto de cumplimiento legal y documental.",
+        title: "GESTIÓN DE IMPAGOS",
+        body: "Activamos controles extrajudiciales y la emisión de notificaciones extrajudiciales para mitigar la morosidad. Adicionalmente coordinamos con el staff de profesionales externo cuando sea necesario intervenir legalmente.",
       },
       {
-        title: "Seguros",
-        body: "Asesoramos en renovación, contratación y seguimiento de pólizas para asegurar la cobertura más adecuada.",
-      },
-      {
-        title: "Staff profesional",
-        body: "Cuando el edificio lo necesita, conectamos con especialistas de nuestro equipo para resolver temas puntuales.",
+        title: "SOLUCIONES ESTRATÉGICAS",
+        body: "Contamos con un staff de profesionales externo por lo cual si el edificio requiere de un profesional para una temática en particular le proporsionamos el contacto.",
       },
     ],
   },
@@ -79,23 +83,14 @@ const serviceGroups: ServiceGroup[] = [
     description:
       "Acompañamos la toma de decisiones y activamos mecanismos concretos para sostener la salud financiera de la copropiedad.",
     items: [
-      {
-        title: "Asamblea anual incluida",
-        body: "Los ejecutivos asisten sin costo, labran el acta y gestionan la firma digital en la propia reunión.",
-      },
-      {
-        title: "Reuniones extraordinarias",
-        body: "Dentro del horario de oficina acompañamos instancias extraordinarias o de seguimiento específico.",
-      },
-      {
-        title: "Gestión de impagos",
-        body: "Activamos procesos extrajudiciales y articulamos asesoría legal cuando hace falta para preservar la estabilidad del edificio.",
-      },
+      
+      
     ],
   },
 ];
 
 const serviceItems = serviceGroups.flatMap((group) => group.items);
+const serviceItemsSplitIndex = Math.ceil(serviceItems.length / 2);
 
 const paymentGroups: PaymentGroup[] = [
   {
@@ -155,16 +150,11 @@ export default function CommonExpensesPage() {
         <div className="container common-expenses-management-layout">
           <div className="common-expenses-management-copy">
             <div className="common-expenses-section-head reveal">
-              <h2>Gestión integral pensada para cada edificio</h2>
-              <p>
-                Desde la atención cotidiana hasta el respaldo contable, operativo y financiero, estos
-                ejes resumen cómo acompañamos la administración de gastos comunes con cercanía, control
-                y criterio.
-              </p>
+              <h2>Gestión integral adaptada a cada edificio</h2>
             </div>
 
             <div className="common-expenses-card-grid">
-              {serviceItems.map((item, index) => (
+              {serviceItems.slice(0, serviceItemsSplitIndex).map((item, index) => (
                 <ServiceItemCard key={item.title} item={item} index={index} />
               ))}
             </div>
@@ -173,7 +163,7 @@ export default function CommonExpensesPage() {
           <aside className="spotlight-panel common-expenses-management-visual reveal reveal-delay-2">
             <div className="spotlight-image-wrap">
               <img
-                src="/optimized/sections/ggcc-city.webp"
+                src="/rent-city.jpg"
                 alt="Edificio residencial administrado por Lars"
                 width="900"
                 height="1292"
@@ -182,13 +172,22 @@ export default function CommonExpensesPage() {
               />
             </div>
             <div className="spotlight-body">
-              <h3>Gestión de gastos comunes con respaldo operativo</h3>
+              <h3>-</h3>
               <p>
-                Administración, liquidación, medios de pago y seguimiento cotidiano en una experiencia
-                clara para copropietarios y comisiones.
+                -
               </p>
             </div>
           </aside>
+
+          <div className="common-expenses-card-grid common-expenses-card-grid-secondary">
+            {serviceItems.slice(serviceItemsSplitIndex).map((item, index) => (
+              <ServiceItemCard
+                key={item.title}
+                item={item}
+                index={index + serviceItemsSplitIndex}
+              />
+            ))}
+          </div>
         </div>
       </section>
 

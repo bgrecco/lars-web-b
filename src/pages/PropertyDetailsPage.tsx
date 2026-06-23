@@ -87,10 +87,11 @@ function SimilarPropertyCard(props: { property: SalesProperty; index: number; or
           decoding="async"
           style={{ objectPosition: property.imagePosition ?? "center center" }}
         />
-        <div className="property-similar-badges">
-          <span className="property-similar-pill">{property.type}</span>
-          {property.reserved ? <span className="property-similar-pill is-reserved">Reservada</span> : null}
-        </div>
+        {property.reserved ? (
+          <div className="property-similar-badges">
+            <span className="property-similar-pill is-reserved">Reservada</span>
+          </div>
+        ) : null}
       </div>
 
       <div className="property-similar-body">
@@ -115,7 +116,6 @@ function SimilarPropertyCard(props: { property: SalesProperty; index: number; or
         </div>
         <div className="property-similar-footer">
           <strong>{property.price}</strong>
-          <span>Ver ficha</span>
         </div>
       </div>
     </a>
@@ -239,7 +239,6 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
     setActiveImageIndex(index);
     setLightboxImageIndex(index);
   };
-
   return (
     <div className="property-details-page">
       <section className="property-details-hero">
@@ -309,20 +308,16 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
                 </div>
               </div>
 
-              <div className="property-location-line">
-                <span className="property-location-item">
-                  <span className="property-location-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                      <path d="M12 20s6-5.4 6-10.2A6 6 0 0 0 6 9.8C6 14.6 12 20 12 20Z" />
-                      <circle cx="12" cy="9.5" r="2.2" />
-                    </svg>
+              <div className="property-location-price-row">
+                <div className="property-location-line">
+                  <span className="property-location-item">
+                    <span>{property.location}</span>
                   </span>
-                  <span>{property.address}</span>
-                </span>
-              </div>
+                </div>
 
-              <div className="property-price-row">
-                <strong className="property-price-value">{property.price}</strong>
+                <div className="property-price-row">
+                  <strong className="property-price-value property-price-font-lato">{property.price}</strong>
+                </div>
               </div>
 
               <div className="property-intro-stats" aria-label={`Datos principales de ${property.title}`}>
@@ -389,7 +384,7 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
 
             <aside className="property-contact-sidebar" id="consulta">
               <div ref={contactCardRef} className="property-contact-card reveal reveal-delay-2">
-                <h2>Quiero más información sobre esta propiedad</h2>
+                <h2>Quiero recibir información sobre esta propiedad</h2>
 
                 <form className="property-contact-form" onSubmit={handleContactSubmit}>
                   <input type="text" placeholder="Nombre" />
@@ -397,7 +392,7 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
                   <input type="text" placeholder="Teléfono" />
                   <textarea
                     rows={4}
-                    defaultValue={`Me interesa ${property.title} (Ref. ${property.ref}). Quisiera recibir más información.`}
+                    defaultValue={`Me interesa ${property.title} (Ref. ${property.ref}). Quiero recibir más información.`}
                   />
                 </form>
 
@@ -433,7 +428,7 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
       {similarProperties.length ? (
         <section className="property-similar-section">
           <div className="container">
-            <div className="property-similar-head reveal">
+            <div className="property-similar-head section-title-frame reveal">
               <h2>Propiedades similares</h2>
             </div>
 

@@ -2,7 +2,10 @@ import WhatsAppIcon from "./WhatsAppIcon";
 
 type ContactCard = {
   title: string;
-  details: string;
+  details?: string;
+  address?: string;
+  addressHref?: string;
+  schedule?: string;
 };
 
 type ContactSectionProps = {
@@ -12,23 +15,32 @@ type ContactSectionProps = {
 const contactCards: ContactCard[] = [
   {
     title: "Casa central Cordón",
-    details: "Minas 1401 - Lunes a viernes de 9:45 a 18:30",
+    address: "Minas 1401",
+    addressHref: "https://www.google.com/maps/search/?api=1&query=Minas+1401,+Montevideo,+Uruguay",
+    schedule: "Lunes a viernes de 9:45 a 18:30",
   },
   {
     title: "Sucursal Pocitos Nuevo",
-    details: "Rivera 3471 - Lunes a jueves de 10:00 a 18:30\n - Viernes de 10:00 a 17:00",
+    address: "Rivera 3471",
+    addressHref: "https://www.google.com/maps/search/?api=1&query=Av.+Gral+Rivera+3471,+Montevideo,+Uruguay",
+    schedule: "Lunes a jueves de 10:00 a 18:30\nViernes de 10:00 a 17:00",
   },
   {
-    title: "Contacto directo",
-    details: "2401 01 01 - 2622 50 50 - inmobiliaria@lars.com.uy",
+    title: "Contacto",
+    details: "2401 01 01 - 2622 50 50 inmobiliaria@lars.com.uy",
   },
 ];
 
-function ContactSectionHeader() {
+function ContactSectionHeaderWithVariant(props: { variant: ContactSectionProps["variant"] }) {
+  const { variant } = props;
+
   return (
-    <div className="section-heading reveal">
+    <div
+      className={`section-heading section-title-frame contact-section-title reveal${
+        variant === "contrast" ? " contact-section-title-light" : " contact-section-title-dark"
+      }`}
+    >
       <h2>Oficinas</h2>
-      <p />
     </div>
   );
 }
@@ -46,13 +58,24 @@ export default function ContactSection({ variant = "default" }: ContactSectionPr
     <section className={sectionClassName} id="contacto">
       <div className="container contact-layout">
         <div className="contact-copy">
-          <ContactSectionHeader />
+          <ContactSectionHeaderWithVariant variant={variant} />
 
           <div className="contact-grid">
             {contactCards.map((item) => (
               <article key={item.title} className="contact-card reveal">
                 <h3>{item.title}</h3>
-                <p>{item.details}</p>
+                {item.address && item.addressHref ? (
+                  <p className="contact-card-details">
+                    <a href={item.addressHref} target="_blank" rel="noreferrer" className="contact-address-link">
+                      {item.address}
+                    </a>
+                    {item.schedule ? (
+                      <span className="contact-card-schedule">{item.schedule}</span>
+                    ) : null}
+                  </p>
+                ) : (
+                  <p className="contact-card-details">{item.details}</p>
+                )}
               </article>
             ))}
           </div>
@@ -77,11 +100,11 @@ export default function ContactSection({ variant = "default" }: ContactSectionPr
               />
             </label>
             <label className="contact-field contact-field-wide">
-              <span className="sr-only">Correo electrónico</span>
+              <span className="sr-only">Email</span>
               <input
                 type="email"
-                placeholder="Correo electrónico"
-                aria-label="Correo electrónico"
+                placeholder="Email"
+                aria-label="Email"
               />
             </label>
             <label className="contact-field contact-field-wide">
@@ -105,7 +128,7 @@ export default function ContactSection({ variant = "default" }: ContactSectionPr
             rel="noreferrer"
           >
             <WhatsAppIcon />
-            <span>Contactarme por WhatsApp</span>
+            <span>WhatsApp</span>
           </a>
         </form>
       </div>

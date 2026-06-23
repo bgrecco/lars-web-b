@@ -40,21 +40,28 @@ type OwnerTestimonial = {
   location: string;
 };
 
+const showOwnerPainSection = false;
+const showOwnerServicesSection = false;
+const showOwnerProcessSection = false;
+const showOwnerReasonsSection = false;
+const showOwnerFinalSection = false;
+const showOwnerAnchorNav = false;
+
 const ownerMetrics: OwnerMetric[] = [
   {
-    value: "+1.500",
-    label: "inquilinos buscando",
-    description: "Posibles inquilinos en los últimos 30 días",
+    value: "2 oficinas",
+    label: "",
+    description: "estratégicamente ubicadas e interconectadas",
   },
   {
-    value: "+55",
-    label: "años en el mercado",
+    value: "+55 años",
+    label: "",
     description: "Respaldando a propietarios desde 1971",
   },
   {
-    value: "24hrs",
-    label: "respuesta",
-    description: "Te contactaremos a la brevedad",
+    value: "Integral",
+    label: "",
+    description: "Gestión cercana, clara y respaldada en cada etapa",
   },
 ];
 
@@ -344,32 +351,15 @@ function OwnerLeadForm(props: { compact?: boolean; id?: string }) {
   return (
     <form className={`owners-lead-form${compact ? " owners-lead-form-compact" : ""}`} onSubmit={handleSubmit}>
       <div className="owners-form-head">
-        <h2 id={id}>Quiero que alquilen y/o vendan mi propiedad</h2>
-        <p>Completá el formulario y te contactamos a la brevedad.</p>
+        <h2 id={id}>Quiero alquilar o vender mi propiedad</h2>
       </div>
 
-      <fieldset className="owners-intent-group" aria-label="Qué querés hacer con tu propiedad">
-        <legend>¿Qué querés hacer con tu propiedad?</legend>
-        <label>
-          <input type="radio" name="intent" value="vender" required />
-          <span>Quiero vender mi propiedad</span>
-        </label>
-        <label>
-          <input type="radio" name="intent" value="alquilar" />
-          <span>Quiero alquilar mi propiedad</span>
-        </label>
-        <label>
-          <input type="radio" name="intent" value="ambos" />
-          <span>Ambos</span>
-        </label>
-      </fieldset>
-
       <div className="owners-form-grid">
-        <label>
-          <span>Tipo de propiedad</span>
-          <select name="propertyType" required defaultValue="">
+        <label className="owners-form-span-3">
+          <span className="sr-only">Tipo de propiedad</span>
+          <select name="propertyType" aria-label="Tipo de propiedad" required defaultValue="">
             <option value="" disabled>
-              Seleccioná el tipo
+              Tipo de propiedad
             </option>
             <option>Apartamento</option>
             <option>Casa</option>
@@ -378,38 +368,39 @@ function OwnerLeadForm(props: { compact?: boolean; id?: string }) {
           </select>
         </label>
 
-        <label>
-          <span>Zona</span>
-          <select name="zone" required defaultValue="">
+        <label className="owners-form-span-3">
+          <span className="sr-only">Zona</span>
+          <select name="zone" aria-label="Zona" required defaultValue="">
             <option value="" disabled>
-              Seleccioná la zona
+              Zona
             </option>
             <option>Montevideo</option>
             <option>Ciudad de la Costa</option>
           </select>
         </label>
 
-        <label>
-          <span>Nombre completo</span>
-          <input type="text" name="fullName" placeholder="Juan Pérez" autoComplete="name" required />
+        <label className="owners-form-span-4">
+          <span className="sr-only">Nombre</span>
+          <input type="text" name="fullName" placeholder="Nombre" aria-label="Nombre" autoComplete="name" required />
         </label>
 
-        <label>
-          <span>Email</span>
-          <input type="email" name="email" placeholder="tu@email.com" autoComplete="email" required />
-        </label>
-
-        <label>
-          <span>Celular</span>
-          <input type="tel" name="phone" placeholder="099 000 000" autoComplete="tel" required />
+        <label className="owners-form-span-2">
+          <span className="sr-only">Celular</span>
+          <input type="tel" name="phone" placeholder="Celular" aria-label="Celular" autoComplete="tel" required />
         </label>
 
         <label className="owners-form-wide">
-          <span>Comentarios sobre tu propiedad</span>
+          <span className="sr-only">Email</span>
+          <input type="email" name="email" placeholder="Email" aria-label="Email" autoComplete="email" required />
+        </label>
+
+        <label className="owners-form-wide">
+          <span className="sr-only">Comentarios</span>
           <textarea
             name="comments"
             rows={compact ? 3 : 4}
-            placeholder="Ej: Apartamento de 2 dormitorios en Pocitos, actualmente desocupado..."
+            placeholder="Comentarios"
+            aria-label="Comentarios"
           />
         </label>
       </div>
@@ -432,12 +423,11 @@ function OwnerLeadForm(props: { compact?: boolean; id?: string }) {
   );
 }
 
-function OwnerSectionHeader(props: { eyebrow?: string; title: string; description: string; inverse?: boolean }) {
-  const { eyebrow, title, description, inverse = false } = props;
+function OwnerSectionHeader(props: { title: string; description: string; inverse?: boolean }) {
+  const { title, description, inverse = false } = props;
 
   return (
     <div className={`owners-section-head reveal${inverse ? " owners-section-head-inverse" : ""}`}>
-      {eyebrow ? <span>{eyebrow}</span> : null}
       <h2>{title}</h2>
       <p>{description}</p>
     </div>
@@ -445,11 +435,14 @@ function OwnerSectionHeader(props: { eyebrow?: string; title: string; descriptio
 }
 
 export default function PropertyAdminPage() {
+  const [isAnchorNavCondensed, setIsAnchorNavCondensed] = useState(false);
+
   useEffect(() => {
     const page = document.querySelector<HTMLElement>(".owners-page");
     const header = document.querySelector<HTMLElement>(".site-header");
+    const anchorNav = document.querySelector<HTMLElement>(".owners-anchor-nav");
 
-    if (!page || !header) {
+    if (!page || !header || !anchorNav) {
       return;
     }
 
@@ -457,11 +450,24 @@ export default function PropertyAdminPage() {
       page.style.setProperty("--owners-sticky-offset", `${header.offsetHeight}px`);
     };
 
+    const updateAnchorNavState = () => {
+      const isSmallViewport = window.innerWidth <= 760;
+      const stickyTop = header.offsetHeight;
+      const anchorTop = anchorNav.getBoundingClientRect().top;
+
+      setIsAnchorNavCondensed(isSmallViewport && anchorTop <= stickyTop + 1);
+    };
+
     updateStickyOffset();
+    updateAnchorNavState();
     window.addEventListener("resize", updateStickyOffset);
+    window.addEventListener("resize", updateAnchorNavState);
+    window.addEventListener("scroll", updateAnchorNavState, { passive: true });
 
     return () => {
       window.removeEventListener("resize", updateStickyOffset);
+      window.removeEventListener("resize", updateAnchorNavState);
+      window.removeEventListener("scroll", updateAnchorNavState);
       page.style.removeProperty("--owners-sticky-offset");
     };
   }, []);
@@ -479,20 +485,37 @@ export default function PropertyAdminPage() {
         <div className="container owners-hero-layout">
           <div className="owners-hero-copy reveal">
             <h1>+1.500 personas buscan alquilar ya.</h1>
-            <p>
-              En los últimos 30 días, más de 1.500 posibles inquilinos buscaron propiedades con
-              nosotros. Te brindamos un servicio integral desde conectarte con el futuro inquilino
-              hasta publicar en los principales portales, nuestra web y redes sociales.
-            </p>
 
             <div className="owners-metrics-grid owners-hero-metrics" aria-label="Datos del servicio">
               {ownerMetrics.map((metric, index) => (
-                <article className={`owners-metric-card reveal reveal-delay-${(index % 3) + 1}`} key={metric.label}>
+                <article
+                  className={`owners-metric-card owners-metric-card-${index + 1} reveal reveal-delay-${(index % 3) + 1}`}
+                  key={metric.label}
+                >
                   <span>{metric.value}</span>
                   <strong>{metric.label}</strong>
                   <p>{metric.description}</p>
                 </article>
               ))}
+            </div>
+
+            <div className="owners-hero-testimonials" id="testimonios">
+              <OwnerSectionHeader title="Testimonios" description="" />
+
+              <div className="owners-testimonials-grid">
+                {ownerTestimonials.map((testimonial) => (
+                  <article className="owners-testimonial-card" key={testimonial.author}>
+                    <span className="owners-quote-mark" aria-hidden="true">
+                      <QuoteIcon />
+                    </span>
+                    <blockquote>{testimonial.text}</blockquote>
+                    <footer>
+                      <strong>{testimonial.author}</strong>
+                      <span>{testimonial.location}</span>
+                    </footer>
+                  </article>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -502,179 +525,151 @@ export default function PropertyAdminPage() {
         </div>
       </section>
 
-      <nav className="owners-anchor-nav" aria-label="Secciones de propietarios">
-        <div className="container owners-anchor-nav-inner">
-          <a href="#servicios">Servicios</a>
-          <a href="#como-funciona">Cómo funciona</a>
-          <a href="#testimonios">Testimonios</a>
-          <a href="#lead-form-admin" className="owners-anchor-cta">
-            Solicitar contacto
-          </a>
-        </div>
-      </nav>
-
-      <section className="owners-section owners-pain-section">
-        <div className="container">
-          <OwnerSectionHeader
-            eyebrow="Administrar por cuenta propia"
-            title="Cuando no hay respaldo, cada problema queda de tu lado"
-            description="Estas son algunas de las problemáticas que enfrentan los propietarios que administran por su cuenta sus propiedades."
-          />
-
-          <div className="owners-card-grid owners-pain-grid">
-            {ownerPainPoints.map((item, index) => (
-              <article className={`owners-card owners-pain-card reveal reveal-delay-${(index % 4) + 1}`} key={item.title}>
-                <span className="owners-card-icon">
-                  <OwnerIcon kind={item.icon ?? "check"} />
-                </span>
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-              </article>
-            ))}
+      {showOwnerAnchorNav ? (
+        <nav
+          className={`owners-anchor-nav${isAnchorNavCondensed ? " is-condensed" : ""}`}
+          aria-label="Secciones de propietarios"
+        >
+          <div className="container owners-anchor-nav-inner">
+            <a href="#servicios">Servicios</a>
+            <a href="#como-funciona">Cómo funciona</a>
+            <a href="#testimonios">Testimonios</a>
+            <a href="#lead-form-admin" className="owners-anchor-cta">
+              Solicitar contacto
+            </a>
           </div>
+        </nav>
+      ) : null}
 
-          <div className="owners-solution-arrow reveal" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M12 5v14" />
-              <path d="m19 12-7 7-7-7" />
-            </svg>
-          </div>
+      {showOwnerPainSection ? (
+        <section className="owners-section owners-pain-section">
+          <div className="container">
+            <OwnerSectionHeader
+              title="Cuando no hay respaldo, cada problema queda de tu lado"
+              description="Estas son algunas de las problemáticas que enfrentan los propietarios que administran por su cuenta sus propiedades."
+            />
 
-          <a className="owners-solution-card reveal" href="#lead-form-admin">
-            <span>Si te identificás con alguna de estas situaciones,</span>
-            <strong>tenemos la solución.</strong>
-          </a>
-        </div>
-      </section>
-
-      <section className="owners-section owners-services-section" id="servicios">
-        <div className="container">
-          <OwnerSectionHeader
-            eyebrow="Servicio integral"
-            title="Nos encargamos de todo"
-            description="Administración de alquileres para que vos no tengas que preocuparte por nada."
-          />
-
-          <div className="owners-card-grid owners-service-grid">
-            {ownerServices.map((item, index) => (
-              <article className={`owners-card owners-service-card reveal reveal-delay-${(index % 3) + 1}`} key={item.title}>
-                <span className="owners-card-icon owners-card-icon-dark">
-                  <OwnerIcon kind={item.icon ?? "check"} />
-                </span>
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="owners-process-section" id="como-funciona">
-        <div className="container">
-          <OwnerSectionHeader
-            eyebrow="Proceso"
-            title="¿Querés que administremos tu propiedad?"
-            description="Un recorrido claro desde el primer contacto hasta la administración cotidiana."
-            inverse
-          />
-
-          <div className="owners-steps-grid">
-            {ownerSteps.map((step, index) => (
-              <article className={`owners-step-card reveal reveal-delay-${(index % 4) + 1}`} key={step.number}>
-                <span>{step.number}</span>
-                <h3>{step.title}</h3>
-                <p>{step.description}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="owners-section owners-testimonials-section" id="testimonios">
-        <div className="container">
-          <OwnerSectionHeader
-            eyebrow="Experiencias"
-            title="Algunas de las personas que confían en nosotros"
-            description="Propietarios e inquilinos valoran la seriedad, la agilidad y el acompañamiento del equipo."
-          />
-
-          <div className="owners-testimonials-grid">
-            {ownerTestimonials.map((testimonial, index) => (
-              <article className={`owners-testimonial-card reveal reveal-delay-${(index % 3) + 1}`} key={testimonial.author}>
-                <span className="owners-quote-mark" aria-hidden="true">
-                  <QuoteIcon />
-                </span>
-                <blockquote>{testimonial.text}</blockquote>
-                <footer>
-                  <strong>{testimonial.author}</strong>
-                  <span>{testimonial.location}</span>
-                </footer>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="owners-section owners-why-section">
-        <div className="container">
-          <OwnerSectionHeader
-            eyebrow="Por qué Lars"
-            title="Lo que nos diferencia"
-            description="Trayectoria, equipo y demanda real trabajando juntos para cuidar el valor de tu propiedad."
-          />
-
-          <div className="owners-reasons-grid">
-            {ownerReasons.map((reason, index) => (
-              <article className={`owners-reason-card reveal reveal-delay-${(index % 4) + 1}`} key={reason.title}>
-                <div className="owners-reason-head">
-                  <span className="owners-card-icon">
-                    <OwnerIcon kind={reason.icon ?? "check"} />
-                  </span>
-                  <h3>{reason.title}</h3>
-                </div>
-                <p>{reason.description}</p>
-                {reason.highlights ? (
-                  <ul>
-                    {reason.highlights.map((highlight) => (
-                      <li key={highlight}>
-                        <OwnerIcon kind="check" />
-                        <span>{highlight}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="owners-final-section">
-        <div className="container owners-final-layout">
-          <div className="owners-final-copy reveal">
-            <h2>Empezá a disfrutar de tu propiedad sin preocupaciones</h2>
-            <p>Completá el formulario y te contactamos a la brevedad.</p>
-            <div className="owners-final-badges" aria-label="Condiciones del contacto">
-              <span>
-                <OwnerIcon kind="check" />
-                Asesoría gratuita
-              </span>
-              <span>
-                <OwnerIcon kind="check" />
-                Sin compromiso
-              </span>
-              <span>
-                <OwnerIcon kind="check" />
-                Respuesta en 24hs
-              </span>
+            <div className="owners-card-grid owners-pain-grid">
+              {ownerPainPoints.map((item, index) => (
+                <article className={`owners-card owners-pain-card reveal reveal-delay-${(index % 4) + 1}`} key={item.title}>
+                  <div className="owners-pain-head">
+                    <span className="owners-card-icon">
+                      <OwnerIcon kind={item.icon ?? "check"} />
+                    </span>
+                    <h3>{item.title}</h3>
+                  </div>
+                  <p>{item.description}</p>
+                </article>
+              ))}
             </div>
           </div>
+        </section>
+      ) : null}
 
-          <aside className="owners-final-form-card reveal reveal-delay-2">
-            <OwnerLeadForm compact />
-          </aside>
-        </div>
-      </section>
+      {showOwnerServicesSection ? (
+        <section className="owners-section owners-services-section" id="servicios">
+          <div className="container">
+            <OwnerSectionHeader
+              title="Nos encargamos de todo"
+              description="Administración de alquileres para que vos no tengas que preocuparte por nada."
+            />
+
+            <div className="owners-card-grid owners-service-grid">
+              {ownerServices.map((item, index) => (
+                <article className={`owners-card owners-service-card reveal reveal-delay-${(index % 3) + 1}`} key={item.title}>
+                  <div className="owners-service-head">
+                    <h3>{item.title}</h3>
+                  </div>
+                  <p>{item.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {showOwnerProcessSection ? (
+        <section className="owners-process-section" id="como-funciona">
+          <div className="container">
+            <OwnerSectionHeader
+              title="¿Querés que administremos tu propiedad?"
+              description="Un recorrido claro desde el primer contacto hasta la administración cotidiana."
+              inverse
+            />
+
+            <div className="owners-steps-grid">
+              {ownerSteps.map((step, index) => (
+                <article className={`owners-step-card reveal reveal-delay-${(index % 4) + 1}`} key={step.number}>
+                  <div className="owners-step-head">
+                    <span>{`Paso ${step.number}`}</span>
+                    <h3>{step.title}</h3>
+                  </div>
+                  <p>{step.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {showOwnerReasonsSection ? (
+        <section className="owners-section owners-why-section">
+          <div className="container">
+            <OwnerSectionHeader
+              title="Lo que nos diferencia"
+              description="Trayectoria, equipo y demanda real trabajando juntos para cuidar el valor de tu propiedad."
+            />
+
+            <div className="owners-reasons-grid">
+              {ownerReasons.map((reason, index) => (
+                <article className={`owners-reason-card reveal reveal-delay-${(index % 4) + 1}`} key={reason.title}>
+                  <div className="owners-reason-head">
+                    <span className="owners-card-icon">
+                      <OwnerIcon kind={reason.icon ?? "check"} />
+                    </span>
+                    <h3>{reason.title}</h3>
+                  </div>
+                  <p>{reason.description}</p>
+                  {reason.highlights ? (
+                    <ul>
+                      {reason.highlights.map((highlight) => (
+                        <li key={highlight}>
+                          <OwnerIcon kind="check" />
+                          <span>{highlight}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {showOwnerFinalSection ? (
+        <section className="owners-final-section">
+          <div className="container owners-final-layout">
+            <div className="owners-final-copy reveal">
+              <h2>Empezá a disfrutar de tu propiedad sin preocupaciones</h2>
+              <div className="owners-final-badges" aria-label="Condiciones del contacto">
+                <span>
+                  <OwnerIcon kind="check" />
+                  Asesoría gratuita
+                </span>
+                <span>
+                  <OwnerIcon kind="check" />
+                  Respuesta en 24 h
+                </span>
+              </div>
+            </div>
+
+            <aside className="owners-final-form-card reveal reveal-delay-2">
+              <OwnerLeadForm compact />
+            </aside>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

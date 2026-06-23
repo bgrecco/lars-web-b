@@ -27,15 +27,6 @@ function BackArrowIcon() {
   );
 }
 
-function MapPinIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 20s6-5.4 6-10.2A6 6 0 0 0 6 9.8C6 14.6 12 20 12 20Z" />
-      <circle cx="12" cy="9.5" r="2.2" />
-    </svg>
-  );
-}
-
 function formatUsd(value: number) {
   return `US$ ${value.toLocaleString("es-UY")}`;
 }
@@ -118,10 +109,6 @@ function ProjectSimilarCard(props: { project: Project; index: number }) {
         <div className="project-similar-summary">
           <span>{project.unitSummary[0] ?? "Unidades disponibles"}</span>
           <span>{project.deliveryDates[0] ?? "Consultar entrega"}</span>
-        </div>
-        <div className="property-similar-footer">
-          <strong>Proyecto</strong>
-          <span>Ver ficha</span>
         </div>
       </div>
     </a>
@@ -226,7 +213,7 @@ function ProjectParkingTable(props: { rows: ProjectParking[] }) {
         <thead>
           <tr>
             <th>
-              <SortButton label="Número" active={orderBy === "number"} direction={direction} onClick={() => handleSort("number")} />
+              <SortButton label="Nº" active={orderBy === "number"} direction={direction} onClick={() => handleSort("number")} />
             </th>
             <th>
               <SortButton label="Capacidad" active={orderBy === "capacity"} direction={direction} onClick={() => handleSort("capacity")} />
@@ -239,7 +226,7 @@ function ProjectParkingTable(props: { rows: ProjectParking[] }) {
         <tbody>
           {sortedRows.map((row) => (
             <tr key={row.number}>
-              <td data-label="Número">
+              <td data-label="Nº">
                 <span className="project-unit-chip">{row.number}</span>
               </td>
               <td data-label="Capacidad">{row.capacity}</td>
@@ -248,6 +235,67 @@ function ProjectParkingTable(props: { rows: ProjectParking[] }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function ProjectUnitsPreview(props: { rows: ProjectUnit[] }) {
+  const previewRows = props.rows.slice(0, 3);
+
+  return (
+    <div className="project-preview-card">
+      <div className="project-preview-card-head">
+        <h3>Unidades disponibles</h3>
+        <a href="#tabla-unidades">Ver tabla</a>
+      </div>
+
+      <div className="project-preview-list">
+        {previewRows.map((row) => (
+          <div key={row.unit} className="project-preview-item">
+            <div className="project-preview-item-main">
+              <span className="project-unit-chip">{row.unit}</span>
+              <strong>{formatBedrooms(row.bedrooms)} dorm.</strong>
+            </div>
+            <div className="project-preview-item-meta">
+              <span>{formatArea(row.totalArea)}</span>
+              <span>{formatUsd(row.price)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProjectParkingPreview(props: { rows: ProjectParking[] }) {
+  const previewRows = props.rows.slice(0, 3);
+
+  return (
+    <div className="project-preview-card">
+      <div className="project-preview-card-head">
+        <h3>Cocheras disponibles</h3>
+        <a href="#tabla-cocheras">Ver tabla</a>
+      </div>
+
+      {previewRows.length ? (
+        <div className="project-preview-list">
+          {previewRows.map((row) => (
+            <div key={row.number} className="project-preview-item">
+              <div className="project-preview-item-main">
+                <span className="project-unit-chip">{row.number}</span>
+                <strong>{row.capacity}</strong>
+              </div>
+              <div className="project-preview-item-meta">
+                <span>{formatUsd(row.price)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="project-preview-empty">
+          Cocheras sujetas a disponibilidad. Consultá al equipo comercial por opciones vigentes.
+        </div>
+      )}
     </div>
   );
 }
@@ -371,9 +419,6 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
                   style={{ objectPosition: activeImage.objectPosition ?? "center center" }}
                 />
               </button>
-              <span className="property-status-pill property-gallery-status-pill project-gallery-status-pill">
-                {project.tag}
-              </span>
             </div>
 
             <div className="property-gallery-rail" aria-label={`Galería de ${project.title}`}>
@@ -418,9 +463,6 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
 
               <div className="property-location-line">
                 <span className="property-location-item">
-                  <span className="property-location-icon" aria-hidden="true">
-                    <MapPinIcon />
-                  </span>
                   <span>{project.address}</span>
                 </span>
               </div>
@@ -431,19 +473,9 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
                 ))}
               </div>
 
-              <div className="property-intro-stats project-intro-stats" aria-label={`Datos principales de ${project.title}`}>
-                <div className="property-intro-stat project-intro-stat">
-                  <strong>{project.availableUnits.length}</strong>
-                  <span>Unidades disponibles</span>
-                </div>
-                <div className="property-intro-stat project-intro-stat">
-                  <strong>{project.unitSummary.length}</strong>
-                  <span>Tipologías</span>
-                </div>
-                <div className="property-intro-stat project-intro-stat">
-                  <strong>{project.availableParking.length || "-"}</strong>
-                  <span>Cocheras</span>
-                </div>
+              <div className="project-intro-previews">
+                <ProjectUnitsPreview rows={project.availableUnits} />
+                <ProjectParkingPreview rows={project.availableParking} />
               </div>
             </div>
           </div>
@@ -456,7 +488,7 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
             <div className="property-main-column">
               <section className="property-flow-section reveal" id="descripcion">
                 <div className="property-section-header">
-                  <h2>Descripción del proyecto</h2>
+                  <h2>Descripción</h2>
                 </div>
 
                 <div className="property-section-copy">
@@ -507,7 +539,7 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
 
             <aside className="property-contact-sidebar">
               <div className="property-contact-card reveal reveal-delay-2">
-                <h2>Quiero más información sobre este proyecto</h2>
+                <h2>Quiero recibir información sobre este proyecto</h2>
 
                 <form className="property-contact-form" onSubmit={handleContactSubmit}>
                   <input type="text" placeholder="Nombre" />
@@ -515,7 +547,7 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
                   <input type="text" placeholder="Teléfono" />
                   <textarea
                     rows={4}
-                    defaultValue={`Me interesa ${project.title}. Quisiera recibir más información sobre unidades disponibles.`}
+                    defaultValue={`Me interesa ${project.title}. Quiero recibir más información sobre unidades disponibles.`}
                   />
                 </form>
 
@@ -548,15 +580,15 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
       </section>
 
       <section className="project-availability-section">
-        <div className="container">
-          <div className="project-availability-block reveal">
+        <div className="container project-availability-layout">
+          <div className="project-availability-block reveal" id="tabla-unidades">
             <div className="property-section-header">
               <h2>Unidades disponibles</h2>
             </div>
             <ProjectUnitsTable rows={project.availableUnits} />
           </div>
 
-          <div className="project-availability-block reveal reveal-delay-1">
+          <div className="project-availability-block reveal reveal-delay-1" id="tabla-cocheras">
             <div className="property-section-header">
               <h2>Cocheras disponibles</h2>
             </div>
@@ -568,8 +600,8 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
       {similarProjects.length ? (
         <section className="property-similar-section project-similar-section">
           <div className="container">
-            <div className="property-similar-head reveal">
-              <h2>Otros proyectos</h2>
+            <div className="property-similar-head section-title-frame reveal">
+              <h2>Más proyectos</h2>
             </div>
 
             <div className="property-similar-grid project-similar-grid">

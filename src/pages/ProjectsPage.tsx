@@ -42,7 +42,7 @@ export default function ProjectsPage() {
       <section className="sales-results projects-results" id="proyectos-resultados">
         <div className="container">
           <div className="sales-results-head reveal">
-            <div className="sales-results-copy">
+            <div className="sales-results-copy section-title-frame">
               <h2>Proyectos</h2>
             </div>
           </div>
@@ -68,13 +68,11 @@ export default function ProjectsPage() {
                     loading="lazy"
                     decoding="async"
                   />
-                  <span className="sales-listing-pill project-results-pill">{project.tag}</span>
                 </div>
                 <div className="project-body">
                   <h3>{project.title}</h3>
                   <p className="project-meta">{project.location}</p>
                   <p>{project.description}</p>
-                  <span className="text-link">Ver proyecto</span>
                 </div>
               </article>
             ))}
