@@ -4525,16 +4525,7 @@ button {
     letter-spacing:inherit;
     text-transform:inherit
 }
-.sales-filter-field .search-price-popover-title,
-.sales-filter-field .search-price-slider-head span {
-    color:rgba(255,255,255,.72);
-    font-size:.82rem
-}
-.sales-filter-field .search-price-number-field span {
-    color:rgba(255,255,255,.72);
-    font-size:.72rem
-}
-.sales-filter-field input,.sales-filter-field select,.sales-filter-field .search-select-trigger {
+.sales-filter-field>input,.sales-filter-field>select,.sales-filter-field .search-select-trigger {
     width:100%;
     min-height:4.2rem;
     padding:.95rem .82rem .95rem 3.2rem;
@@ -4587,43 +4578,46 @@ button {
 .sales-filter-field-order:before {
     display:none
 }
-.sales-filter-field-type-house:before {
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23f5c400' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 10.5 12 4l8.5 6.5'/%3E%3Cpath d='M6 9.5V20h12V9.5'/%3E%3Cpath d='M10 20v-5h4v5'/%3E%3C/svg%3E")
-}
-.sales-filter-field-type-building:before {
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23f5c400' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 21h16'/%3E%3Cpath d='M7 21V7l5-3 5 3v14'/%3E%3Cpath d='M10 10h.01'/%3E%3Cpath d='M14 10h.01'/%3E%3Cpath d='M10 14h.01'/%3E%3Cpath d='M14 14h.01'/%3E%3C/svg%3E")
-}
-.sales-filter-field-zone:before {
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23f5c400' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21s6-5.4 6-10a6 6 0 1 0-12 0c0 4.6 6 10 6 10Z'/%3E%3Ccircle cx='12' cy='11' r='2.2'/%3E%3C/svg%3E")
-}
-.sales-filter-field-bedrooms:before {
-    background-image:url("/optimized/home/icon-dorm.webp")
-}
+.sales-filter-field-type-house:before,
+.sales-filter-field-type-building:before,
+.sales-filter-field-zone:before,
+.sales-filter-field-bedrooms:before,
 .sales-filter-field-price:before {
-    content:"$";
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    width:1.4rem;
-    height:1.4rem;
-    font-family:var(--title-font);
-    font-size:1.9rem;
-    font-weight:400;
-    line-height:1;
-    background:none
+    display:none
 }
-.sales-filter-field input:focus,.sales-filter-field select:focus,.sales-filter-field .search-select-trigger:focus-visible {
+.sales-filter-field .search-select-trigger,
+.sales-filter-field-reference input {
+    padding-left:.82rem
+}
+.sales-filter-field>input:focus,.sales-filter-field>select:focus,.sales-filter-field .search-select-trigger:focus-visible {
     border-color:rgba(255,255,255,.42);
     background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.1));
     box-shadow:0 0 0 4px rgba(77,228,201,.16),0 18px 36px rgba(0,11,75,.2)
 }
-.sales-filter-field .search-price-trigger {
-    min-height:4.2rem;
-    padding-left:3.2rem
+.sales-filter-field-price .search-price-trigger-input-shell {
+    min-height:4.2rem
 }
-.sales-filter-field .search-price-popover {
-    width:min(100%,24rem);
-    min-width:20rem
+.sales-filter-field-price .search-price-trigger-prefix {
+    font-size:1.18rem;
+    line-height:1
+}
+.sales-filter-field-price .search-price-trigger-input {
+    width:100%;
+    min-width:0;
+    min-height:auto;
+    padding:0;
+    border:none!important;
+    background:transparent!important;
+    color:#fff!important;
+    font-family:var(--subtitle-font);
+    font-size:1.18rem;
+    font-weight:700;
+    line-height:1;
+    outline:none;
+    box-shadow:none!important
+}
+.sales-filter-field-price .search-price-trigger-input::placeholder {
+    color:rgba(255,255,255,.5)
 }
 .sales-filter-actions {
     display:flex;

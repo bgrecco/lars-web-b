@@ -43,7 +43,6 @@ const initialFilters: SalesFilters = {
 const pageSize = 6;
 const salesPriceMinLimit = 0;
 const salesPriceMaxLimit = 500000;
-const salesPriceStep = 10000;
 
 function SearchDropdownField(props: SearchDropdownFieldProps) {
   const { active, className, label, onSelect, onToggle, options, value } = props;
@@ -186,15 +185,13 @@ export default function SalesPage({
   const [appliedFilters, setAppliedFilters] = useState<SalesFilters>(() => getInitialFiltersFromUrl());
   const [isLoaderVisible, setIsLoaderVisible] = useState(showLoaderDemo);
   const [page, setPage] = useState(1);
-  const [isPricePopoverOpen, setIsPricePopoverOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<"tipo" | "barrio" | "dormitorios" | null>(null);
   const [isCompactFiltersOpen, setIsCompactFiltersOpen] = useState(false);
   const [isCompactFilterViewport, setIsCompactFilterViewport] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(max-width: 480px)").matches : false,
   );
-  const [salesPriceMinInput, setSalesPriceMinInput] = useState(() => getInitialFiltersFromUrl().precioMinimo || "120000");
-  const [salesPriceMaxInput, setSalesPriceMaxInput] = useState(() => getInitialFiltersFromUrl().precioMaximo || "250000");
-  const pricePopoverRef = useRef<HTMLDivElement | null>(null);
+  const [salesPriceFieldValue, setSalesPriceFieldValue] = useState(() => getInitialFiltersFromUrl().precioMaximo || "");
+  const [isSalesPriceFieldEditing, setIsSalesPriceFieldEditing] = useState(false);
   const filterPanelRef = useRef<HTMLDivElement | null>(null);
 
   const typeOptions = useMemo(
@@ -234,7 +231,6 @@ export default function SalesPage({
 
   const filteredProperties = useMemo(() => {
     const normalizedRef = appliedFilters.ref.trim();
-    const minimumPrice = Number(appliedFilters.precioMinimo || 0);
     const maximumPrice = Number(appliedFilters.precioMaximo || salesPriceMaxLimit);
 
     const filtered = salesCatalog.filter((property) => {
@@ -243,7 +239,7 @@ export default function SalesPage({
       const matchesRef = normalizedRef
         ? property.ref.includes(normalizedRef) || String(property.id).includes(normalizedRef)
         : true;
-      const matchesMinimum = appliedFilters.precioMinimo ? property.priceValue >= minimumPrice : true;
+      const matchesMinimum = true;
       const matchesMaximum = appliedFilters.precioMaximo ? property.priceValue <= maximumPrice : true;
 
       return (
@@ -306,20 +302,18 @@ export default function SalesPage({
   }, []);
 
   useEffect(() => {
-    if (!isPricePopoverOpen && !activeDropdown) {
+    if (!activeDropdown) {
       return;
     }
 
     const handlePointerDown = (event: MouseEvent) => {
       if (!filterPanelRef.current?.contains(event.target as Node)) {
-        setIsPricePopoverOpen(false);
         setActiveDropdown(null);
       }
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setIsPricePopoverOpen(false);
         setActiveDropdown(null);
       }
     };
@@ -331,7 +325,7 @@ export default function SalesPage({
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [activeDropdown, isPricePopoverOpen]);
+  }, [activeDropdown]);
 
   useEffect(() => {
     if (isLoaderVisible) {
@@ -371,6 +365,12 @@ export default function SalesPage({
     return () => observer.disconnect();
   }, [isLoaderVisible, page, totalPages, visibleProperties.length, activeFilterChips.length]);
 
+  useEffect(() => {
+    if (!isSalesPriceFieldEditing) {
+      setSalesPriceFieldValue(draftFilters.precioMaximo || "");
+    }
+  }, [draftFilters.precioMaximo, isSalesPriceFieldEditing]);
+
   if (isLoaderVisible) {
     return (
       <div className="sales-page">
@@ -388,58 +388,27 @@ export default function SalesPage({
     }));
   };
 
-  const handleSalesPriceMinChange = (value: number) => {
-    const nextMin = clampSalesPriceValue(value);
-    const nextMax = Math.max(Number(draftFilters.precioMaximo || salesPriceMaxLimit), nextMin);
+  const handleSalesPriceFieldFocus = () => {
+    setIsSalesPriceFieldEditing(true);
+    setSalesPriceFieldValue(draftFilters.precioMaximo || "");
+  };
 
-    setSalesPriceMinInput(String(nextMin));
-    setSalesPriceMaxInput(String(nextMax));
+  const handleSalesPriceFieldChange = (value: string) => {
+    setSalesPriceFieldValue(value.replace(/\D/g, ""));
+  };
+
+  const handleSalesPriceFieldBlur = () => {
+    setIsSalesPriceFieldEditing(false);
+    const normalizedValue = salesPriceFieldValue.replace(/\D/g, "");
+    const nextMax = normalizedValue ? String(clampSalesPriceValue(Number(normalizedValue))) : "";
+
+    setSalesPriceFieldValue(nextMax);
     setDraftFilters((currentFilters) => ({
       ...currentFilters,
-      precioMinimo: String(nextMin),
-      precioMaximo: String(nextMax),
+      precioMoneda: listingContext === "alquileres" ? "uyu" : "usd",
+      precioMinimo: "",
+      precioMaximo: nextMax,
     }));
-  };
-
-  const handleSalesPriceMaxChange = (value: number) => {
-    const nextMax = clampSalesPriceValue(value);
-    const nextMin = Math.min(Number(draftFilters.precioMinimo || salesPriceMinLimit), nextMax);
-
-    setSalesPriceMinInput(String(nextMin));
-    setSalesPriceMaxInput(String(nextMax));
-    setDraftFilters((currentFilters) => ({
-      ...currentFilters,
-      precioMinimo: String(nextMin),
-      precioMaximo: String(nextMax),
-    }));
-  };
-
-  const handleSalesPriceInputChange = (field: "min" | "max", value: string) => {
-    const normalizedValue = value.replace(/\D/g, "");
-
-    if (field === "min") {
-      setSalesPriceMinInput(normalizedValue);
-      setDraftFilters((currentFilters) => ({ ...currentFilters, precioMinimo: normalizedValue }));
-      if (normalizedValue) {
-        handleSalesPriceMinChange(Number(normalizedValue));
-      }
-      return;
-    }
-
-    setSalesPriceMaxInput(normalizedValue);
-    setDraftFilters((currentFilters) => ({ ...currentFilters, precioMaximo: normalizedValue }));
-    if (normalizedValue) {
-      handleSalesPriceMaxChange(Number(normalizedValue));
-    }
-  };
-
-  const handleSalesPriceInputBlur = (field: "min" | "max") => {
-    if (field === "min") {
-      handleSalesPriceMinChange(Number(salesPriceMinInput || salesPriceMinLimit));
-      return;
-    }
-
-    handleSalesPriceMaxChange(Number(salesPriceMaxInput || salesPriceMaxLimit));
   };
 
   const handleApplyFilters = (event: FormEvent<HTMLFormElement>) => {
@@ -449,7 +418,6 @@ export default function SalesPage({
       setAppliedFilters({ ...draftFilters });
       setPage(1);
     });
-    setIsPricePopoverOpen(false);
     setActiveDropdown(null);
     if (isCompactFilterViewport) {
       setIsCompactFiltersOpen(false);
@@ -460,11 +428,9 @@ export default function SalesPage({
     startTransition(() => {
       setDraftFilters(initialFilters);
       setAppliedFilters(initialFilters);
-      setSalesPriceMinInput("120000");
-      setSalesPriceMaxInput("250000");
+      setSalesPriceFieldValue("");
       setPage(1);
     });
-    setIsPricePopoverOpen(false);
     setActiveDropdown(null);
     if (isCompactFilterViewport) {
       setIsCompactFiltersOpen(false);
@@ -523,7 +489,6 @@ export default function SalesPage({
                     setActiveDropdown(null);
                   }}
                   onToggle={() => {
-                    setIsPricePopoverOpen(false);
                     setActiveDropdown((currentValue) => (currentValue === "tipo" ? null : "tipo"));
                   }}
                   options={typeDropdownOptions}
@@ -539,7 +504,6 @@ export default function SalesPage({
                     setActiveDropdown(null);
                   }}
                   onToggle={() => {
-                    setIsPricePopoverOpen(false);
                     setActiveDropdown((currentValue) => (currentValue === "barrio" ? null : "barrio"));
                   }}
                   options={neighborhoodDropdownOptions}
@@ -555,113 +519,28 @@ export default function SalesPage({
                     setActiveDropdown(null);
                   }}
                   onToggle={() => {
-                    setIsPricePopoverOpen(false);
                     setActiveDropdown((currentValue) => (currentValue === "dormitorios" ? null : "dormitorios"));
                   }}
                   options={bedroomDropdownOptions}
                   value={draftFilters.dormitorios}
                 />
 
-                <div className="sales-filter-field sales-filter-field-price" ref={pricePopoverRef}>
+                <div className="sales-filter-field sales-filter-field-price">
                   <span>Precio</span>
-                  <button
-                    type="button"
-                    className={`search-price-trigger${isPricePopoverOpen ? " is-open" : ""}`}
-                    onClick={() => {
-                      setActiveDropdown(null);
-                      setIsPricePopoverOpen((currentValue) => !currentValue);
-                    }}
-                    aria-expanded={isPricePopoverOpen}
-                    aria-haspopup="dialog"
-                  >
-                    <span>
-                      {formatSalesPriceValue(
-                        draftFilters.precioMoneda,
-                        Number(draftFilters.precioMinimo || salesPriceMinInput || 120000),
-                      )}{" "}
-                      -{" "}
-                      {formatSalesPriceValue(
-                        draftFilters.precioMoneda,
-                        Number(draftFilters.precioMaximo || salesPriceMaxInput || 250000),
-                      )}
+                  <div className="search-price-trigger-input-shell sales-price-trigger-input-shell">
+                    <span className="search-price-trigger-prefix">
+                      {`Hasta ${listingContext === "alquileres" ? "$" : "US$"}`}
                     </span>
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </button>
-                  {isPricePopoverOpen ? (
-                    <div className="search-price-popover" role="dialog" aria-label="Seleccionar rango de precio">
-                      <div className="search-price-currency-row">
-                        <span className="search-price-popover-title">Moneda</span>
-                        <div className="search-price-currency-toggle" aria-label="Seleccionar moneda">
-                          <button
-                            type="button"
-                            className={draftFilters.precioMoneda === "usd" ? "is-active" : undefined}
-                            onClick={() => handleDraftFilterChange("precioMoneda", "usd")}
-                          >
-                            US$
-                          </button>
-                          <button
-                            type="button"
-                            className={draftFilters.precioMoneda === "uyu" ? "is-active" : undefined}
-                            onClick={() => handleDraftFilterChange("precioMoneda", "uyu")}
-                          >
-                            $
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="search-price-slider-group">
-                        <div className="search-price-slider-head">
-                          <span>Mínimo</span>
-                          <strong>{formatSalesPriceValue(draftFilters.precioMoneda, Number(draftFilters.precioMinimo || salesPriceMinInput || 120000))}</strong>
-                        </div>
-                        <label className="search-price-number-field">
-                          <span>Valor mínimo</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={salesPriceMinInput}
-                            onChange={(event) => handleSalesPriceInputChange("min", event.currentTarget.value)}
-                            onBlur={() => handleSalesPriceInputBlur("min")}
-                          />
-                        </label>
-                        <input
-                          type="range"
-                          min={salesPriceMinLimit}
-                          max={salesPriceMaxLimit}
-                          step={salesPriceStep}
-                          value={Number(draftFilters.precioMinimo || salesPriceMinInput || 120000)}
-                          onChange={(event) => handleSalesPriceMinChange(Number(event.currentTarget.value))}
-                        />
-                      </div>
-
-                      <div className="search-price-slider-group">
-                        <div className="search-price-slider-head">
-                          <span>Máximo</span>
-                          <strong>{formatSalesPriceValue(draftFilters.precioMoneda, Number(draftFilters.precioMaximo || salesPriceMaxInput || 250000))}</strong>
-                        </div>
-                        <label className="search-price-number-field">
-                          <span>Máximo</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={salesPriceMaxInput}
-                            onChange={(event) => handleSalesPriceInputChange("max", event.currentTarget.value)}
-                            onBlur={() => handleSalesPriceInputBlur("max")}
-                          />
-                        </label>
-                        <input
-                          type="range"
-                          min={salesPriceMinLimit}
-                          max={salesPriceMaxLimit}
-                          step={salesPriceStep}
-                          value={Number(draftFilters.precioMaximo || salesPriceMaxInput || 250000)}
-                          onChange={(event) => handleSalesPriceMaxChange(Number(event.currentTarget.value))}
-                        />
-                      </div>
-                    </div>
-                  ) : null}
+                    <input
+                      className="search-price-trigger-input sales-price-trigger-input"
+                      type="text"
+                      inputMode="numeric"
+                      value={salesPriceFieldValue}
+                      onFocus={handleSalesPriceFieldFocus}
+                      onChange={(event) => handleSalesPriceFieldChange(event.currentTarget.value)}
+                      onBlur={handleSalesPriceFieldBlur}
+                    />
+                  </div>
                 </div>
 
                 <label className="sales-filter-field sales-filter-field-reference">
