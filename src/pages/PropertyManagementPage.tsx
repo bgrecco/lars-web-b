@@ -9,43 +9,43 @@ type ManagementService = {
 
 const managementServices: ManagementService[] = [
 	{
-		title: "Marketing y promoción",
+		title: "MARKETING Y PROMOCIÓN",
 		body: "Aseguramos la máxima visibilidad de su inmueble, desde la tasación y producción fotográfica hasta la publicación estratégica en portales y redes sociales. Coordinamos y acompañamos personalmente cada visita, realizando un seguimiento exhaustivo.",
 	},
 	{
-		title: "Garantías",
+		title: "GARANTÍAS",
 		body: "Brindamos asesoramiento integral sobre las diferentes garantías (CGN, ANDA, Porto Seguro y Sura).",
 	},
 	{
-		title: "Confección del Contrato",
+		title: "CONFECCIÓN DEL CONTRATO",
 		body: "Confeccionamos el contrato de arrendamiento y el inventario de la propiedad, respaldados con material fotográfico para mayor transparencia y seguridad.",
 	},
 	// {
-	// 	title: "Rentabilidad Garantizada",
+	// 	title: "RENTABILIDAD GARANTIZADA",
 	// 	body: "Nuestro compromiso es maximizar la rentabilidad de su inversión inmobiliaria, asegurando una gestión eficiente y efectiva.",
 	// },
 	{
-		title: "Gestión Tributaria y Respaldo General",
+		title: "GESTIÓN TRIBUTARIA Y RESPALDO GENERAL",
 		body: "Nos ocupamos de la gestión integral y del pago, sin costos adicionales, de tributos clave como Fondo de Reserva, Impuesto de Primaria, Contribución Inmobiliaria y demás obligaciones fiscales.",
 	},
 	{
-		title: "Control de Pagos",
+		title: "CONTROL DE PAGOS",
 		body: "Implementamos un seguimiento riguroso de los pagos a cargo del arrendatario, garantizando el cumplimiento efectivo de sus obligaciones contractuales.",
 	},
 	{
-		title: "Agentes de Retención",
+		title: "AGENTES DE RETENCIÓN",
 		body: "Brindamos asesoría especializada y gestionamos el trámite de exoneración de IRPF.",
 	},
 	{
-		title: "Estado de Cuenta y Pagos Simplificados",
+		title: "ESTADO DE CUENTA Y PAGOS SIMPLIFICADOS",
 		body: "Desde nuestro sitio web podrá visualizar su estado de cuenta y realizar el pago de alquiler directamente en la cuenta bancaria de su preferencia. Contamos además con diversas vías de comunicación: correo electrónico, atención telefónica y WhatsApp.",
 	},
 	{
-		title: "Rescisiones Supervisadas",
+		title: "RESCISIONES SUPERVISADAS",
 		body: "Al finalizar el contrato, supervisamos personalmente la desocupación del inmueble, asegurando su concordancia con el inventario.",
 	},
 	{
-		title: "Acondicionamiento",
+		title: "ACONDICIONAMIENTO",
 		body: "Sin costo, facilitamos diversos presupuestos para optimizar el estado de la propiedad.",
 	},
 ];

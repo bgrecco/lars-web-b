@@ -172,8 +172,6 @@ export default function CommonExpensesPage() {
               />
             </div>
             <div className="spotlight-body">
-              <h3>Soluciones integrales para su edificio, con atención ejecutiva personalizada y respaldo
-administrativo transparente.</h3>
               <p>
                 Soluciones integrales para su edificio, con atención ejecutiva personalizada y respaldo
 administrativo transparente.
