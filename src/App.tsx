@@ -1397,7 +1397,12 @@ function App() {
                           value={searchZone}
                         />
                         <div className="search-field-standard search-field-price search-mobile-advanced-field">
-                          <span className="search-field-label search-field-label-titlecase">Precio</span>
+                          <span
+                            className="search-field-label search-field-label-titlecase"
+                            id="search-price-field-label"
+                          >
+                            Precio
+                          </span>
                           <div className="search-price-trigger-input-shell">
                             <span className="search-price-trigger-prefix">
                               {`Hasta ${searchPriceCurrency === "usd" ? "US$" : "$"}`}
@@ -1406,6 +1411,7 @@ function App() {
                               className="search-price-trigger-input"
                               type="text"
                               inputMode="numeric"
+                              aria-labelledby="search-price-field-label"
                               value={searchPriceFieldValue}
                               placeholder=""
                               onFocus={handleSearchPriceFieldFocus}
