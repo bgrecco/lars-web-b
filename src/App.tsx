@@ -1377,7 +1377,8 @@ function App() {
                       <div
                         className={`search-mobile-advanced-panel${isMobileSearchFiltersOpen ? " is-open" : ""}`}
                         id="search-mobile-advanced-fields"
-                        aria-hidden={!isMobileSearchFiltersOpen}
+                        aria-hidden={isSmallScreen ? !isMobileSearchFiltersOpen : undefined}
+                        inert={isSmallScreen && !isMobileSearchFiltersOpen ? true : undefined}
                       >
                         <SearchDropdownField
                           active={activeSearchDropdown === "zone"}
