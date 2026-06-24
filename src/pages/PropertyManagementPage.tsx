@@ -9,28 +9,28 @@ type ManagementService = {
 
 const managementServices: ManagementService[] = [
 	{
-		title: "Marketing y promoción del inmueble",
-		body: "Aseguramos la máxima visibilidad de su inmueble, comenzando desde la tasación y producción fotográfica, hasta su publicación estratégica en los principales portales y redes sociales. Coordinamos y acompañamos personalmente a cada visita, realizando un seguimiento exhaustivo.",
+		title: "Marketing y promoción",
+		body: "Aseguramos la máxima visibilidad de su inmueble, desde la tasación y producción fotográfica hasta la publicación estratégica en portales y redes sociales. Coordinamos y acompañamos personalmente cada visita, realizando un seguimiento exhaustivo.",
 	},
 	{
-		title: "Asesoramiento y Gestión de Garantías",
-		body: "Brindamos asesoramiento integral sobre las diferentes garantías (CGN, ANDA, Porto Seguro y Sura). Mantenemos con cada una de ellas una relación de confianza avalada por años de trabajo conjunto.",
+		title: "Garantías",
+		body: "Brindamos asesoramiento integral sobre las diferentes garantías (CGN, ANDA, Porto Seguro y Sura).",
 	},
 	{
-		title: "Rentabilidad Garantizada",
-		body: "Nuestro compromiso es maximizar la rentabilidad de su inversión inmobiliaria, asegurando una gestión eficiente y efectiva.",
+		title: "Confección del Contrato",
+		body: "Confeccionamos el contrato de arrendamiento y el inventario de la propiedad, respaldados con material fotográfico para mayor transparencia y seguridad.",
 	},
-	{
-		title: "Gestión del Contrato",
-		body: "Nos encargamos de la elaboración del contrato de arrendamiento y el inventario de la propiedad, respaldado con documentación fotográfica para una mayor transparencia y seguridad.",
-	},
+	// {
+	// 	title: "Rentabilidad Garantizada",
+	// 	body: "Nuestro compromiso es maximizar la rentabilidad de su inversión inmobiliaria, asegurando una gestión eficiente y efectiva.",
+	// },
 	{
 		title: "Gestión Tributaria y Respaldo General",
-		body: "Nos ocupamos de la gestión integral y el pago, sin costos adicionales, de tributos clave como el Fondo de Reserva, Impuesto de Primaria, Contribución Inmobiliaria y demás obligaciones fiscales.",
+		body: "Nos ocupamos de la gestión integral y del pago, sin costos adicionales, de tributos clave como Fondo de Reserva, Impuesto de Primaria, Contribución Inmobiliaria y demás obligaciones fiscales.",
 	},
 	{
 		title: "Control de Pagos",
-		body: "Implementamos un seguimiento riguroso del pago de los gastos a cargo del arrendatario, garantizando el cumplimiento efectivo de sus obligaciones financieras.",
+		body: "Implementamos un seguimiento riguroso de los pagos a cargo del arrendatario, garantizando el cumplimiento efectivo de sus obligaciones contractuales.",
 	},
 	{
 		title: "Agentes de Retención",
@@ -38,15 +38,15 @@ const managementServices: ManagementService[] = [
 	},
 	{
 		title: "Estado de Cuenta y Pagos Simplificados",
-		body: "Desde nuestro sitio web podrá visualizar su estado de cuenta 24/7. En la cuenta bancaria de su preferencia podrá realizar directamente el pago de alquiler.",
+		body: "Desde nuestro sitio web podrá visualizar su estado de cuenta y realizar el pago de alquiler directamente en la cuenta bancaria de su preferencia. Contamos además con diversas vías de comunicación: correo electrónico, atención telefónica y WhatsApp.",
 	},
 	{
 		title: "Rescisiones Supervisadas",
-		body: "Al finalizar el contrato, supervisamos personalmente la desocupación del inmueble, asegurando su concordancia con el inventario original.",
+		body: "Al finalizar el contrato, supervisamos personalmente la desocupación del inmueble, asegurando su concordancia con el inventario.",
 	},
 	{
-		title: "Acondicionamiento de la Propiedad",
-		body: "Facilitamos diversos presupuestos sin costo, ofreciendo opciones para optimizar el estado de su propiedad.",
+		title: "Acondicionamiento",
+		body: "Sin costo, facilitamos diversos presupuestos para optimizar el estado de la propiedad.",
 	},
 ];
 const managementServicesSplitIndex = Math.ceil(managementServices.length / 2);
@@ -142,10 +142,8 @@ export default function PropertyManagementPage() {
 							/>
 						</div>
 						<div className="spotlight-body">
-							<h3>Un equipo entre el propietario, el inquilino y la operación diaria</h3>
 							<p>
-								Coordinamos pagos, documentación, mantenimiento y seguimiento para que la propiedad
-								se mantenga administrada con continuidad y respaldo.
+								Gestión integral para su inmueble, desde promoción y garantías hasta control de pagos y supervisión contractual, con transparencia y acompañamiento personalizado.
 							</p>
 						</div>
 					</aside>

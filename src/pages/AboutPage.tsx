@@ -7,14 +7,14 @@ type Pillar = {
 
 const pillars: Pillar[] = [
   {
-    title: "NOSOTROS",
+    title: "ACERCA DE LARS",
     description:
-      "Somos una empresa familiar con más de medio siglo de trayectoria, manteniéndonos a la vanguardia gracias a una visión innovadora y continuidad generacional. Nuestra seriedad, transparencia y dedicación son los pilares que han forjado una sólida reputación, merecedora del reconocimiento de clientes y del sector, brindando soluciones respaldadas por décadas de experiencia.\n\nAdemás, nuestra ética empresarial incluye ser una empresa pet-friendly y animalista, reflejando un compromiso integral que va más allá de lo comercial.",
+      "Somos una empresa familiar con más de medio siglo de trayectoria, manteniéndonos a la vanguardia gracias a una visión innovadora y continuidad generacional. Nuestra seriedad, transparencia y dedicación son pilares que han forjado una sólida reputación, reconocida por clientes y por el sector, brindando soluciones a medida respaldadas por décadas de experiencia. En coherencia con estos valores, nuestra ética empresarial incluye una política pet friendly y un compromiso animalista que trascienden lo estrictamente comercial.",
   },
   {
     title: "SERVICIO INTEGRAL",
     description:
-      "Abarcamos todas las áreas del rubro inmobiliario: Ventas, Alquileres y Administración de gastos comunes. Contamos con un capital humano de primera línea y altamente especializado.",
+      "Abarcamos todas las áreas del rubro inmobiliario: ventas, alquileres y administración de gastos comunes. Contamos con un capital humano de primera línea, altamente especializado.",
   },
   {
     title: "COMPROMISO",
@@ -22,14 +22,14 @@ const pillars: Pillar[] = [
       "Nuestro objetivo es superar las expectativas de nuestros clientes y establecer vínculos sólidos y de confianza.",
   },
   {
-    title: "Red de atención estratégica",
+    title: "RED DE ATENCIÓN ESTRATÉGICA",
     description:
-      "Oficinas operativas estratégicamente ubicadas e interconectadas, con amplio horario de atención, para brindarle más y mejores prestaciones.",
+      "Disponemos de oficinas operativas estratégicamente ubicadas e interconectadas, con amplio horario de atención, lo que nos permite ofrecer más y mejores prestaciones, entre ellas la posibilidad de abonar en línea la liquidación de gastos comunes mediante usuario en nuestro sitio web.",
   },
   {
     title: "VINCULACIÓN Y LIDERAZGO",
     description:
-      "Como miembros activos del Colegio de Administradores de Propiedad Horizontal, como también de la Cámara Inmobiliaria del Uruguay, reafirmamos nuestro compromiso con el desarrollo responsable del rubro inmobiliario.",
+      "Como miembros activos del Colegio de Administradores de Propiedad Horizontal y de la Cámara Inmobiliaria del Uruguay, reafirmamos nuestro compromiso con el desarrollo responsable del rubro inmobiliario.",
   },
 ];
 export default function AboutPage() {
@@ -64,11 +64,8 @@ export default function AboutPage() {
               />
             </div>
             <div className="spotlight-body">
-              <h3>Servicio integral con mirada actual y una forma de trabajo cercana</h3>
               <p>
-                Brindamos administración de gastos comunes, ventas, alquileres y administración
-                de propiedades con un equipo especializado, foco real en cada necesidad y una
-                experiencia más clara para el cliente.
+                Empresa familiar con más de medio siglo de trayectoria, reconocida por su seriedad, innovación y compromiso ético que trasciende lo estrictamente comercial.
               </p>
             </div>
           </aside>
