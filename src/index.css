@@ -6090,7 +6090,7 @@ button {
 }
 .project-details-hero .container {
     display:grid;
-    grid-template-columns:minmax(0,1.18fr) minmax(20rem,.82fr);
+    grid-template-columns:minmax(0,1fr) minmax(24rem,28rem);
     align-items:start;
     gap:1.4rem 1.6rem
 }
@@ -6807,6 +6807,18 @@ button {
         min-height:auto;
         padding:3rem 0
   }
+  .owners-hero-metrics .owners-metric-card p {
+        text-align:center
+  }
+  .owners-hero-metrics .owners-metric-card {
+        align-content:start;
+        min-height:0;
+        gap:.05rem;
+        padding:1rem 1.2rem
+  }
+  .owners-hero-metrics .owners-metric-card strong:empty {
+        display:none
+  }
   .owners-hero-scrim {
         background:linear-gradient(180deg,rgba(0,11,75,.92),rgba(0,11,75,.78)),linear-gradient(90deg,rgba(0,11,75,.92),rgba(0,11,75,.32))
   }
@@ -6869,16 +6881,50 @@ button {
         min-height:auto
   }
   .search-card {
-        padding:1.3rem .95rem
+        padding:1.3rem .95rem;
+        border-color:rgba(216,166,66,.9);
+        background:linear-gradient(180deg,rgba(18,35,92,.62),rgba(11,24,72,.58))
+  }
+  .search-card:before {
+        background:radial-gradient(circle at 10% 10%,rgba(255,255,255,.1),transparent 28%),radial-gradient(circle at 86% 88%,rgba(245,196,0,.035),transparent 26%)
   }
   .search-header {
         display:none
   }
   .search-grid {
         grid-template-columns:repeat(2,minmax(0,1fr));
+        column-gap:.65rem;
         margin-top:0
   }
+  .search-grid>.search-field-operation {
+        order:1
+  }
+  .search-grid>.search-field-type {
+        order:2
+  }
+  .search-grid>.search-field-bedrooms {
+        order:3
+  }
+  .search-grid>.search-field-reference {
+        order:4
+  }
+  .search-grid>.search-field-operation,
+  .search-grid>.search-field-type,
+  .search-grid>.search-field-bedrooms,
+  .search-grid>.search-field-reference {
+        width:100%;
+        min-width:0;
+        max-width:none
+  }
+  .search-grid>.search-field-operation .search-select-trigger,
+  .search-grid>.search-field-type .search-select-trigger,
+  .search-grid>.search-field-bedrooms .search-select-trigger,
+  .search-grid>.search-field-reference input {
+        width:100%;
+        min-height:4.2rem
+  }
   .search-mobile-more-toggle {
+        order:5;
         grid-column:1 / -1;
         display:inline-flex;
         align-items:center;
@@ -6912,6 +6958,7 @@ button {
         grid-column:1 / -1
   }
   .search-mobile-advanced-panel {
+        order:6;
         grid-column:1 / -1;
         display:grid;
         grid-template-columns:1fr;
@@ -6931,9 +6978,21 @@ button {
         pointer-events:auto
   }
   .search-grid .search-mobile-advanced-field {
-        min-width:0
+        width:100%;
+        min-width:0;
+        max-width:none
+  }
+  .search-grid .search-field-price .search-price-trigger-input-shell {
+        width:100%;
+        min-width:0;
+        max-width:none
+  }
+  .search-grid .search-field-zone .search-select-popover {
+        width:100%;
+        min-width:100%
   }
   .search-action-buttons {
+        order:7;
         grid-column:1 / -1;
         width:100%
   }
@@ -6958,7 +7017,7 @@ button {
         min-width:0
   }
   .hero-search-band {
-        margin-top:-.35rem
+        margin-top:1.1rem
   }
   .common-expenses-hero,.about-page-hero {
         padding:2rem 0 3.4rem
@@ -7127,8 +7186,34 @@ button {
   .property-intro-shell {
         margin-top:1rem
   }
+  .property-details-page:not(.project-details-page) .property-intro-shell {
+        margin-top:.1rem;
+        padding-top:.5rem
+  }
   .property-headline-row {
         grid-template-columns:1fr
+  }
+  .property-details-page:not(.project-details-page) .property-headline-copy {
+        width:100%;
+        max-width:none;
+        text-align:center
+  }
+  .property-details-page:not(.project-details-page) .property-location-price-row {
+        display:grid;
+        grid-template-columns:1fr;
+        justify-items:center
+  }
+  .property-details-page:not(.project-details-page) .property-location-line,
+  .property-details-page:not(.project-details-page) .property-price-row {
+        justify-content:center;
+        width:100%;
+        text-align:center
+  }
+  .property-details-page:not(.project-details-page) .property-location-line {
+        margin-top:.45rem
+  }
+  .property-details-page:not(.project-details-page) .property-location-line + .property-price-row {
+        margin-top:.45rem
   }
   .property-anchor-nav {
         gap:.75rem 1rem
@@ -7414,6 +7499,9 @@ button {
   .project-details-page {
         background:radial-gradient(circle at 82% 10%,rgba(77,228,201,.12),transparent 18%),radial-gradient(circle at 14% 8%,rgba(158,247,230,.08),transparent 20%),linear-gradient(180deg,#010a34,#03154a 46%,#020c30)
   }
+  .property-details-page:not(.project-details-page) {
+        background:radial-gradient(circle at 82% 10%,rgba(77,228,201,.06),transparent 18%),radial-gradient(circle at 14% 8%,rgba(158,247,230,.04),transparent 20%),linear-gradient(180deg,#000621,#010e35 46%,#00071f)
+  }
   .property-gallery-status-pill.is-reserved {
         padding:.72rem 1rem;
         font-size:1.08rem;
@@ -7651,9 +7739,9 @@ button {
         min-height:3.25rem;
         padding:.9rem 1rem;
         border-radius:var(--sales-radius-md);
-        border:1px solid rgba(7,24,90,.14);
-        background:#fff;
-        color:var(--brand-navy);
+        border:1px solid rgba(216,166,66,.58);
+        background:var(--brand-navy);
+        color:var(--brand-gold);
         font-size:1rem;
         font-weight:800;
         letter-spacing:.06em;
@@ -7702,7 +7790,8 @@ button {
         display:block
   }
   .sales-filter-grid {
-        grid-template-columns:1fr
+        grid-template-columns:1fr;
+        padding:0 .65rem .65rem
   }
   .sales-filter-field-price {
         grid-column:auto
@@ -7716,6 +7805,13 @@ button {
   .common-expenses-page {
         --common-description-size: 1.18rem;
         --common-description-line-height: 1.46
+  }
+  .common-expenses-logo-tile-brou {
+        padding:.1rem .18rem
+  }
+  .common-expenses-logo-tile-brou img {
+        object-fit:contain;
+        transform:scale(1.2)
   }
   .about-page {
         --about-description-size: 1.18rem;

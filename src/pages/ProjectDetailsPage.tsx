@@ -283,7 +283,7 @@ function ProjectParkingPreview(props: { rows: ProjectParking[] }) {
             <div key={row.number} className="project-preview-item">
               <div className="project-preview-item-main">
                 <span className="project-unit-chip">{row.number}</span>
-                <strong>{row.capacity}</strong>
+                <strong>Capacidad de {row.capacity}</strong>
               </div>
               <div className="project-preview-item-meta">
                 <span>{formatUsd(row.price)}</span>
