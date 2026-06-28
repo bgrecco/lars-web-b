@@ -32,7 +32,7 @@ const serviceGroups: ServiceGroup[] = [
       },
       {
         title: "ASAMBLEAS",
-        body: "Asistencia ejecutiva sin costo en la asamblea anual, labrando el acta en formato digital y facilitando sufirma en la propia instancia.",
+        body: "Asistencia ejecutiva sin costo en la asamblea anual, labrando el acta en formato digital y facilitando su firma en la propia instancia.",
       },
       {
         title: "VISITAS PERSONALIZADAS",

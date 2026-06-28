@@ -25,7 +25,7 @@ const managementServices: ManagementService[] = [
 	// 	body: "Nuestro compromiso es maximizar la rentabilidad de su inversión inmobiliaria, asegurando una gestión eficiente y efectiva.",
 	// },
 	{
-		title: "GESTIÓN TRIBUTARIA Y RESPALDO GENERAL",
+		title: "GESTIÓN TRIBUTARIA",
 		body: "Nos ocupamos de la gestión integral y del pago, sin costos adicionales, de tributos clave como Fondo de Reserva, Impuesto de Primaria, Contribución Inmobiliaria y demás obligaciones fiscales.",
 	},
 	{
