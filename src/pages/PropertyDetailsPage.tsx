@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import ImageLightbox from "../components/ImageLightbox";
 import WhatsAppIcon from "../components/WhatsAppIcon";
 import {
@@ -11,6 +11,8 @@ import {
 type PropertyDetailsPageProps = {
   propertyId: number | null;
 };
+
+type PropertyDetailsDemoVariant = "default" | "sticky-contact" | "hero-summary";
 
 function getBedroomStatLabel(rooms: number) {
   return rooms === 0 ? "1" : String(rooms);
@@ -58,6 +60,24 @@ function getPropertyBackCopy(origin: "ventas" | "alquileres") {
   return origin === "alquileres"
     ? { href: "/alquileres", label: "Volver a alquileres" }
     : { href: "/ventas", label: "Volver a ventas" };
+}
+
+function getPropertyDetailsDemoVariant(): PropertyDetailsDemoVariant {
+  if (typeof window === "undefined") {
+    return "default";
+  }
+
+  const demo = new URLSearchParams(window.location.search).get("demo");
+
+  if (demo === "sticky-contact") {
+    return "sticky-contact";
+  }
+
+  if (demo === "hero-summary") {
+    return "hero-summary";
+  }
+
+  return "default";
 }
 
 function BackArrowIcon() {
@@ -130,8 +150,18 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
   );
   const propertyOrigin = getPropertyOrigin();
   const backCopy = getPropertyBackCopy(propertyOrigin);
+  const demoVariant = getPropertyDetailsDemoVariant();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isStickyDemoContactLight, setIsStickyDemoContactLight] = useState(demoVariant === "sticky-contact");
   const [lightboxImageIndex, setLightboxImageIndex] = useState<number | null>(null);
+  const galleryShellRef = useRef<HTMLDivElement>(null);
+  const galleryMainRef = useRef<HTMLDivElement>(null);
+  const stickyDemoStageRef = useRef<HTMLDivElement>(null);
+  const stickyDemoHeroRef = useRef<HTMLElement>(null);
+  const stickyDemoContentRef = useRef<HTMLElement>(null);
+  const stickyContactColumnRef = useRef<HTMLDivElement>(null);
+  const stickyContactSummaryRef = useRef<HTMLDivElement>(null);
+  const contactSidebarRef = useRef<HTMLElement>(null);
   const contactCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -192,6 +222,111 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
     return () => window.clearTimeout(timeoutId);
   }, [property]);
 
+  useLayoutEffect(() => {
+    if (demoVariant !== "sticky-contact" || typeof window === "undefined") {
+      setIsStickyDemoContactLight(false);
+      return;
+    }
+
+    const stage = stickyDemoStageRef.current;
+    const hero = stickyDemoHeroRef.current;
+    const content = stickyDemoContentRef.current;
+    const galleryShell = galleryShellRef.current;
+    const galleryMain = galleryMainRef.current;
+    const stickyContactColumn = stickyContactColumnRef.current;
+    const stickyContactSummary = stickyContactSummaryRef.current;
+    const contactSidebar = contactSidebarRef.current;
+    const contact = contactCardRef.current;
+
+    if (
+      !stage ||
+      !hero ||
+      !content ||
+      !galleryShell ||
+      !galleryMain ||
+      !stickyContactColumn ||
+      !stickyContactSummary ||
+      !contactSidebar ||
+      !contact
+    ) {
+      return;
+    }
+
+    const updateStickyDemoDimensions = () => {
+      const stageRect = stage.getBoundingClientRect();
+      const heroRect = hero.getBoundingClientRect();
+      const galleryShellRect = galleryShell.getBoundingClientRect();
+      const stickyContactSummaryRect = stickyContactSummary.getBoundingClientRect();
+      const stickyContactColumnStyle = window.getComputedStyle(stickyContactColumn);
+      const stickyContactGap = Number.parseFloat(stickyContactColumnStyle.rowGap || stickyContactColumnStyle.gap);
+      const heroHeight = heroRect.bottom - stageRect.top;
+      const contactCardHeight = Math.max(
+        galleryShellRect.height - stickyContactSummaryRect.height - (Number.isFinite(stickyContactGap) ? stickyContactGap : 0),
+        0,
+      );
+
+      stage.style.setProperty("--sticky-demo-hero-height", `${Math.ceil(heroHeight)}px`);
+      stage.style.setProperty("--sticky-demo-gallery-shell-height", `${Math.ceil(galleryShellRect.height)}px`);
+      stage.style.setProperty("--sticky-demo-contact-card-height", `${Math.ceil(contactCardHeight)}px`);
+    };
+
+    const updateStickyDemoContactTheme = () => {
+      const contactSidebarStyle = window.getComputedStyle(contactSidebar);
+
+      if (contactSidebarStyle.position !== "sticky") {
+        setIsStickyDemoContactLight(true);
+        return;
+      }
+
+      const stickyTop = Number.parseFloat(contactSidebarStyle.top);
+      const stickyThreshold = Number.isFinite(stickyTop) ? stickyTop + 24 : 24;
+      const shouldUseLightCard = hero.getBoundingClientRect().bottom > stickyThreshold;
+
+      setIsStickyDemoContactLight((currentValue) =>
+        currentValue === shouldUseLightCard ? currentValue : shouldUseLightCard,
+      );
+    };
+
+    updateStickyDemoDimensions();
+    updateStickyDemoContactTheme();
+
+    const animationFrameId = window.requestAnimationFrame(() => {
+      updateStickyDemoDimensions();
+      updateStickyDemoContactTheme();
+    });
+
+    window.addEventListener("resize", updateStickyDemoDimensions);
+    window.addEventListener("resize", updateStickyDemoContactTheme);
+    window.addEventListener("scroll", updateStickyDemoContactTheme, { passive: true });
+
+    const resizeObserver =
+      "ResizeObserver" in window
+        ? new ResizeObserver(() => {
+            updateStickyDemoDimensions();
+            updateStickyDemoContactTheme();
+          })
+        : null;
+
+    resizeObserver?.observe(hero);
+    resizeObserver?.observe(galleryShell);
+    resizeObserver?.observe(galleryMain);
+    resizeObserver?.observe(stickyContactColumn);
+    resizeObserver?.observe(stickyContactSummary);
+    resizeObserver?.observe(contactSidebar);
+    resizeObserver?.observe(contact);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+      window.removeEventListener("resize", updateStickyDemoDimensions);
+      window.removeEventListener("resize", updateStickyDemoContactTheme);
+      window.removeEventListener("scroll", updateStickyDemoContactTheme);
+      resizeObserver?.disconnect();
+      stage.style.removeProperty("--sticky-demo-hero-height");
+      stage.style.removeProperty("--sticky-demo-gallery-shell-height");
+      stage.style.removeProperty("--sticky-demo-contact-card-height");
+    };
+  }, [demoVariant, property?.id]);
+
   if (!property) {
     return (
       <div className="property-details-page property-details-page-missing">
@@ -239,191 +374,309 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
     setActiveImageIndex(index);
     setLightboxImageIndex(index);
   };
-  return (
-    <div className="property-details-page">
-      <section className="property-details-hero">
-        <div className="container">
-          <div className="property-gallery-shell reveal reveal-delay-1" id="galeria">
-            <div className="property-gallery-main">
-              <button
-                type="button"
-                className="property-gallery-main-button"
-                onClick={() => handleOpenLightbox(activeImageIndex)}
-                aria-label={`Abrir imagen ${activeImageIndex + 1} de ${property.title}`}
-              >
-                <img
-                  src={activeImage.image}
-                  alt={activeImage.alt}
-                  width="1400"
-                  height="788"
-                  fetchPriority="high"
-                  decoding="async"
-                  style={{ objectPosition: activeImage.objectPosition ?? "center center" }}
-                />
-              </button>
-              {property.reserved ? (
-                <span className="property-status-pill property-gallery-status-pill is-reserved">
-                  Reservada
-                </span>
-              ) : null}
-            </div>
 
-            <div className="property-gallery-rail" aria-label={`Galería de ${property.title}`}>
-              {gallery.map((image, index) => (
-                <button
-                  key={`${image.image}-${index}`}
-                  type="button"
-                  className={`property-gallery-thumb${index === activeImageIndex ? " is-active" : ""}`}
-                  onClick={() => handleOpenLightbox(index)}
-                  aria-label={`Abrir imagen ${index + 1}`}
-                  aria-pressed={index === activeImageIndex}
-                >
-                  <img
-                    src={image.thumbImage ?? image.image}
-                    alt=""
-                    width="480"
-                    height="270"
-                    loading="lazy"
-                    decoding="async"
-                    style={{ objectPosition: image.objectPosition ?? "center center" }}
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <ImageLightbox
-            images={gallery}
-            activeIndex={lightboxImageIndex}
-            title={property.title}
-            onClose={() => setLightboxImageIndex(null)}
-            onIndexChange={handleLightboxIndexChange}
+  const galleryBlock = (
+    <div ref={galleryShellRef} className="property-gallery-shell reveal reveal-delay-1" id="galeria">
+      <div ref={galleryMainRef} className="property-gallery-main">
+        <button
+          type="button"
+          className="property-gallery-main-button"
+          onClick={() => handleOpenLightbox(activeImageIndex)}
+          aria-label={`Abrir imagen ${activeImageIndex + 1} de ${property.title}`}
+        >
+          <img
+            src={activeImage.image}
+            alt={activeImage.alt}
+            width="1400"
+            height="788"
+            fetchPriority="high"
+            decoding="async"
+            style={{ objectPosition: activeImage.objectPosition ?? "center center" }}
           />
+        </button>
+        {property.reserved ? (
+          <span className="property-status-pill property-gallery-status-pill is-reserved">
+            Reservada
+          </span>
+        ) : null}
+      </div>
 
-          <div className="property-intro-shell reveal reveal-delay-2">
-            <div className="property-intro-copy">
-              <div className="property-headline-row">
-                <div className="property-headline-copy">
-                  <h1>{property.title}</h1>
-                </div>
-              </div>
+      <div className="property-gallery-rail" aria-label={`Galería de ${property.title}`}>
+        {gallery.map((image, index) => (
+          <button
+            key={`${image.image}-${index}`}
+            type="button"
+            className={`property-gallery-thumb${index === activeImageIndex ? " is-active" : ""}`}
+            onClick={() => handleOpenLightbox(index)}
+            aria-label={`Abrir imagen ${index + 1}`}
+            aria-pressed={index === activeImageIndex}
+          >
+            <img
+              src={image.thumbImage ?? image.image}
+              alt=""
+              width="480"
+              height="270"
+              loading="lazy"
+              decoding="async"
+              style={{ objectPosition: image.objectPosition ?? "center center" }}
+            />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 
-              <div className="property-location-price-row">
-                <div className="property-location-line">
-                  <span className="property-location-item">
-                    <span>{property.location}</span>
-                  </span>
-                </div>
+  const introBlock = (
+    <div className="property-intro-shell reveal reveal-delay-2">
+      <div className="property-intro-copy">
+        <div className="property-headline-row">
+          <div className="property-headline-copy">
+            <h1>{property.title}</h1>
+          </div>
+        </div>
 
-                <div className="property-price-row">
-                  <strong className="property-price-value property-price-font-lato">{property.price}</strong>
-                </div>
-              </div>
+        <div className="property-location-price-row">
+          <div className="property-location-line">
+            <span className="property-location-item">
+              <span>{property.location}</span>
+            </span>
+          </div>
 
-              <div className="property-intro-stats" aria-label={`Datos principales de ${property.title}`}>
-                <div className="property-intro-stat">
-                  <img src="/optimized/home/icon-dorm.webp" alt="" width="40" height="36" />
-                  <span>{getBedroomStatLabel(property.rooms)}</span>
-                </div>
-                <div className="property-intro-stat">
-                  <img src="/optimized/home/icon-banos.webp" alt="" width="39" height="40" />
-                  <span>{property.bathrooms}</span>
-                </div>
-                <div className="property-intro-stat">
-                  <img src="/optimized/home/icon-sup.webp" alt="" width="40" height="36" />
-                  <span>{property.size}</span>
-                </div>
-              </div>
+          <div className="property-price-row">
+            <strong className="property-price-value property-price-font-lato">{property.price}</strong>
+          </div>
+        </div>
 
-            </div>
+        <div className="property-intro-stats" aria-label={`Datos principales de ${property.title}`}>
+          <div className="property-intro-stat">
+            <img src="/optimized/home/icon-dorm.webp" alt="" width="40" height="36" />
+            <span>{getBedroomStatLabel(property.rooms)}</span>
+          </div>
+          <div className="property-intro-stat">
+            <img src="/optimized/home/icon-banos.webp" alt="" width="39" height="40" />
+            <span>{property.bathrooms}</span>
+          </div>
+          <div className="property-intro-stat">
+            <img src="/optimized/home/icon-sup.webp" alt="" width="40" height="36" />
+            <span>{property.size}</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+
+  const stickyContactSummaryBlock = (
+    <div
+      ref={demoVariant === "sticky-contact" ? stickyContactSummaryRef : null}
+      className={
+        demoVariant === "sticky-contact"
+          ? "property-sticky-contact-summary property-sticky-contact-fade property-sticky-contact-fade-delay-1"
+          : "property-sticky-contact-summary"
+      }
+      aria-label={`Resumen de ${property.title}`}
+    >
+      <h1>{property.title}</h1>
+
+      <div className="property-location-price-row">
+        <div className="property-location-line">
+          <span className="property-location-item">
+            <span>{property.location}</span>
+          </span>
+        </div>
+
+        <div className="property-price-row">
+          <strong className="property-price-value property-price-font-lato">{property.price}</strong>
+        </div>
+      </div>
+
+      <div className="property-intro-stats" aria-label={`Datos principales de ${property.title}`}>
+        <div className="property-intro-stat">
+          <img src="/optimized/home/icon-dorm.webp" alt="" width="40" height="36" />
+          <span>{getBedroomStatLabel(property.rooms)}</span>
+        </div>
+        <div className="property-intro-stat">
+          <img src="/optimized/home/icon-banos.webp" alt="" width="39" height="40" />
+          <span>{property.bathrooms}</span>
+        </div>
+        <div className="property-intro-stat">
+          <img src="/optimized/home/icon-sup.webp" alt="" width="40" height="36" />
+          <span>{property.size}</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const contactCardClassName = [
+    "property-contact-card",
+    demoVariant === "sticky-contact"
+      ? "property-sticky-contact-fade property-sticky-contact-fade-delay-2"
+      : "reveal reveal-delay-2",
+    demoVariant === "sticky-contact" && isStickyDemoContactLight ? "is-light" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const contactCard = (
+    <div
+      ref={contactCardRef}
+      className={contactCardClassName}
+    >
+      <h2>Quiero recibir información sobre esta propiedad</h2>
+
+      <form className="property-contact-form" onSubmit={handleContactSubmit}>
+        <input type="text" placeholder="Nombre" />
+        <input type="email" placeholder="Email" />
+        <input type="text" placeholder="Teléfono" />
+        <textarea
+          rows={4}
+          defaultValue={`Me interesa ${property.title} (Ref. ${property.ref}). Quiero recibir más información.`}
+        />
+      </form>
+
+      <div className="property-contact-quicklinks">
+        <a
+          className="property-contact-quicklink property-contact-quicklink-whatsapp"
+          href="https://wa.me/59824010101"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span className="property-contact-quicklink-icon" aria-hidden="true">
+            <WhatsAppIcon />
+          </span>
+          <span>WhatsApp</span>
+        </a>
+        <a className="property-contact-quicklink property-contact-quicklink-email" href="mailto:inmobiliaria@lars.com.uy">
+          <span className="property-contact-quicklink-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M3.5 5.25h17v13.5h-17V5.25Z" />
+              <path d="m4.2 6.2 7.8 6.25 7.8-6.25" />
+            </svg>
+          </span>
+          <span>Email</span>
+        </a>
+      </div>
+
+    </div>
+  );
+
+  const mainContent = (
+    <div className="property-main-column">
+      <section className="property-flow-section reveal" id="descripcion">
+        <div className="property-section-header">
+          <h2>Descripción</h2>
+        </div>
+
+        <div className="property-section-copy">
+          {descriptionParagraphs.map((paragraph, index) => (
+            <p key={`${property.id}-description-${index}`}>{paragraph}</p>
+          ))}
+        </div>
+      </section>
+
+      <section className="property-flow-section reveal reveal-delay-1" id="comodidades">
+        <div className="property-section-header">
+          <h2>Características</h2>
+        </div>
+
+        <div className="property-section-grid">
+          <div className="property-section-column">
+            <PropertyDetailList items={quickFacts} />
+          </div>
+
+          <div className="property-section-column">
+            <PropertyDetailList items={characteristics} />
           </div>
         </div>
       </section>
 
-      <section className="property-page-content">
-        <div className="container">
-          <div className="property-page-layout">
-            <div className="property-main-column">
-              <section className="property-flow-section reveal" id="descripcion">
-                <div className="property-section-header">
-                  <h2>Descripción</h2>
-                </div>
+      <section className="property-flow-section reveal reveal-delay-2" id="amenities">
+        <div className="property-section-header">
+          <h2>Amenities</h2>
+        </div>
 
-                <div className="property-section-copy">
-                  {descriptionParagraphs.map((paragraph, index) => (
-                    <p key={`${property.id}-description-${index}`}>{paragraph}</p>
-                  ))}
-                </div>
+        <PropertyAmenityGrid items={property.amenities} />
+      </section>
+
+    </div>
+  );
+
+  const lightbox = (
+    <ImageLightbox
+      images={gallery}
+      activeIndex={lightboxImageIndex}
+      title={property.title}
+      onClose={() => setLightboxImageIndex(null)}
+      onIndexChange={handleLightboxIndexChange}
+    />
+  );
+
+  const pageClassName = [
+    "property-details-page",
+    demoVariant === "sticky-contact" ? "property-details-page-demo-sticky-contact" : "",
+    demoVariant === "hero-summary" ? "property-details-page-demo-hero-summary" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <div className={pageClassName}>
+      {demoVariant === "sticky-contact" ? (
+        <div ref={stickyDemoStageRef} className="property-details-demo-sticky-stage">
+          <div className="container property-details-demo-sticky-layout">
+            <div className="property-details-demo-main">
+              <section ref={stickyDemoHeroRef} className="property-details-hero">
+                {galleryBlock}
+                {demoVariant === "sticky-contact" ? null : introBlock}
               </section>
 
-              <section className="property-flow-section reveal reveal-delay-1" id="comodidades">
-                <div className="property-section-header">
-                  <h2>Características</h2>
-                </div>
-
-                <div className="property-section-grid">
-                  <div className="property-section-column">
-                    <PropertyDetailList items={quickFacts} />
-                  </div>
-
-                  <div className="property-section-column">
-                    <PropertyDetailList items={characteristics} />
-                  </div>
-                </div>
+              <section ref={stickyDemoContentRef} className="property-page-content property-page-content-demo">
+                {mainContent}
               </section>
-
-              <section className="property-flow-section reveal reveal-delay-2" id="amenities">
-                <div className="property-section-header">
-                  <h2>Amenities</h2>
-                </div>
-
-                <PropertyAmenityGrid items={property.amenities} />
-              </section>
-
             </div>
 
-            <aside className="property-contact-sidebar" id="consulta">
-              <div ref={contactCardRef} className="property-contact-card reveal reveal-delay-2">
-                <h2>Quiero recibir información sobre esta propiedad</h2>
+            <div ref={stickyContactColumnRef} className="property-sticky-contact-column">
+              {stickyContactSummaryBlock}
 
-                <form className="property-contact-form" onSubmit={handleContactSubmit}>
-                  <input type="text" placeholder="Nombre" />
-                  <input type="email" placeholder="Email" />
-                  <input type="text" placeholder="Teléfono" />
-                  <textarea
-                    rows={4}
-                    defaultValue={`Me interesa ${property.title} (Ref. ${property.ref}). Quiero recibir más información.`}
-                  />
-                </form>
-
-                <div className="property-contact-quicklinks">
-                  <a
-                    className="property-contact-quicklink property-contact-quicklink-whatsapp"
-                    href="https://wa.me/59824010101"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <span className="property-contact-quicklink-icon" aria-hidden="true">
-                      <WhatsAppIcon />
-                    </span>
-                    <span>WhatsApp</span>
-                  </a>
-                  <a className="property-contact-quicklink property-contact-quicklink-email" href="mailto:inmobiliaria@lars.com.uy">
-                    <span className="property-contact-quicklink-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24">
-                        <path d="M3.5 5.25h17v13.5h-17V5.25Z" />
-                        <path d="m4.2 6.2 7.8 6.25 7.8-6.25" />
-                      </svg>
-                    </span>
-                    <span>Email</span>
-                  </a>
-                </div>
-
-              </div>
-            </aside>
+              <aside ref={contactSidebarRef} className="property-contact-sidebar" id="consulta">
+                {contactCard}
+              </aside>
+            </div>
           </div>
         </div>
-      </section>
+      ) : (
+        <>
+          <section className="property-details-hero">
+            <div className="container">
+              {demoVariant === "hero-summary" ? (
+                <div className="property-details-hero-split-layout">
+                  {galleryBlock}
+                  {introBlock}
+                </div>
+              ) : (
+                <>
+                  {galleryBlock}
+                  {introBlock}
+                </>
+              )}
+            </div>
+          </section>
+
+          <section className="property-page-content">
+            <div className="container">
+              <div className="property-page-layout">
+                {mainContent}
+
+                <aside className="property-contact-sidebar" id="consulta">
+                  {contactCard}
+                </aside>
+              </div>
+            </div>
+          </section>
+        </>
+      )}
+
+      {lightbox}
 
       {similarProperties.length ? (
         <section className="property-similar-section">

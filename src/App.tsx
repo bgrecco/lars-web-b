@@ -81,6 +81,9 @@ type SearchDropdownFieldProps = {
   value: string;
 };
 
+const homeSearchButtonVariant = "glow" as const;
+const homeHeaderAccessVariant = "icon-links" as const;
+
 function buildListingGallery(title: string, primaryImage: string): ListingMedia[] {
   return [
     {
@@ -116,7 +119,7 @@ function SearchDropdownField(props: SearchDropdownFieldProps) {
 
   return (
     <label className={`${className} search-field-select`}>
-      {label}
+      <span className="search-field-heading">{label}</span>
       <button
         type="button"
         className={`search-select-trigger${active ? " is-open" : ""}`}
@@ -148,6 +151,19 @@ function SearchDropdownField(props: SearchDropdownFieldProps) {
   );
 }
 
+function HeaderAccessPayrollIcon() {
+  return <img src="/optimized/sections/salary.svg" alt="" aria-hidden="true" />;
+}
+
+function HeaderAccessPersonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" />
+      <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+    </svg>
+  );
+}
+
 const navLinks: NavLink[] = [
   { label: "Gastos Comunes", href: "/gastos-comunes", route: "gastos" },
   { label: "Ventas", href: "/ventas", route: "ventas" },
@@ -166,13 +182,17 @@ const navLinks: NavLink[] = [
   { label: "Contacto", href: "/contacto", route: "contacto" },
 ];
 
+const mobileQuickLinks = [
+  { label: "Sueldos" },
+  { label: "Clientes" },
+];
 const featuredListings: Listing[] = [
   {
     id: 4,
     origin: "alquileres",
     operation: "Alquiler",
     title: "Villa Dolores Loft",
-    price: "$ 171.000",
+    price: "$171.000",
     location: "Villa Dolores",
     rooms: 3,
     bathrooms: 2,
@@ -414,7 +434,6 @@ function ListingShowcaseCard(props: ListingShowcaseCardProps) {
           onMouseLeave={hasVideoPreview ? () => setIsVideoPreviewActive(false) : undefined}
           aria-label={`Ver detalles de ${listing.title}`}
         >
-          <span className="listing-operation-chip">{listing.operation}</span>
           <img
             src={currentMedia.image}
             alt={currentMedia.alt}
@@ -507,10 +526,10 @@ function ListingShowcaseCard(props: ListingShowcaseCardProps) {
         </div>
 
         <div className="listing-showcase-footer">
-          <div className="listing-showcase-price">{listing.price}</div>
-          <a href={listingHref} className="sales-listing-link listing-showcase-link">
-            Consultar
-          </a>
+          <div className="listing-showcase-price">
+            <span className="listing-showcase-price-operation">{listing.operation}</span>
+            <span className="listing-showcase-price-value">{listing.price}</span>
+          </div>
         </div>
       </div>
     </article>
@@ -891,6 +910,8 @@ function App() {
   const activeListing = featuredListings[getWrappedIndex(listingIndex, listingCount)];
   const previousPreviewListing = featuredListings[getWrappedIndex(listingIndex - 1, listingCount)];
   const nextPreviewListing = featuredListings[getWrappedIndex(listingIndex + 1, listingCount)];
+  const activeHomeSearchButtonDemo = homeSearchButtonVariant;
+  const activeHomeHeaderAccessDemo = homeHeaderAccessVariant;
 
   useEffect(() => {
     setListingMediaIndex(0);
@@ -1166,12 +1187,19 @@ function App() {
             )}
           </nav>
           <div className="header-actions" aria-label="Accesos directos">
-            <button type="button" className="header-action-button">
-              <span>Sueldos</span>
-            </button>
-            <button type="button" className="header-action-button">
-              <span>Clientes</span>
-            </button>
+            <div className={`header-actions-demo-shell header-actions-demo-shell-${activeHomeHeaderAccessDemo}`}>
+              <div className="header-access-demo header-access-demo-icon-links">
+                <span className="header-access-divider" aria-hidden="true" />
+                <button type="button" className="header-access-link header-access-link-icon header-access-link-salary">
+                  <HeaderAccessPayrollIcon />
+                  <span>Sueldos</span>
+                </button>
+                <button type="button" className="header-access-link header-access-link-icon">
+                  <HeaderAccessPersonIcon />
+                  <span>Clientes</span>
+                </button>
+              </div>
+            </div>
           </div>
           <button
             type="button"
@@ -1249,6 +1277,13 @@ function App() {
                 ) : null}
               </div>
             ))}
+            {mobileQuickLinks.map((item) => (
+              <div key={`mobile-quick-${item.label}`} className="mobile-menu-item">
+                <button type="button" className="mobile-menu-link mobile-menu-link-button">
+                  <span>{item.label}</span>
+                </button>
+              </div>
+            ))}
           </nav>
         </div>
       </header>
@@ -1310,7 +1345,7 @@ function App() {
             <section className="hero-search-band" id="buscador">
               <div className="search-wrap">
                 <div className="search-stack">
-                  <form className="search-card" ref={homeSearchFormRef}>
+                  <form className="search-card search-card-variant-4" ref={homeSearchFormRef}>
                     <div className="search-grid">
                       <SearchDropdownField
                         active={activeSearchDropdown === "operation"}
@@ -1345,22 +1380,6 @@ function App() {
                         }}
                         options={searchTypeOptions}
                         value={searchType}
-                      />
-                      <SearchDropdownField
-                        active={activeSearchDropdown === "bedrooms"}
-                        className="search-field-compact search-field-bedrooms"
-                        label="Dormitorios"
-                        onSelect={(value) => {
-                          setSearchBedrooms(value);
-                          setActiveSearchDropdown(null);
-                        }}
-                        onToggle={() => {
-                          setActiveSearchDropdown((currentValue) =>
-                            currentValue === "bedrooms" ? null : "bedrooms",
-                          );
-                        }}
-                        options={searchBedroomOptions}
-                        value={searchBedrooms}
                       />
                       <button
                         type="button"
@@ -1397,15 +1416,15 @@ function App() {
                           value={searchZone}
                         />
                         <div className="search-field-standard search-field-price search-mobile-advanced-field">
-                          <span
-                            className="search-field-label search-field-label-titlecase"
-                            id="search-price-field-label"
-                          >
+                          <span className="search-field-label search-field-heading" id="search-price-field-label">
                             Precio
                           </span>
                           <div className="search-price-trigger-input-shell">
                             <span className="search-price-trigger-prefix">
-                              {`Hasta ${searchPriceCurrency === "usd" ? "US$" : "$"}`}
+                              Hasta{" "}
+                              <span className="search-price-trigger-prefix-currency">
+                                {searchPriceCurrency === "usd" ? "US$" : "$"}
+                              </span>
                             </span>
                             <input
                               className="search-price-trigger-input"
@@ -1421,12 +1440,36 @@ function App() {
                           </div>
                         </div>
                       </div>
+                      <SearchDropdownField
+                        active={activeSearchDropdown === "bedrooms"}
+                        className="search-field-compact search-field-bedrooms"
+                        label="Dormitorios"
+                        onSelect={(value) => {
+                          setSearchBedrooms(value);
+                          setActiveSearchDropdown(null);
+                        }}
+                        onToggle={() => {
+                          setActiveSearchDropdown((currentValue) =>
+                            currentValue === "bedrooms" ? null : "bedrooms",
+                          );
+                        }}
+                        options={searchBedroomOptions}
+                        value={searchBedrooms}
+                      />
                       <label className="search-field-compact search-field-reference">
-                        Referencia
+                        <span className="search-field-heading">REF.</span>
                         <input type="text" placeholder="Ej: 1234" maxLength={4} inputMode="numeric" />
                       </label>
                       <div className="search-action-buttons">
-                        <button type="button" className="primary-button search-cta-button">
+                        <button
+                          key={activeHomeSearchButtonDemo}
+                          type="button"
+                          className={`primary-button search-cta-button search-cta-button-demo search-cta-button-demo-${activeHomeSearchButtonDemo}`}
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="11" cy="11" r="7" />
+                            <path d="m20 20-3.5-3.5" />
+                          </svg>
                           <span>Buscar</span>
                         </button>
                       </div>

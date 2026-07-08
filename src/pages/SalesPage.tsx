@@ -50,7 +50,7 @@ function SearchDropdownField(props: SearchDropdownFieldProps) {
 
   return (
     <label className={`${className} search-field-select`}>
-      {label}
+      <span className="sales-filter-field-label">{label}</span>
       <button
         type="button"
         className={`search-select-trigger${active ? " is-open" : ""}`}
@@ -219,8 +219,6 @@ export default function SalesPage({
 
   const bedroomDropdownOptions = useMemo<SearchDropdownOption[]>(
     () => [
-      { value: "", label: "Todos" },
-      { value: "Monoambiente", label: "Monoambiente" },
       { value: "1", label: "1" },
       { value: "2", label: "2" },
       { value: "3", label: "3" },
@@ -450,7 +448,7 @@ export default function SalesPage({
     <div className="sales-page">
       <section className="sales-filter-band" id="ventas-filtros">
         <div className="container">
-          <form className="sales-filter-card reveal" onSubmit={handleApplyFilters}>
+          <form className="sales-filter-card search-card-variant-4 reveal" onSubmit={handleApplyFilters}>
             <button
               type="button"
               className={`sales-filter-toggle${isCompactFiltersOpen ? " is-open" : ""}`}
@@ -510,23 +508,8 @@ export default function SalesPage({
                   value={draftFilters.barrio}
                 />
 
-                <SearchDropdownField
-                  active={activeDropdown === "dormitorios"}
-                  className="sales-filter-field sales-filter-field-bedrooms"
-                  label="Dormitorios"
-                  onSelect={(value) => {
-                    handleDraftFilterChange("dormitorios", value);
-                    setActiveDropdown(null);
-                  }}
-                  onToggle={() => {
-                    setActiveDropdown((currentValue) => (currentValue === "dormitorios" ? null : "dormitorios"));
-                  }}
-                  options={bedroomDropdownOptions}
-                  value={draftFilters.dormitorios}
-                />
-
                 <div className="sales-filter-field sales-filter-field-price">
-                  <span>Precio</span>
+                  <span className="sales-filter-field-label">Precio</span>
                   <div className="search-price-trigger-input-shell sales-price-trigger-input-shell">
                     <span className="search-price-trigger-prefix">
                       {`Hasta ${listingContext === "alquileres" ? "$" : "US$"}`}
@@ -543,11 +526,26 @@ export default function SalesPage({
                   </div>
                 </div>
 
+                <SearchDropdownField
+                  active={activeDropdown === "dormitorios"}
+                  className="sales-filter-field sales-filter-field-bedrooms"
+                  label="Dormitorios"
+                  onSelect={(value) => {
+                    handleDraftFilterChange("dormitorios", value);
+                    setActiveDropdown(null);
+                  }}
+                  onToggle={() => {
+                    setActiveDropdown((currentValue) => (currentValue === "dormitorios" ? null : "dormitorios"));
+                  }}
+                  options={bedroomDropdownOptions}
+                  value={draftFilters.dormitorios}
+                />
+
                 <label className="sales-filter-field sales-filter-field-reference">
-                  <span>Referencia</span>
+                  <span className="sales-filter-field-label">REF.</span>
                   <input
                     type="text"
-                    placeholder="Ej: 013"
+                    placeholder="Ej: 1234"
                     value={draftFilters.ref}
                     onChange={(event) => handleDraftFilterChange("ref", event.target.value)}
                   />
@@ -616,9 +614,6 @@ export default function SalesPage({
                     />
 
                     <div className="sales-listing-badges">
-                      {!property.reserved ? (
-                        <span className="sales-listing-pill">{property.type}</span>
-                      ) : null}
                       {property.reserved ? (
                         <span className="sales-listing-pill is-reserved">Reservada</span>
                       ) : null}
@@ -653,11 +648,6 @@ export default function SalesPage({
 
                     <div className="sales-listing-footer">
                       <strong>{property.price}</strong>
-                      {!property.reserved ? (
-                        <a href={`${getSalesPropertyUrl(property.id, listingContext)}#consulta`} className="text-link sales-listing-link">
-                          Consultar
-                        </a>
-                      ) : null}
                     </div>
                   </div>
                 </article>

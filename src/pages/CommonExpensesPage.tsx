@@ -24,24 +24,24 @@ const serviceGroups: ServiceGroup[] = [
     items: [
       {
         title: "ATENCIÓN PERSONALIZADA",
-        body: "Nuestro compromiso es brindar soluciones ajustadas a cada necesidad, respaldadas por trayectoria y solidez empresarial, con el objetivo de construir relaciones sólidas. Su edificio contará con la atención directa de dos ejecutivos, quienes asistirán en todos los requerimientos.",
+        body: "Nuestro compromiso es brindar soluciones ajustadas a cada necesidad, respaldadas por trayectoria y solidez empresarial, con el objetivo de construir relaciones sólidas. Su edificio contará con la atención directa de dos ejecutivos, quienes los asistirán en todos sus requerimientos.",
       },
       {
         title: "RED DE ATENCIÓN ESTRATÉGICA",
-        body: "Disponemos de oficinas operativas estratégicamente ubicadas e interconectadas, con amplio horario de atención, lo que nos permite ofrecer más y mejores prestaciones, entre ellas la posibilidad de abonar en línea la liquidación de gastos comunes mediante usuario en nuestro sitio web.",
+        body: "Disponemos de oficinas operativas estratégicamente ubicadas e interconectadas, con amplio horario de atención, lo que nos permite ofrecer más y mejores prestaciones, entre ellas la posibilidad de abonar en línea los gastos comunes mediante usuario en nuestro sitio web.",
       },
       {
         title: "ASAMBLEAS",
-        body: "Asistencia ejecutiva sin costo en la asamblea anual, labrando el acta en formato digital y facilitando su firma en la propia instancia.",
+        body: "Asistencia ejecutiva sin costo en la asamblea anual, labrando el acta en formato digital y simplificando su firma en la propia instancia.",
+      },
+      {
+        title: "REUNIONES",
+        body: "Reuniones presenciales o virtuales, dentro del horario de oficina, con acompañamiento ejecutivo sin costo adicional para la copropiedad.",
       },
       {
         title: "VISITAS PERSONALIZADAS",
         body: "Cuando la situación requiera presencia ejecutiva, se coordinarán visitas puntuales con los referentes de la copropiedad, sin costo adicional.",
       },
-      {
-        title: "REUNIONES",
-        body: "Reuniones presenciales o virtuales, desarrollados dentro del horario de oficina, con acompañamiento ejecutivo sin costo para la copropiedad.",
-      }
     ],
   },
   {
@@ -50,16 +50,16 @@ const serviceGroups: ServiceGroup[] = [
       "La administración combina procesos claros, soporte profesional y visibilidad permanente para los copropietarios.",
     items: [
       {
-        title: "DEPARTAMENTO CONTABLE INTERNO",
-        body: "Gestionamos con transparencia las obligaciones laborales (BPS, MTSS y BSE), y en lo referente al personal dependiente brindamos un servicio integral conforme a la normativa vigente.",
+        title: "DEPARTAMENTO CONTABLE",
+        body: "Contamos con departamento contable interno que gestiona con total transparencia las obligaciones laborales (BPS, MTSS y BSE), y en lo referente al personal dependiente brindamos un servicio integral conforme a la normativa vigente.",
+      },
+      {
+        title: "SEGUROS",
+        body: "Brindamos asesoramiento y gestión integral en contratación, seguimiento y renovación de seguros, asegurando condiciones adecuadas para su edificio.",
       },
       {
         title: "TERCERIZACIÓN",
         body: "Gestionamos la contratación de servicios bajo estricto control documental (Leyes 18.099 y 18.251), supervisando el cumplimiento legal de los distintos prestadores.",
-      },
-      {
-        title: "SEGUROS",
-        body: "Brindamos asesoramiento y gestión integral en contratación, seguimiento y renovación de pólizas, asegurando condiciones adecuadas para su edificio.",
       },
     ],
   },
@@ -69,22 +69,13 @@ const serviceGroups: ServiceGroup[] = [
       "Supervisamos servicios, contratos y coberturas para reducir fricciones y mantener la operación del edificio bajo control.",
     items: [
       {
-        title: "GESTIÓN DE IMPAGOS",
+        title: "REGULARIZACIÓN",
         body: "Activación de contralores internos y emisión de notificaciones extrajudiciales, orientadas a prevenir la morosidad y asegurar la correcta gestión administrativa.",
       },
       {
-        title: "SOLUCIONES ESTRATÉGICAS",
-        body: "Contamos con un staff profesional externo, de modo que, si el edificio requiere asistencia específica, proporcionamos el contacto correspondiente.",
+        title: "STAFF SELECTO",
+        body: "Contamos con un staff externo de profesionales, de modo que, si el edificio requiere asistencia específica, proporcionamos el contacto correspondiente.",
       },
-    ],
-  },
-  {
-    title: "Asambleas y estabilidad financiera",
-    description:
-      "Acompañamos la toma de decisiones y activamos mecanismos concretos para sostener la salud financiera de la copropiedad.",
-    items: [
-      
-      
     ],
   },
 ];

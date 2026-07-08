@@ -46,6 +46,8 @@ const showOwnerProcessSection = false;
 const showOwnerReasonsSection = false;
 const showOwnerFinalSection = false;
 const showOwnerAnchorNav = false;
+const ownerTestimonialRotationMs = 11000;
+const ownerTestimonialTransitionMs = 1600;
 
 const ownerMetrics: OwnerMetric[] = [
   {
@@ -142,20 +144,120 @@ const ownerSteps: OwnerStep[] = [
 const ownerTestimonials: OwnerTestimonial[] = [
   {
     text:
+      "Excelente inmobiliaria. Súper profesionales, atentos y transparentes en todo el proceso. Desde el primer contacto se nota el compromiso y la seriedad con la que trabajan.",
+    author: "Ismael Gradin",
+    location: "Reseña en Google",
+  },
+  {
+    text:
+      "Excelente atención y muy buena disposición. Se nota el compromiso y la seriedad con la que trabajan. Súper recomendable ❤️",
+    author: "Kati Cusmanich",
+    location: "Reseña en Google",
+  },
+  {
+    text:
+      "Responden las consultas a tiempo, se interesan por ayudarte a encontrar el tipo de propiedad que estás buscando y resolver cualquier inconveniente que pueda surgir.",
+    author: "Sara Rivero Villalba",
+    location: "Reseña en Google",
+  },
+  {
+    text: "Excelente servicio.",
+    author: "Maria Etchegoyen",
+    location: "Reseña en Google",
+  },
+  {
+    text: "Brindan el mejor asesoramiento, me encantó el trato y la amabilidad, los recomiendo 100%.",
+    author: "Matias Pellejero",
+    location: "Reseña en Google",
+  },
+  {
+    text: "Excelente atención.",
+    author: "Eliz Partamian",
+    location: "Reseña en Google",
+  },
+  {
+    text:
+      "Destaco especialmente la calidad humana del equipo, junto con un alto nivel de profesionalismo, seriedad y compromiso. Su acompañamiento es responsable, transparente y respetuoso en cada etapa del proceso. Confiable y totalmente recomendable.",
+    author: "Nathali Cruz Castro",
+    location: "Reseña en Google",
+  },
+  {
+    text: "Muy bueno todo, una empresa muy confiable y segura.",
+    author: "André Souberbielle",
+    location: "Reseña en Google",
+  },
+  {
+    text:
+      "Excelente servicio. Muy recomendable y seria. Viví 12 años en Montevideo y siempre alquilé en Lars.",
+    author: "Antonella Escobilla Borges",
+    location: "Reseña en Google",
+  },
+  {
+    text:
+      "Inmobiliaria ágil, responsable y en mi experiencia siempre interesada en responder todas mis consultas. Cuando las cosas se hacen bien está bueno decirlo. Excelente servicio 💪🏼",
+    author: "Mauro Verdun",
+    location: "Reseña en Google",
+  },
+  {
+    text:
       "Es una inmobiliaria seria, con mucha trayectoria y responsable. Uno puede hacer un contrato y tener la certeza de que no van a ser nada fuera de la norma. Recomiendo plenamente.",
     author: "Lucía R. Novellino",
     location: "Reseña en Google",
   },
   {
     text:
-      "Inmobiliaria ágil, responsable y en mi experiencia siempre interesada en responder todas mis consultas. Cuando las cosas se hacen bien está bueno decirlo. Excelente servicio.",
-    author: "Mauro Verdun",
+      "La verdad, excelente atención por parte de la Sra. Andrea, muy amable y pudo resolver todas mis dudas. Muchas gracias.",
+    author: "Magali Mora",
     location: "Reseña en Google",
   },
   {
     text:
-      "Excelente inmobiliaria. Súper profesionales, atentos y transparentes en todo el proceso. Desde el primer contacto se nota el compromiso y la seriedad con la que trabajan.",
-    author: "Ismael Gradin",
+      "Excelente amabilidad del personal. Como empresa, siempre atentos y solucionando los problemas referente a las propiedades.",
+    author: "Maria Reyes",
+    location: "Reseña en Google",
+  },
+  {
+    text:
+      "Muy amable atención por parte de Andrea, mostrando opciones con seriedad, cordialidad y con su singular simpatía. Gracias.",
+    author: "Rossana Méndez",
+    location: "Reseña en Google",
+  },
+  {
+    text:
+      "Andrea fue sumamente amable, profesional y atenta a cada detalle. Se tomó el tiempo de escuchar lo que buscábamos, respondió todas nuestras dudas con claridad y nos acompañó durante todo el proceso con una paciencia y dedicación que realmente se agradecen.",
+    author: "Fer Cairo",
+    location: "Reseña en Google",
+  },
+  {
+    text: "Seriedad. Responsabilidad. Rapidez.",
+    author: "Gabriel Mendez",
+    location: "Reseña en Google",
+  },
+  {
+    text: "Siempre atentos a los requerimientos solicitados. Excelente.",
+    author: "Schubert Anandez",
+    location: "Reseña en Google",
+  },
+  {
+    text:
+      "Lar's, excelente servicio. Muchos años administrando nuestro edificio, más de 20. Muy agradecida con Christian y Patricia, que siempre están a la orden, súper expeditivos y atentos.",
+    author: "Nilsa Marquez",
+    location: "Reseña en Google",
+  },
+  {
+    text:
+      "Inmobiliaria con gran trayectoria en el mercado. Siempre dispuestos a encontrar una solución a tus necesidades.",
+    author: "Estela Imhof",
+    location: "Reseña en Google",
+  },
+  {
+    text: "Excelente servicio y atención.",
+    author: "Alexis Bellati",
+    location: "Reseña en Google",
+  },
+  {
+    text: "Excelente, siempre me solucionan todo.",
+    author: "Kari Nuñez",
     location: "Reseña en Google",
   },
 ];
@@ -436,6 +538,17 @@ function OwnerSectionHeader(props: { title: string; description: string; inverse
 
 export default function PropertyAdminPage() {
   const [isAnchorNavCondensed, setIsAnchorNavCondensed] = useState(false);
+  const [testimonialRotationPage, setTestimonialRotationPage] = useState(0);
+  const [outgoingTestimonialRotationPage, setOutgoingTestimonialRotationPage] = useState<number | null>(null);
+  const visibleTestimonialCount = Math.min(3, ownerTestimonials.length);
+  const testimonialPageCount =
+    visibleTestimonialCount === 0 ? 0 : Math.ceil(ownerTestimonials.length / visibleTestimonialCount);
+
+  const getTestimonialsForPage = (pageIndex: number) =>
+    Array.from({ length: visibleTestimonialCount }, (_, index) => {
+      const testimonialIndex = (pageIndex * visibleTestimonialCount + index) % ownerTestimonials.length;
+      return ownerTestimonials[testimonialIndex];
+    });
 
   useEffect(() => {
     const page = document.querySelector<HTMLElement>(".owners-page");
@@ -472,6 +585,43 @@ export default function PropertyAdminPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (testimonialPageCount <= 1) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setTestimonialRotationPage((currentPage) => {
+        setOutgoingTestimonialRotationPage(currentPage);
+        return (currentPage + 1) % testimonialPageCount;
+      });
+    }, ownerTestimonialRotationMs);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [testimonialPageCount]);
+
+  useEffect(() => {
+    if (outgoingTestimonialRotationPage === null) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setOutgoingTestimonialRotationPage(null);
+    }, ownerTestimonialTransitionMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [outgoingTestimonialRotationPage]);
+
+  const visibleTestimonials = getTestimonialsForPage(testimonialRotationPage);
+  const outgoingVisibleTestimonials =
+    outgoingTestimonialRotationPage === null
+      ? []
+      : getTestimonialsForPage(outgoingTestimonialRotationPage);
+
   return (
     <div className="owners-page">
       <section className="owners-hero">
@@ -502,19 +652,44 @@ export default function PropertyAdminPage() {
             <div className="owners-hero-testimonials" id="testimonios">
               <OwnerSectionHeader title="Testimonios" description="" />
 
-              <div className="owners-testimonials-grid">
-                {ownerTestimonials.map((testimonial) => (
-                  <article className="owners-testimonial-card" key={testimonial.author}>
-                    <span className="owners-quote-mark" aria-hidden="true">
-                      <QuoteIcon />
-                    </span>
-                    <blockquote>{testimonial.text}</blockquote>
-                    <footer>
-                      <strong>{testimonial.author}</strong>
-                      <span>{testimonial.location}</span>
-                    </footer>
-                  </article>
-                ))}
+              <div className="owners-testimonials-shell">
+                {outgoingTestimonialRotationPage !== null ? (
+                  <div className="owners-testimonials-grid owners-testimonials-grid-outgoing" aria-hidden="true">
+                    {outgoingVisibleTestimonials.map((testimonial, index) => (
+                      <article
+                        className="owners-testimonial-card"
+                        key={`${testimonial.author}-outgoing-${outgoingTestimonialRotationPage}-${index}`}
+                      >
+                        <span className="owners-quote-mark" aria-hidden="true">
+                          <QuoteIcon />
+                        </span>
+                        <blockquote>{testimonial.text}</blockquote>
+                        <footer>
+                          <strong>{testimonial.author}</strong>
+                          <span>{testimonial.location}</span>
+                        </footer>
+                      </article>
+                    ))}
+                  </div>
+                ) : null}
+
+                <div
+                  className="owners-testimonials-grid owners-testimonials-grid-current"
+                  key={`testimonials-${testimonialRotationPage}`}
+                >
+                  {visibleTestimonials.map((testimonial, index) => (
+                    <article className="owners-testimonial-card" key={`${testimonial.author}-${testimonialRotationPage}-${index}`}>
+                      <span className="owners-quote-mark" aria-hidden="true">
+                        <QuoteIcon />
+                      </span>
+                      <blockquote>{testimonial.text}</blockquote>
+                      <footer>
+                        <strong>{testimonial.author}</strong>
+                        <span>{testimonial.location}</span>
+                      </footer>
+                    </article>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

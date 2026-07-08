@@ -1,11 +1,8 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type TouchEvent } from "react";
 import ImageLightbox from "../components/ImageLightbox";
 import WhatsAppIcon from "../components/WhatsAppIcon";
 import {
   getProjectBySlug,
-  getProjectUrl,
-  getSimilarProjects,
-  type Project,
   type ProjectParking,
   type ProjectUnit,
 } from "../data/projectsCatalog";
@@ -78,43 +75,6 @@ function ProjectAmenityGrid(props: { items: string[] }) {
   );
 }
 
-function ProjectSimilarCard(props: { project: Project; index: number }) {
-  const { project, index } = props;
-
-  return (
-    <a
-      href={getProjectUrl(project.slug)}
-      className={`property-similar-card project-similar-card reveal reveal-delay-${(index % 3) + 1}`}
-    >
-      <div className="property-similar-media">
-        <img
-          src={project.cardImage}
-          alt={project.title}
-          width="700"
-          height={project.slug === "tempo-guayabos" ? 543 : project.slug === "vila" ? 804 : 750}
-          loading="lazy"
-          decoding="async"
-          style={{ objectPosition: project.imagePosition ?? "center center" }}
-        />
-        <div className="property-similar-badges">
-          <span className="property-similar-pill">{project.tag}</span>
-        </div>
-      </div>
-
-      <div className="property-similar-body">
-        <div className="property-similar-meta">
-          <span>{project.location}</span>
-        </div>
-        <h3>{project.title}</h3>
-        <div className="project-similar-summary">
-          <span>{project.unitSummary[0] ?? "Unidades disponibles"}</span>
-          <span>{project.deliveryDates[0] ?? "Consultar entrega"}</span>
-        </div>
-      </div>
-    </a>
-  );
-}
-
 function SortButton(props: {
   label: string;
   active: boolean;
@@ -132,57 +92,164 @@ function SortButton(props: {
 function ProjectUnitsTable(props: { rows: ProjectUnit[] }) {
   const [orderBy, setOrderBy] = useState<UnitSortKey>("unit");
   const [direction, setDirection] = useState<SortDirection>("asc");
+  const [mobileIndex, setMobileIndex] = useState(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const sortedRows = useMemo(
     () => sortValues(props.rows, orderBy, direction),
     [props.rows, orderBy, direction],
   );
+
+  useEffect(() => {
+    setMobileIndex(0);
+  }, [props.rows, orderBy, direction]);
 
   const handleSort = (key: UnitSortKey) => {
     setDirection((currentDirection) => (orderBy === key && currentDirection === "asc" ? "desc" : "asc"));
     setOrderBy(key);
   };
 
+  const activeMobileRow = sortedRows[mobileIndex] ?? null;
+
+  const showPreviousMobileCard = () => {
+    setMobileIndex((currentIndex) => Math.max(0, currentIndex - 1));
+  };
+
+  const showNextMobileCard = () => {
+    setMobileIndex((currentIndex) => Math.min(sortedRows.length - 1, currentIndex + 1));
+  };
+
+  const handleMobileTouchStart = (event: TouchEvent<HTMLElement>) => {
+    setTouchStartX(event.touches[0]?.clientX ?? null);
+  };
+
+  const handleMobileTouchEnd = (event: TouchEvent<HTMLElement>) => {
+    if (touchStartX === null) {
+      return;
+    }
+
+    const touchEndX = event.changedTouches[0]?.clientX ?? touchStartX;
+    const deltaX = touchEndX - touchStartX;
+
+    if (deltaX >= 36) {
+      showPreviousMobileCard();
+    } else if (deltaX <= -36) {
+      showNextMobileCard();
+    }
+
+    setTouchStartX(null);
+  };
+
   return (
-    <div className="project-table-wrap">
-      <table className="project-availability-table">
-        <thead>
-          <tr>
-            <th>
-              <SortButton label="Unidad" active={orderBy === "unit"} direction={direction} onClick={() => handleSort("unit")} />
-            </th>
-            <th>
-              <SortButton label="Disposición" active={orderBy === "orientation"} direction={direction} onClick={() => handleSort("orientation")} />
-            </th>
-            <th>
-              <SortButton label="Dorms." active={orderBy === "bedrooms"} direction={direction} onClick={() => handleSort("bedrooms")} />
-            </th>
-            <th>
-              <SortButton label="Sup. cubierta" active={orderBy === "coveredArea"} direction={direction} onClick={() => handleSort("coveredArea")} />
-            </th>
-            <th>
-              <SortButton label="Sup. total" active={orderBy === "totalArea"} direction={direction} onClick={() => handleSort("totalArea")} />
-            </th>
-            <th>
-              <SortButton label="Importe" active={orderBy === "price"} direction={direction} onClick={() => handleSort("price")} />
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedRows.map((row) => (
-            <tr key={row.unit}>
-              <td data-label="Unidad">
-                <span className="project-unit-chip">{row.unit}</span>
-              </td>
-              <td data-label="Disposición">{row.orientation}</td>
-              <td data-label="Dorms.">{formatBedrooms(row.bedrooms)}</td>
-              <td data-label="Sup. cubierta">{formatArea(row.coveredArea)}</td>
-              <td data-label="Sup. total">{formatArea(row.totalArea)}</td>
-              <td data-label="Importe">{formatUsd(row.price)}</td>
+    <>
+      <div className="project-table-wrap project-units-table-wrap">
+        <table className="project-availability-table">
+          <thead>
+            <tr>
+              <th>
+                <SortButton label="Unidad" active={orderBy === "unit"} direction={direction} onClick={() => handleSort("unit")} />
+              </th>
+              <th>
+                <SortButton label="Disposición" active={orderBy === "orientation"} direction={direction} onClick={() => handleSort("orientation")} />
+              </th>
+              <th>
+                <SortButton label="Dorms." active={orderBy === "bedrooms"} direction={direction} onClick={() => handleSort("bedrooms")} />
+              </th>
+              <th>
+                <SortButton label="Sup. cubierta" active={orderBy === "coveredArea"} direction={direction} onClick={() => handleSort("coveredArea")} />
+              </th>
+              <th>
+                <SortButton label="Sup. total" active={orderBy === "totalArea"} direction={direction} onClick={() => handleSort("totalArea")} />
+              </th>
+              <th>
+                <SortButton label="Importe" active={orderBy === "price"} direction={direction} onClick={() => handleSort("price")} />
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {sortedRows.map((row) => (
+              <tr key={row.unit}>
+                <td data-label="Unidad">
+                  <span className="project-unit-chip">{row.unit}</span>
+                </td>
+                <td data-label="Disposición">{row.orientation}</td>
+                <td data-label="Dorms.">{formatBedrooms(row.bedrooms)}</td>
+                <td data-label="Sup. cubierta">{formatArea(row.coveredArea)}</td>
+                <td data-label="Sup. total">{formatArea(row.totalArea)}</td>
+                <td data-label="Importe">{formatUsd(row.price)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {activeMobileRow ? (
+        <div className="project-units-mobile-carousel" aria-label="Unidades disponibles">
+          <div className="project-units-mobile-slider">
+            <button
+              type="button"
+              className="project-units-mobile-arrow project-units-mobile-arrow-left"
+              onClick={showPreviousMobileCard}
+              disabled={mobileIndex === 0}
+              aria-label="Unidad anterior"
+            >
+              <BackArrowIcon />
+            </button>
+
+            <article
+              className="project-unit-mobile-card"
+              onTouchStart={handleMobileTouchStart}
+              onTouchEnd={handleMobileTouchEnd}
+            >
+              <div className="project-unit-mobile-card-head">
+                <span className="project-unit-chip">{activeMobileRow.unit}</span>
+                <strong>{formatUsd(activeMobileRow.price)}</strong>
+              </div>
+              <dl className="project-unit-mobile-details">
+                <div>
+                  <dt>Disposición</dt>
+                  <dd>{activeMobileRow.orientation}</dd>
+                </div>
+                <div>
+                  <dt>Dorms.</dt>
+                  <dd>{formatBedrooms(activeMobileRow.bedrooms)}</dd>
+                </div>
+                <div>
+                  <dt>Sup. cubierta</dt>
+                  <dd>{formatArea(activeMobileRow.coveredArea)}</dd>
+                </div>
+                <div>
+                  <dt>Sup. total</dt>
+                  <dd>{formatArea(activeMobileRow.totalArea)}</dd>
+                </div>
+              </dl>
+            </article>
+
+            <button
+              type="button"
+              className="project-units-mobile-arrow project-units-mobile-arrow-right"
+              onClick={showNextMobileCard}
+              disabled={mobileIndex === sortedRows.length - 1}
+              aria-label="Unidad siguiente"
+            >
+              <BackArrowIcon />
+            </button>
+          </div>
+
+          <div className="project-units-mobile-dots" aria-label={`Unidad ${mobileIndex + 1} de ${sortedRows.length}`}>
+            {sortedRows.map((row, index) => (
+              <button
+                key={row.unit}
+                type="button"
+                className={`project-units-mobile-dot${index === mobileIndex ? " is-active" : ""}`}
+                onClick={() => setMobileIndex(index)}
+                aria-label={`Ver unidad ${row.unit}`}
+                aria-pressed={index === mobileIndex}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -376,7 +443,6 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
     ? project.gallery
     : [{ image: project.image, alt: project.title, objectPosition: project.imagePosition }];
   const activeImage = gallery[Math.min(activeImageIndex, gallery.length - 1)];
-  const similarProjects = getSimilarProjects(project, 3);
   const quickFacts = [
     `Tipo: ${project.tag}`,
     `Ubicación: ${project.location}`,
@@ -465,12 +531,6 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
                 <span className="property-location-item">
                   <span>{project.address}</span>
                 </span>
-              </div>
-
-              <div className="project-delivery-row" aria-label={`Fechas de entrega de ${project.title}`}>
-                {project.deliveryDates.map((date) => (
-                  <span key={date}>{date}</span>
-                ))}
               </div>
 
               <div className="project-intro-previews">
@@ -597,21 +657,6 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
         </div>
       </section>
 
-      {similarProjects.length ? (
-        <section className="property-similar-section project-similar-section">
-          <div className="container">
-            <div className="property-similar-head section-title-frame reveal">
-              <h2>Más proyectos</h2>
-            </div>
-
-            <div className="property-similar-grid project-similar-grid">
-              {similarProjects.map((similarProject, index) => (
-                <ProjectSimilarCard key={similarProject.slug} project={similarProject} index={index} />
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : null}
     </div>
   );
 }

@@ -7,9 +7,14 @@ type Pillar = {
 
 const pillars: Pillar[] = [
   {
-    title: "ACERCA DE LARS",
+    title: "NOSOTROS",
     description:
-      "Somos una empresa familiar con más de medio siglo de trayectoria, manteniéndonos a la vanguardia gracias a una visión innovadora y continuidad generacional. Nuestra seriedad, transparencia y dedicación son pilares que han forjado una sólida reputación, reconocida por clientes y por el sector, brindando soluciones a medida respaldadas por décadas de experiencia. En coherencia con estos valores, nuestra ética empresarial incluye una política pet friendly y un compromiso animalista que trascienden lo estrictamente comercial.",
+      "Somos una empresa familiar con más de medio siglo de trayectoria, manteniéndonos a la vanguardia gracias a una visión innovadora y continuidad generacional. Nuestra seriedad, transparencia y dedicación son pilares que han forjado una sólida reputación, reconocida por clientes y por el sector, brindando soluciones a medida respaldadas por décadas de experiencia.",
+  },
+  {
+    title: "PET FRIENDLY",
+    description:
+      "En coherencia con nuestros valores, nuestra ética empresarial incluye una política pet friendly y un compromiso animalista que trascienden lo estrictamente comercial.",
   },
   {
     title: "SERVICIO INTEGRAL",
@@ -45,7 +50,12 @@ export default function AboutPage() {
             <div className="about-page-pillar-grid">
               {pillars.map((pillar, index) => (
                 <article key={pillar.title} className={`about-page-pillar-card reveal reveal-delay-${(index % 4) + 1}`}>
-                  <h3>{pillar.title}</h3>
+                  <h3>
+                    {pillar.title}
+                    {pillar.title === "PET FRIENDLY" ? (
+                      <span className="about-page-paw-icon" aria-hidden="true" />
+                    ) : null}
+                  </h3>
                   <p>{pillar.description}</p>
                 </article>
               ))}
