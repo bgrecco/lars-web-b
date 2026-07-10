@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 
 type OwnerIconKind =
@@ -177,8 +177,8 @@ const ownerTestimonials: OwnerTestimonial[] = [
   },
   {
     text:
-      "Destaco especialmente la calidad humana del equipo, junto con un alto nivel de profesionalismo, seriedad y compromiso. Su acompañamiento es responsable, transparente y respetuoso en cada etapa del proceso. Confiable y totalmente recomendable.",
-    author: "Nathali Cruz Castro",
+      "Muy buena atención. El personal es muy amable y se esfuerzan al máximo por resolver cualquier situación. Totalmente recomendable.",
+    author: "Melany Baldivieso",
     location: "Reseña en Google",
   },
   {
@@ -224,8 +224,8 @@ const ownerTestimonials: OwnerTestimonial[] = [
   },
   {
     text:
-      "Andrea fue sumamente amable, profesional y atenta a cada detalle. Se tomó el tiempo de escuchar lo que buscábamos, respondió todas nuestras dudas con claridad y nos acompañó durante todo el proceso con una paciencia y dedicación que realmente se agradecen.",
-    author: "Fer Cairo",
+      "En Lars todos sus trabajadores son respetuosos y con muy buena actitud para solucionar los temas vinculados a ventas y alquileres.",
+    author: "Maria del Rosario Fernandez",
     location: "Reseña en Google",
   },
   {
@@ -428,6 +428,79 @@ function OwnerIcon(props: { kind: OwnerIconKind }) {
       <circle cx="12" cy="12" r="9" />
       <path d="m8.5 12.4 2.4 2.4 4.8-5.6" />
     </svg>
+  );
+}
+
+function TestimonialAuthor(props: { author: string }) {
+  const { author } = props;
+  const authorRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    const element = authorRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    const resizeToFit = () => {
+      const computedStyles = window.getComputedStyle(element);
+      const rootFontSize = Number.parseFloat(
+        window.getComputedStyle(document.documentElement).fontSize,
+      );
+      const resolveLengthToPx = (value: string, fallback: number) => {
+        const trimmedValue = value.trim();
+        const parsedValue = Number.parseFloat(trimmedValue);
+
+        if (Number.isNaN(parsedValue)) {
+          return fallback;
+        }
+
+        if (trimmedValue.endsWith("rem")) {
+          return parsedValue * rootFontSize;
+        }
+
+        if (trimmedValue.endsWith("em")) {
+          return parsedValue * fallback;
+        }
+
+        return parsedValue;
+      };
+      const baseSize =
+        resolveLengthToPx(
+          computedStyles.getPropertyValue("--owners-testimonial-author-font-size"),
+          Number.parseFloat(computedStyles.fontSize),
+        ) || Number.parseFloat(computedStyles.fontSize);
+      const minSize =
+        resolveLengthToPx(
+          computedStyles.getPropertyValue("--owners-testimonial-author-min-font-size"),
+          baseSize * 0.72,
+        ) ||
+        baseSize * 0.72;
+
+      element.style.fontSize = `${baseSize}px`;
+
+      let nextSize = baseSize;
+
+      while (element.scrollWidth > element.clientWidth && nextSize > minSize) {
+        nextSize = Math.max(minSize, nextSize - 0.25);
+        element.style.fontSize = `${nextSize}px`;
+      }
+    };
+
+    resizeToFit();
+
+    const resizeObserver = new ResizeObserver(resizeToFit);
+    resizeObserver.observe(element);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [author]);
+
+  return (
+    <strong ref={authorRef} className="owners-testimonial-author">
+      {author}
+    </strong>
   );
 }
 
@@ -665,7 +738,7 @@ export default function PropertyAdminPage() {
                         </span>
                         <blockquote>{testimonial.text}</blockquote>
                         <footer>
-                          <strong>{testimonial.author}</strong>
+                          <TestimonialAuthor author={testimonial.author} />
                           <span>{testimonial.location}</span>
                         </footer>
                       </article>
@@ -684,7 +757,7 @@ export default function PropertyAdminPage() {
                       </span>
                       <blockquote>{testimonial.text}</blockquote>
                       <footer>
-                        <strong>{testimonial.author}</strong>
+                        <TestimonialAuthor author={testimonial.author} />
                         <span>{testimonial.location}</span>
                       </footer>
                     </article>

@@ -4203,8 +4203,12 @@ button {
     padding-top:1rem;
     border-top:1px solid rgba(7,24,90,.1)
 }
-.owners-testimonial-card footer strong {
-    font-size:1.28rem;
+.owners-testimonial-author {
+    display:block;
+    --owners-testimonial-author-font-size: .94rem;
+    --owners-testimonial-author-min-font-size: .72rem;
+    font-size:var(--owners-testimonial-author-font-size);
+    line-height:1.15;
     white-space:nowrap
 }
 .owners-testimonial-card footer span {

@@ -24,15 +24,15 @@ const serviceGroups: ServiceGroup[] = [
     items: [
       {
         title: "ATENCIÓN PERSONALIZADA",
-        body: "Nuestro compromiso es brindar soluciones ajustadas a cada necesidad, respaldadas por trayectoria y solidez empresarial, con el objetivo de construir relaciones sólidas. Su edificio contará con la atención directa de dos ejecutivos, quienes los asistirán en todos sus requerimientos.",
+        body: "Nuestro compromiso es brindar soluciones adaptadas a cada necesidad, respaldadas por trayectoria y solidez empresarial. Su edificio contará con la atención directa de dos ejecutivos, quienes los asistirán en todos sus requerimientos.",
       },
       {
         title: "RED DE ATENCIÓN ESTRATÉGICA",
-        body: "Disponemos de oficinas operativas estratégicamente ubicadas e interconectadas, con amplio horario de atención, lo que nos permite ofrecer más y mejores prestaciones, entre ellas la posibilidad de abonar en línea los gastos comunes mediante usuario en nuestro sitio web.",
+        body: "Oficinas operativas estratégicamente ubicadas e interconectadas, con amplio horario de atención para brindarle más y mejores prestaciones.",
       },
       {
         title: "ASAMBLEAS",
-        body: "Asistencia ejecutiva sin costo en la asamblea anual, labrando el acta en formato digital y simplificando su firma en la propia instancia.",
+        body: "Asistencia sin costo de sus dos ejecutivos a la asamblea anual. Confeccionamos el acta en formato digital para simplificar y agilizar su firma en la propia instancia.",
       },
       {
         title: "REUNIONES",
@@ -40,7 +40,7 @@ const serviceGroups: ServiceGroup[] = [
       },
       {
         title: "VISITAS PERSONALIZADAS",
-        body: "Cuando la situación requiera presencia ejecutiva, se coordinarán visitas puntuales con los referentes de la copropiedad, sin costo adicional.",
+        body: "Cuando la temática requiera presencia ejecutiva, se coordinarán visitas puntuales con los referentes de la copropiedad, sin costo adicional.",
       },
     ],
   },
@@ -51,11 +51,11 @@ const serviceGroups: ServiceGroup[] = [
     items: [
       {
         title: "DEPARTAMENTO CONTABLE",
-        body: "Contamos con departamento contable interno que gestiona con total transparencia las obligaciones laborales (BPS, MTSS y BSE), y en lo referente al personal dependiente brindamos un servicio integral conforme a la normativa vigente.",
+        body: "Contamos con un departamento contable propio y especializado, que garantiza una gestión transparente de las obligaciones laborales (BPS, MTSS y BSE), y en lo referente al personal dependiente brindamos un servicio integral conforme a la normativa vigente.",
       },
       {
         title: "SEGUROS",
-        body: "Brindamos asesoramiento y gestión integral en contratación, seguimiento y renovación de seguros, asegurando condiciones adecuadas para su edificio.",
+        body: "Asesoramiento y gestión integral en contratación, seguimiento y renovación de seguros.",
       },
       {
         title: "TERCERIZACIÓN",
@@ -70,10 +70,10 @@ const serviceGroups: ServiceGroup[] = [
     items: [
       {
         title: "REGULARIZACIÓN",
-        body: "Activación de contralores internos y emisión de notificaciones extrajudiciales, orientadas a prevenir la morosidad y asegurar la correcta gestión administrativa.",
+        body: "Activación de contralores internos y emisión de notificaciones extrajudiciales, orientadas a prevenir la morosidad.",
       },
       {
-        title: "STAFF SELECTO",
+        title: "STAFF DE PROFESIONALES",
         body: "Contamos con un staff externo de profesionales, de modo que, si el edificio requiere asistencia específica, proporcionamos el contacto correspondiente.",
       },
     ],
