@@ -37,7 +37,7 @@ const managementServices: ManagementService[] = [
 		body: "Brindamos asesoría especializada y gestionamos el trámite de exoneración de IRPF.",
 	},
 	{
-		title: "ESTADO DE CUENTA Y PAGOS SIMPLIFICADOS",
+		title: "PAGOS SIMPLIFICADOS",
 		body: "Desde nuestro sitio web podrá visualizar su estado de cuenta y realizar el pago de alquiler directamente en la cuenta bancaria de su preferencia. Contamos además con diversas vías de comunicación: correo electrónico, atención telefónica y WhatsApp.",
 	},
 	{
@@ -105,23 +105,10 @@ export default function PropertyManagementPage() {
 
 	return (
 		<div className="common-expenses-page property-management-page">
-			<section className="common-expenses-hero">
-				<div className="container common-expenses-hero-layout">
-					<div className="common-expenses-hero-copy reveal">
-						<h1>
-							<span>Administración de propiedades</span>
-							<span>Gestión seria para cada inmueble</span>
-						</h1>
-					</div>
-				</div>
-			</section>
 
 			<section className="common-expenses-section" id="gestion">
 				<div className="container common-expenses-management-layout">
 					<div className="common-expenses-management-copy">
-						<div className="common-expenses-section-head reveal">
-							<h2>Administramos tu propiedad de forma integral</h2>
-						</div>
 
 						<div className="common-expenses-card-grid">
 							{managementServices.slice(0, managementServicesSplitIndex).map((item, index) => (
@@ -141,11 +128,7 @@ export default function PropertyManagementPage() {
 								decoding="async"
 							/>
 						</div>
-						<div className="spotlight-body">
-							<p>
-								Gestión integral para su inmueble, desde promoción y garantías hasta control de pagos y supervisión contractual, con transparencia y acompañamiento personalizado.
-							</p>
-						</div>
+						
 					</aside>
 
 					<div className="common-expenses-card-grid common-expenses-card-grid-secondary">

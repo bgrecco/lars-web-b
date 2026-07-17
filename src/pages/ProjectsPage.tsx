@@ -41,12 +41,6 @@ export default function ProjectsPage() {
     <div className="sales-page projects-page">
       <section className="sales-results projects-results" id="proyectos-resultados">
         <div className="container">
-          <div className="sales-results-head reveal">
-            <div className="sales-results-copy section-title-frame">
-              <h2>Proyectos</h2>
-            </div>
-          </div>
-
           <div className="sales-grid project-results-grid">
             {featuredProjects.map((project, index) => (
               <article

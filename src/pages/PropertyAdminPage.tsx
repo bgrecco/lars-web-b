@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { FormEvent } from "react";
+import type { FormEvent, PointerEvent } from "react";
 
 type OwnerIconKind =
   | "award"
@@ -23,9 +23,7 @@ type OwnerCard = {
 };
 
 type OwnerMetric = {
-  value: string;
-  label: string;
-  description: string;
+  value: string[];
 };
 
 type OwnerStep = {
@@ -48,22 +46,20 @@ const showOwnerFinalSection = false;
 const showOwnerAnchorNav = false;
 const ownerTestimonialRotationMs = 11000;
 const ownerTestimonialTransitionMs = 1600;
+const ownerMetricRotationMs = 7000;
+const ownerMetricTransitionMs = 900;
+const larsFoundingYear = 1969;
 
 const ownerMetrics: OwnerMetric[] = [
   {
-    value: "2 oficinas",
-    label: "",
-    description: "estratégicamente ubicadas e interconectadas",
+    value: ["2", "oficinas"],
+  },
+  
+  {
+    value: ["+ 40", "funcionarios"],
   },
   {
-    value: "+55 años",
-    label: "",
-    description: "Respaldando a propietarios desde 1971",
-  },
-  {
-    value: "Integral",
-    label: "",
-    description: "Gestión cercana, clara y respaldada en cada etapa",
+    value: [`${new Date().getFullYear() - larsFoundingYear} años`, "de trayectoria"],
   },
 ];
 
@@ -611,17 +607,59 @@ function OwnerSectionHeader(props: { title: string; description: string; inverse
 
 export default function PropertyAdminPage() {
   const [isAnchorNavCondensed, setIsAnchorNavCondensed] = useState(false);
+  const [isMobileTestimonials, setIsMobileTestimonials] = useState(false);
+  const [metricRotationPage, setMetricRotationPage] = useState(0);
+  const [outgoingMetricRotationPage, setOutgoingMetricRotationPage] = useState<number | null>(null);
+  const [metricTransitionDirection, setMetricTransitionDirection] = useState<"next" | "previous">("next");
   const [testimonialRotationPage, setTestimonialRotationPage] = useState(0);
   const [outgoingTestimonialRotationPage, setOutgoingTestimonialRotationPage] = useState<number | null>(null);
-  const visibleTestimonialCount = Math.min(3, ownerTestimonials.length);
+  const [testimonialTransitionDirection, setTestimonialTransitionDirection] = useState<"next" | "previous">("next");
+  const testimonialSwipeStartX = useRef<number | null>(null);
+  const visibleMetricCount = Math.min(isMobileTestimonials ? 1 : 3, ownerMetrics.length);
+  const metricPageCount = visibleMetricCount === 0 ? 0 : Math.ceil(ownerMetrics.length / visibleMetricCount);
+  const visibleTestimonialCount = Math.min(isMobileTestimonials ? 1 : 3, ownerTestimonials.length);
   const testimonialPageCount =
     visibleTestimonialCount === 0 ? 0 : Math.ceil(ownerTestimonials.length / visibleTestimonialCount);
+
+  const getMetricsForPage = (pageIndex: number) =>
+    Array.from({ length: visibleMetricCount }, (_, index) => {
+      const metricIndex = (pageIndex * visibleMetricCount + index) % ownerMetrics.length;
+      return ownerMetrics[metricIndex];
+    });
 
   const getTestimonialsForPage = (pageIndex: number) =>
     Array.from({ length: visibleTestimonialCount }, (_, index) => {
       const testimonialIndex = (pageIndex * visibleTestimonialCount + index) % ownerTestimonials.length;
       return ownerTestimonials[testimonialIndex];
     });
+
+  const changeMetricPage = (direction: "next" | "previous") => {
+    if (metricPageCount <= 1) {
+      return;
+    }
+
+    setMetricTransitionDirection(direction);
+    setMetricRotationPage((currentPage) => {
+      setOutgoingMetricRotationPage(currentPage);
+      return direction === "next"
+        ? (currentPage + 1) % metricPageCount
+        : (currentPage - 1 + metricPageCount) % metricPageCount;
+    });
+  };
+
+  const changeTestimonialPage = (direction: "next" | "previous") => {
+    if (testimonialPageCount <= 1) {
+      return;
+    }
+
+    setTestimonialTransitionDirection(direction);
+    setTestimonialRotationPage((currentPage) => {
+      setOutgoingTestimonialRotationPage(currentPage);
+      return direction === "next"
+        ? (currentPage + 1) % testimonialPageCount
+        : (currentPage - 1 + testimonialPageCount) % testimonialPageCount;
+    });
+  };
 
   useEffect(() => {
     const page = document.querySelector<HTMLElement>(".owners-page");
@@ -659,15 +697,58 @@ export default function PropertyAdminPage() {
   }, []);
 
   useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 760px)");
+    const updateMobileTestimonials = () => {
+      setIsMobileTestimonials(mediaQuery.matches);
+      setMetricRotationPage(0);
+      setOutgoingMetricRotationPage(null);
+      setTestimonialRotationPage(0);
+      setOutgoingTestimonialRotationPage(null);
+    };
+
+    updateMobileTestimonials();
+    mediaQuery.addEventListener("change", updateMobileTestimonials);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateMobileTestimonials);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (metricPageCount <= 1 || !isMobileTestimonials) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      changeMetricPage("next");
+    }, ownerMetricRotationMs);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [metricPageCount, isMobileTestimonials]);
+
+  useEffect(() => {
+    if (outgoingMetricRotationPage === null) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setOutgoingMetricRotationPage(null);
+    }, ownerMetricTransitionMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [outgoingMetricRotationPage]);
+
+  useEffect(() => {
     if (testimonialPageCount <= 1) {
       return;
     }
 
     const intervalId = window.setInterval(() => {
-      setTestimonialRotationPage((currentPage) => {
-        setOutgoingTestimonialRotationPage(currentPage);
-        return (currentPage + 1) % testimonialPageCount;
-      });
+      changeTestimonialPage("next");
     }, ownerTestimonialRotationMs);
 
     return () => {
@@ -689,11 +770,35 @@ export default function PropertyAdminPage() {
     };
   }, [outgoingTestimonialRotationPage]);
 
+  const visibleMetrics = getMetricsForPage(metricRotationPage);
+  const outgoingVisibleMetrics =
+    outgoingMetricRotationPage === null ? [] : getMetricsForPage(outgoingMetricRotationPage);
   const visibleTestimonials = getTestimonialsForPage(testimonialRotationPage);
   const outgoingVisibleTestimonials =
     outgoingTestimonialRotationPage === null
       ? []
       : getTestimonialsForPage(outgoingTestimonialRotationPage);
+  const handleTestimonialPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (!isMobileTestimonials) {
+      return;
+    }
+
+    testimonialSwipeStartX.current = event.clientX;
+  };
+  const handleTestimonialPointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    if (!isMobileTestimonials || testimonialSwipeStartX.current === null) {
+      return;
+    }
+
+    const swipeDistance = event.clientX - testimonialSwipeStartX.current;
+    testimonialSwipeStartX.current = null;
+
+    if (Math.abs(swipeDistance) < 38) {
+      return;
+    }
+
+    changeTestimonialPage(swipeDistance < 0 ? "next" : "previous");
+  };
 
   return (
     <div className="owners-page">
@@ -707,27 +812,69 @@ export default function PropertyAdminPage() {
 
         <div className="container owners-hero-layout">
           <div className="owners-hero-copy reveal">
-            <h1>+1.500 personas buscan alquilar ya.</h1>
+            <h1>+1.500 personas buscan alquilar ya</h1>
 
-            <div className="owners-metrics-grid owners-hero-metrics" aria-label="Datos del servicio">
-              {ownerMetrics.map((metric, index) => (
-                <article
-                  className={`owners-metric-card owners-metric-card-${index + 1} reveal reveal-delay-${(index % 3) + 1}`}
-                  key={metric.label}
+            <div className="owners-metrics-shell">
+              {outgoingMetricRotationPage !== null ? (
+                <div
+                  className={`owners-metrics-grid owners-hero-metrics owners-metrics-grid-outgoing owners-metrics-grid-${metricTransitionDirection}`}
+                  aria-hidden="true"
                 >
-                  <span>{metric.value}</span>
-                  <strong>{metric.label}</strong>
-                  <p>{metric.description}</p>
-                </article>
-              ))}
+                  {outgoingVisibleMetrics.map((metric, index) => (
+                    <article
+                      className={`owners-metric-card owners-metric-card-${index + 1}`}
+                      key={`${metric.value.join(" ")}-outgoing-${outgoingMetricRotationPage}-${index}`}
+                    >
+                      <span>
+                        {metric.value.map((line, lineIndex) => (
+                          <span className={`owners-metric-line-${lineIndex + 1}`} key={line}>
+                            {line}
+                          </span>
+                        ))}
+                      </span>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+
+              <div
+                className={`owners-metrics-grid owners-hero-metrics owners-metrics-grid-current owners-metrics-grid-${metricTransitionDirection}`}
+                aria-label="Datos del servicio"
+                key={`metrics-${metricRotationPage}-${metricTransitionDirection}`}
+              >
+                {visibleMetrics.map((metric, index) => (
+                  <article
+                    className={`owners-metric-card owners-metric-card-${index + 1}`}
+                    key={`${metric.value.join(" ")}-${metricRotationPage}-${index}`}
+                  >
+                    <span>
+                      {metric.value.map((line, lineIndex) => (
+                        <span className={`owners-metric-line-${lineIndex + 1}`} key={line}>
+                          {line}
+                        </span>
+                      ))}
+                    </span>
+                  </article>
+                ))}
+              </div>
             </div>
 
             <div className="owners-hero-testimonials" id="testimonios">
               <OwnerSectionHeader title="Testimonios" description="" />
 
-              <div className="owners-testimonials-shell">
+              <div
+                className="owners-testimonials-shell"
+                onPointerDown={handleTestimonialPointerDown}
+                onPointerUp={handleTestimonialPointerUp}
+                onPointerCancel={() => {
+                  testimonialSwipeStartX.current = null;
+                }}
+              >
                 {outgoingTestimonialRotationPage !== null ? (
-                  <div className="owners-testimonials-grid owners-testimonials-grid-outgoing" aria-hidden="true">
+                  <div
+                    className={`owners-testimonials-grid owners-testimonials-grid-outgoing owners-testimonials-grid-${testimonialTransitionDirection}`}
+                    aria-hidden="true"
+                  >
                     {outgoingVisibleTestimonials.map((testimonial, index) => (
                       <article
                         className="owners-testimonial-card"
@@ -747,8 +894,8 @@ export default function PropertyAdminPage() {
                 ) : null}
 
                 <div
-                  className="owners-testimonials-grid owners-testimonials-grid-current"
-                  key={`testimonials-${testimonialRotationPage}`}
+                  className={`owners-testimonials-grid owners-testimonials-grid-current owners-testimonials-grid-${testimonialTransitionDirection}`}
+                  key={`testimonials-${testimonialRotationPage}-${testimonialTransitionDirection}`}
                 >
                   {visibleTestimonials.map((testimonial, index) => (
                     <article className="owners-testimonial-card" key={`${testimonial.author}-${testimonialRotationPage}-${index}`}>

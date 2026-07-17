@@ -29,7 +29,7 @@ const pillars: Pillar[] = [
   {
     title: "RED DE ATENCIÓN ESTRATÉGICA",
     description:
-      "Disponemos de oficinas operativas estratégicamente ubicadas e interconectadas, con amplio horario de atención, lo que nos permite ofrecer más y mejores prestaciones, entre ellas la posibilidad de abonar en línea la liquidación de gastos comunes mediante usuario en nuestro sitio web.",
+      "Disponemos de oficinas operativas estratégicamente ubicadas e interconectadas, con amplio horario de atención, lo que nos permite ofrecer más y mejores prestaciones.",
   },
   {
     title: "VINCULACIÓN Y LIDERAZGO",
@@ -37,15 +37,13 @@ const pillars: Pillar[] = [
       "Como miembros activos del Colegio de Administradores de Propiedad Horizontal y de la Cámara Inmobiliaria del Uruguay, reafirmamos nuestro compromiso con el desarrollo responsable del rubro inmobiliario.",
   },
 ];
+
 export default function AboutPage() {
   return (
     <div className="about-page">
       <section className="about-page-section" id="pilares-lars">
         <div className="container about-page-pillars-layout">
           <div className="about-page-pillars-copy">
-            <div className="about-page-section-head reveal">
-              <h2>Los pilares que sostienen la experiencia Lars</h2>
-            </div>
 
             <div className="about-page-pillar-grid">
               {pillars.map((pillar, index) => (
@@ -65,18 +63,13 @@ export default function AboutPage() {
           <aside className="spotlight-panel about-page-pillars-visual reveal reveal-delay-2">
             <div className="spotlight-image-wrap">
               <img
-                src="/optimized/sections/about-city.webp"
+                src="/about/about-city.png"
                 alt="Ciudad y edificios gestionados por Lars"
                 width="960"
                 height="960"
                 fetchPriority="high"
                 decoding="async"
               />
-            </div>
-            <div className="spotlight-body">
-              <p>
-                Empresa familiar con más de medio siglo de trayectoria, reconocida por su seriedad, innovación y compromiso ético que trasciende lo estrictamente comercial.
-              </p>
             </div>
           </aside>
         </div>

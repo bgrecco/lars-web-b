@@ -12,6 +12,7 @@ type SearchDropdownFieldProps = {
   active: boolean;
   className: string;
   label: string;
+  multipleValues?: string[];
   onSelect: (value: string) => void;
   onToggle: () => void;
   options: SearchDropdownOption[];
@@ -40,13 +41,24 @@ const initialFilters: SalesFilters = {
   orden: "",
 };
 
-const pageSize = 6;
+const pageSize = 8;
 const salesPriceMinLimit = 0;
 const salesPriceMaxLimit = 500000;
+const projectTypeFilterValue = "__proyectos__";
 
 function SearchDropdownField(props: SearchDropdownFieldProps) {
-  const { active, className, label, onSelect, onToggle, options, value } = props;
+  const { active, className, label, multipleValues, onSelect, onToggle, options, value } = props;
+  const isMultiple = Boolean(multipleValues);
+  const selectedValues = multipleValues ?? [];
   const selectedOption = options.find((option) => option.value === value) ?? options[0];
+  const selectedMultipleOptions = options.filter((option) => selectedValues.includes(option.value));
+  const selectedLabel = isMultiple
+    ? selectedMultipleOptions.length
+      ? selectedMultipleOptions.map((option) => option.label).join(", ")
+      : options[0]?.label ?? ""
+    : selectedOption.label;
+  const tooltipItems = selectedMultipleOptions.filter((option) => option.value);
+  const showTooltip = isMultiple && tooltipItems.length > 1;
 
   return (
     <label className={`${className} search-field-select`}>
@@ -58,19 +70,40 @@ function SearchDropdownField(props: SearchDropdownFieldProps) {
         aria-haspopup="listbox"
         onClick={onToggle}
       >
-        <span>{selectedOption.label}</span>
+        <span className="search-select-trigger-text">{selectedLabel}</span>
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="m6 9 6 6 6-6" />
         </svg>
       </button>
+      {showTooltip && !active ? (
+        <span className="search-select-tooltip" role="tooltip">
+          {tooltipItems.map((option) => (
+            <span key={`tooltip-${option.value}`}>{option.label}</span>
+          ))}
+        </span>
+      ) : null}
       {active ? (
-        <div className="search-select-popover" role="listbox" aria-label={label}>
+        <div className="search-select-popover" role="listbox" aria-label={label} aria-multiselectable={isMultiple || undefined}>
           {options.map((option) => (
             <button
               key={`${label}-${option.value || "default"}`}
               type="button"
-              className={`search-select-option${option.value === value ? " is-active" : ""}`}
-              aria-selected={option.value === value}
+              className={`search-select-option${
+                (isMultiple
+                  ? option.value
+                    ? selectedValues.includes(option.value)
+                    : selectedValues.length === 0
+                  : option.value === value)
+                  ? " is-active"
+                  : ""
+              }`}
+              aria-selected={
+                isMultiple
+                  ? option.value
+                    ? selectedValues.includes(option.value)
+                    : selectedValues.length === 0
+                  : option.value === value
+              }
               onClick={() => onSelect(option.value)}
             >
               <span>{option.label}</span>
@@ -101,7 +134,7 @@ function getInitialFiltersFromUrl(): SalesFilters {
   return {
     ...initialFilters,
     tipo: searchParams.get("tipo") ?? "",
-    barrio: searchParams.get("barrio") ?? "",
+    barrio: searchParams.getAll("barrio").join(",") || (searchParams.get("barrio") ?? ""),
     dormitorios: searchParams.get("dormitorios") ?? "",
     precioMoneda: (searchParams.get("precioMoneda") as SalesFilters["precioMoneda"]) ?? "usd",
     precioMinimo: searchParams.get("precioMinimo") ?? "",
@@ -123,6 +156,10 @@ function matchesBedrooms(property: SalesProperty, dormitorios: string) {
   }
 
   return String(property.rooms) === dormitorios;
+}
+
+function getSelectedNeighborhoods(value: string) {
+  return value.split(",").map((item) => item.trim()).filter(Boolean);
 }
 
 function PaginationArrowIcon(props: { direction: "left" | "right" }) {
@@ -150,7 +187,7 @@ function getActiveFilterChips(filters: SalesFilters) {
   }
 
   if (filters.barrio) {
-    chips.push(`Barrio: ${filters.barrio}`);
+    chips.push(`Barrios: ${filters.barrio.split(",").filter(Boolean).join(", ")}`);
   }
 
   if (filters.dormitorios) {
@@ -173,12 +210,14 @@ function getActiveFilterChips(filters: SalesFilters) {
 type SalesPageProps = {
   listingContext?: "ventas" | "alquileres";
   resultsTitle?: string;
+  hideResultsTitle?: boolean;
   showLoaderDemo?: boolean;
 };
 
 export default function SalesPage({
   listingContext = "ventas",
   resultsTitle = "Ventas",
+  hideResultsTitle = false,
   showLoaderDemo = false,
 }: SalesPageProps) {
   const [draftFilters, setDraftFilters] = useState<SalesFilters>(() => getInitialFiltersFromUrl());
@@ -208,7 +247,11 @@ export default function SalesPage({
   );
 
   const typeDropdownOptions = useMemo<SearchDropdownOption[]>(
-    () => [{ value: "", label: "Todos" }, ...typeOptions.map((option) => ({ value: option, label: option }))],
+    () => [
+      { value: "", label: "Todos" },
+      ...typeOptions.map((option) => ({ value: option, label: option })),
+      { value: projectTypeFilterValue, label: "Proyecto" },
+    ],
     [typeOptions],
   );
 
@@ -219,10 +262,11 @@ export default function SalesPage({
 
   const bedroomDropdownOptions = useMemo<SearchDropdownOption[]>(
     () => [
+      { value: "0", label: "0" },
       { value: "1", label: "1" },
       { value: "2", label: "2" },
       { value: "3", label: "3" },
-      { value: "4+", label: "4+" },
+      { value: "4+", label: "4 +" },
     ],
     [],
   );
@@ -233,7 +277,8 @@ export default function SalesPage({
 
     const filtered = salesCatalog.filter((property) => {
       const matchesType = appliedFilters.tipo ? property.type === appliedFilters.tipo : true;
-      const matchesLocation = appliedFilters.barrio ? property.location === appliedFilters.barrio : true;
+      const selectedNeighborhoods = getSelectedNeighborhoods(appliedFilters.barrio);
+      const matchesLocation = selectedNeighborhoods.length ? selectedNeighborhoods.includes(property.location) : true;
       const matchesRef = normalizedRef
         ? property.ref.includes(normalizedRef) || String(property.id).includes(normalizedRef)
         : true;
@@ -386,6 +431,30 @@ export default function SalesPage({
     }));
   };
 
+  const handleNeighborhoodFilterSelect = (value: string) => {
+    if (!value) {
+      handleDraftFilterChange("barrio", "");
+      return;
+    }
+
+    const selectedNeighborhoods = getSelectedNeighborhoods(draftFilters.barrio);
+    const nextNeighborhoods = selectedNeighborhoods.includes(value)
+      ? selectedNeighborhoods.filter((neighborhood) => neighborhood !== value)
+      : [...selectedNeighborhoods, value];
+
+    handleDraftFilterChange("barrio", nextNeighborhoods.join(","));
+  };
+
+  const handleTypeFilterSelect = (value: string) => {
+    if (value === projectTypeFilterValue) {
+      window.location.href = "/proyectos";
+      return;
+    }
+
+    handleDraftFilterChange("tipo", value);
+    setActiveDropdown(null);
+  };
+
   const handleSalesPriceFieldFocus = () => {
     setIsSalesPriceFieldEditing(true);
     setSalesPriceFieldValue(draftFilters.precioMaximo || "");
@@ -444,149 +513,148 @@ export default function SalesPage({
     });
   };
 
-  return (
-    <div className="sales-page">
-      <section className="sales-filter-band" id="ventas-filtros">
-        <div className="container">
-          <form className="sales-filter-card search-card-variant-4 reveal" onSubmit={handleApplyFilters}>
-            <button
-              type="button"
-              className={`sales-filter-toggle${isCompactFiltersOpen ? " is-open" : ""}`}
-              onClick={() => setIsCompactFiltersOpen((currentValue) => !currentValue)}
-              aria-expanded={isCompactFilterViewport ? isCompactFiltersOpen : true}
-              aria-controls={`${listingContext}-filters-panel`}
-            >
-              <span className="sales-filter-toggle-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M4 7h16M7 12h10M10 17h4" />
-                </svg>
+  const filterForm = (
+    <form className="sales-filter-card search-card-variant-4 reveal" onSubmit={handleApplyFilters}>
+      <button
+        type="button"
+        className={`sales-filter-toggle${isCompactFiltersOpen ? " is-open" : ""}`}
+        onClick={() => setIsCompactFiltersOpen((currentValue) => !currentValue)}
+        aria-expanded={isCompactFilterViewport ? isCompactFiltersOpen : true}
+        aria-controls={`${listingContext}-filters-panel`}
+      >
+        <span className="sales-filter-toggle-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 7h16M7 12h10M10 17h4" />
+          </svg>
+        </span>
+        <span>Filtros</span>
+        <span className="sales-filter-toggle-caret" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </span>
+      </button>
+
+      <div
+        id={`${listingContext}-filters-panel`}
+        className={`sales-filter-collapse${isCompactFiltersOpen ? " is-open" : ""}`}
+        aria-hidden={isCompactFilterViewport ? !isCompactFiltersOpen : undefined}
+        ref={filterPanelRef}
+      >
+        <div className="sales-filter-grid">
+          <SearchDropdownField
+            active={activeDropdown === "tipo"}
+            className={`sales-filter-field sales-filter-field-type${
+              draftFilters.tipo.toLowerCase() === "casa" ? " sales-filter-field-type-house" : " sales-filter-field-type-building"
+            }`}
+            label="Tipo"
+            onSelect={handleTypeFilterSelect}
+            onToggle={() => {
+              setActiveDropdown((currentValue) => (currentValue === "tipo" ? null : "tipo"));
+            }}
+            options={typeDropdownOptions}
+            value={draftFilters.tipo}
+          />
+
+          <SearchDropdownField
+            active={activeDropdown === "barrio"}
+            className="sales-filter-field sales-filter-field-zone"
+            label="Barrio"
+            multipleValues={getSelectedNeighborhoods(draftFilters.barrio)}
+            onSelect={handleNeighborhoodFilterSelect}
+            onToggle={() => {
+              setActiveDropdown((currentValue) => (currentValue === "barrio" ? null : "barrio"));
+            }}
+            options={neighborhoodDropdownOptions}
+            value={draftFilters.barrio}
+          />
+
+          <div className="sales-filter-field sales-filter-field-price">
+            <span className="sales-filter-field-label">Precio</span>
+            <div className="search-price-trigger-input-shell sales-price-trigger-input-shell">
+              <span className="search-price-trigger-prefix">
+                {`Hasta ${listingContext === "alquileres" ? "$" : "US$"}`}
               </span>
-              <span>Filtros</span>
-              <span className="sales-filter-toggle-caret" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </span>
-            </button>
-
-            <div
-              id={`${listingContext}-filters-panel`}
-              className={`sales-filter-collapse${isCompactFiltersOpen ? " is-open" : ""}`}
-              aria-hidden={isCompactFilterViewport ? !isCompactFiltersOpen : undefined}
-              ref={filterPanelRef}
-            >
-              <div className="sales-filter-grid">
-                <SearchDropdownField
-                  active={activeDropdown === "tipo"}
-                  className={`sales-filter-field sales-filter-field-type${
-                    draftFilters.tipo.toLowerCase() === "casa" ? " sales-filter-field-type-house" : " sales-filter-field-type-building"
-                  }`}
-                  label="Tipo"
-                  onSelect={(value) => {
-                    handleDraftFilterChange("tipo", value);
-                    setActiveDropdown(null);
-                  }}
-                  onToggle={() => {
-                    setActiveDropdown((currentValue) => (currentValue === "tipo" ? null : "tipo"));
-                  }}
-                  options={typeDropdownOptions}
-                  value={draftFilters.tipo}
-                />
-
-                <SearchDropdownField
-                  active={activeDropdown === "barrio"}
-                  className="sales-filter-field sales-filter-field-zone"
-                  label="Barrio"
-                  onSelect={(value) => {
-                    handleDraftFilterChange("barrio", value);
-                    setActiveDropdown(null);
-                  }}
-                  onToggle={() => {
-                    setActiveDropdown((currentValue) => (currentValue === "barrio" ? null : "barrio"));
-                  }}
-                  options={neighborhoodDropdownOptions}
-                  value={draftFilters.barrio}
-                />
-
-                <div className="sales-filter-field sales-filter-field-price">
-                  <span className="sales-filter-field-label">Precio</span>
-                  <div className="search-price-trigger-input-shell sales-price-trigger-input-shell">
-                    <span className="search-price-trigger-prefix">
-                      {`Hasta ${listingContext === "alquileres" ? "$" : "US$"}`}
-                    </span>
-                    <input
-                      className="search-price-trigger-input sales-price-trigger-input"
-                      type="text"
-                      inputMode="numeric"
-                      value={salesPriceFieldValue}
-                      onFocus={handleSalesPriceFieldFocus}
-                      onChange={(event) => handleSalesPriceFieldChange(event.currentTarget.value)}
-                      onBlur={handleSalesPriceFieldBlur}
-                    />
-                  </div>
-                </div>
-
-                <SearchDropdownField
-                  active={activeDropdown === "dormitorios"}
-                  className="sales-filter-field sales-filter-field-bedrooms"
-                  label="Dormitorios"
-                  onSelect={(value) => {
-                    handleDraftFilterChange("dormitorios", value);
-                    setActiveDropdown(null);
-                  }}
-                  onToggle={() => {
-                    setActiveDropdown((currentValue) => (currentValue === "dormitorios" ? null : "dormitorios"));
-                  }}
-                  options={bedroomDropdownOptions}
-                  value={draftFilters.dormitorios}
-                />
-
-                <label className="sales-filter-field sales-filter-field-reference">
-                  <span className="sales-filter-field-label">REF.</span>
-                  <input
-                    type="text"
-                    placeholder="Ej: 1234"
-                    value={draftFilters.ref}
-                    onChange={(event) => handleDraftFilterChange("ref", event.target.value)}
-                  />
-                </label>
-
-                <div className="sales-filter-buttons">
-                  <button type="submit" className="primary-button search-cta-button">
-                    Buscar
-                  </button>
-                </div>
-              </div>
-
-              {activeFilterChips.length ? (
-                <div className="sales-filter-actions">
-                  <div className="sales-filter-summary">
-                    <span>Los filtros aplicados aparecen destacados abajo.</span>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <section className="sales-results" id="ventas-resultados">
-        <div className="container">
-          <div className="sales-results-head reveal">
-            <div className="sales-results-copy section-title-frame">
-              <h2>{resultsTitle}</h2>
-            </div>
-
-            <div className="sales-active-filters">
-              {activeFilterChips.length ? (
-                activeFilterChips.map((chip) => (
-                  <span key={chip} className="sales-filter-chip">
-                    {chip}
-                  </span>
-                ))
-              ) : null}
+              <input
+                className="search-price-trigger-input sales-price-trigger-input"
+                type="text"
+                inputMode="numeric"
+                value={salesPriceFieldValue}
+                onFocus={handleSalesPriceFieldFocus}
+                onChange={(event) => handleSalesPriceFieldChange(event.currentTarget.value)}
+                onBlur={handleSalesPriceFieldBlur}
+              />
             </div>
           </div>
+
+          <SearchDropdownField
+            active={activeDropdown === "dormitorios"}
+            className="sales-filter-field sales-filter-field-bedrooms"
+            label="Dormitorios"
+            onSelect={(value) => {
+              handleDraftFilterChange("dormitorios", value);
+              setActiveDropdown(null);
+            }}
+            onToggle={() => {
+              setActiveDropdown((currentValue) => (currentValue === "dormitorios" ? null : "dormitorios"));
+            }}
+            options={bedroomDropdownOptions}
+            value={draftFilters.dormitorios}
+          />
+
+          <label className="sales-filter-field sales-filter-field-reference">
+            <span className="sales-filter-field-label">REF.</span>
+            <input
+              type="text"
+              placeholder="Ej: 1234"
+              value={draftFilters.ref}
+              onChange={(event) => handleDraftFilterChange("ref", event.target.value)}
+            />
+          </label>
+
+          <div className="sales-filter-buttons">
+            <button type="submit" className="primary-button search-cta-button">
+              Buscar
+            </button>
+          </div>
+        </div>
+
+        {activeFilterChips.length ? (
+          <div className="sales-filter-actions">
+            <div className="sales-filter-summary">
+              <span>Los filtros aplicados aparecen destacados abajo.</span>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </form>
+  );
+
+  return (
+    <div className="sales-page">
+      <section className="sales-results" id="ventas-resultados">
+        <div className="container">
+          {filterForm}
+
+          {!hideResultsTitle || activeFilterChips.length ? (
+            <div className={`sales-results-head reveal${hideResultsTitle ? " sales-results-head-no-title" : ""}`}>
+              {!hideResultsTitle ? (
+                <div className="sales-results-copy section-title-frame">
+                  <h2>{resultsTitle}</h2>
+                </div>
+              ) : null}
+
+              <div className="sales-active-filters">
+                {activeFilterChips.length ? (
+                  activeFilterChips.map((chip) => (
+                    <span key={chip} className="sales-filter-chip">
+                      {chip}
+                    </span>
+                  ))
+                ) : null}
+              </div>
+            </div>
+          ) : null}
 
           {visibleProperties.length ? (
             <div className="sales-grid">

@@ -241,7 +241,7 @@ const featuredListings: Listing[] = [
 
 const topbarBranches = [
   {
-    office: "Casa central Cordón",
+    office: "Casa central",
     address: "Minas 1401",
     mapsHref: "https://www.google.com/maps/search/?api=1&query=Minas+1401,+Montevideo,+Uruguay",
     phone: "2401 01 01",
@@ -527,7 +527,6 @@ function ListingShowcaseCard(props: ListingShowcaseCardProps) {
 
         <div className="listing-showcase-footer">
           <div className="listing-showcase-price">
-            <span className="listing-showcase-price-operation">{listing.operation}</span>
             <span className="listing-showcase-price-value">{listing.price}</span>
           </div>
         </div>
@@ -1244,7 +1243,9 @@ function App() {
                       onClick={() => setIsMobileRentMenuOpen((currentValue) => !currentValue)}
                     >
                       <span className="mobile-menu-link-badge" aria-hidden="true">
-                        +
+                        <svg viewBox="0 0 24 24">
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
                       </span>
                     </button>
                   </div>
@@ -1294,9 +1295,9 @@ function App() {
         ) : route.name === "gastos" ? (
           <CommonExpensesPage />
         ) : route.name === "ventas" ? (
-          <SalesPage showLoaderDemo />
+          <SalesPage showLoaderDemo hideResultsTitle />
         ) : route.name === "alquileres" ? (
-          <SalesPage listingContext="alquileres" resultsTitle="Alquileres" />
+          <SalesPage listingContext="alquileres" resultsTitle="Alquileres" hideResultsTitle />
         ) : route.name === "administracion-propiedades" ? (
           <PropertyManagementPage />
         ) : route.name === "propietarios" ? (

@@ -64,10 +64,14 @@ function getPropertyBackCopy(origin: "ventas" | "alquileres") {
 
 function getPropertyDetailsDemoVariant(): PropertyDetailsDemoVariant {
   if (typeof window === "undefined") {
-    return "default";
+    return "sticky-contact";
   }
 
   const demo = new URLSearchParams(window.location.search).get("demo");
+
+  if (demo === "default") {
+    return "default";
+  }
 
   if (demo === "sticky-contact") {
     return "sticky-contact";
@@ -77,7 +81,7 @@ function getPropertyDetailsDemoVariant(): PropertyDetailsDemoVariant {
     return "hero-summary";
   }
 
-  return "default";
+  return "sticky-contact";
 }
 
 function BackArrowIcon() {
@@ -152,7 +156,6 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
   const backCopy = getPropertyBackCopy(propertyOrigin);
   const demoVariant = getPropertyDetailsDemoVariant();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [isStickyDemoContactLight, setIsStickyDemoContactLight] = useState(demoVariant === "sticky-contact");
   const [lightboxImageIndex, setLightboxImageIndex] = useState<number | null>(null);
   const galleryShellRef = useRef<HTMLDivElement>(null);
   const galleryMainRef = useRef<HTMLDivElement>(null);
@@ -224,7 +227,6 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
 
   useLayoutEffect(() => {
     if (demoVariant !== "sticky-contact" || typeof window === "undefined") {
-      setIsStickyDemoContactLight(false);
       return;
     }
 
@@ -261,7 +263,7 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
       const stickyContactGap = Number.parseFloat(stickyContactColumnStyle.rowGap || stickyContactColumnStyle.gap);
       const heroHeight = heroRect.bottom - stageRect.top;
       const contactCardHeight = Math.max(
-        galleryShellRect.height - stickyContactSummaryRect.height - (Number.isFinite(stickyContactGap) ? stickyContactGap : 0),
+        galleryShellRect.height - stickyContactSummaryRect.height - (Number.isFinite(stickyContactGap) ? stickyContactGap : 0) + 6,
         0,
       );
 
@@ -270,40 +272,18 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
       stage.style.setProperty("--sticky-demo-contact-card-height", `${Math.ceil(contactCardHeight)}px`);
     };
 
-    const updateStickyDemoContactTheme = () => {
-      const contactSidebarStyle = window.getComputedStyle(contactSidebar);
-
-      if (contactSidebarStyle.position !== "sticky") {
-        setIsStickyDemoContactLight(true);
-        return;
-      }
-
-      const stickyTop = Number.parseFloat(contactSidebarStyle.top);
-      const stickyThreshold = Number.isFinite(stickyTop) ? stickyTop + 24 : 24;
-      const shouldUseLightCard = hero.getBoundingClientRect().bottom > stickyThreshold;
-
-      setIsStickyDemoContactLight((currentValue) =>
-        currentValue === shouldUseLightCard ? currentValue : shouldUseLightCard,
-      );
-    };
-
     updateStickyDemoDimensions();
-    updateStickyDemoContactTheme();
 
     const animationFrameId = window.requestAnimationFrame(() => {
       updateStickyDemoDimensions();
-      updateStickyDemoContactTheme();
     });
 
     window.addEventListener("resize", updateStickyDemoDimensions);
-    window.addEventListener("resize", updateStickyDemoContactTheme);
-    window.addEventListener("scroll", updateStickyDemoContactTheme, { passive: true });
 
     const resizeObserver =
       "ResizeObserver" in window
         ? new ResizeObserver(() => {
             updateStickyDemoDimensions();
-            updateStickyDemoContactTheme();
           })
         : null;
 
@@ -318,8 +298,6 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
     return () => {
       window.cancelAnimationFrame(animationFrameId);
       window.removeEventListener("resize", updateStickyDemoDimensions);
-      window.removeEventListener("resize", updateStickyDemoContactTheme);
-      window.removeEventListener("scroll", updateStickyDemoContactTheme);
       resizeObserver?.disconnect();
       stage.style.removeProperty("--sticky-demo-hero-height");
       stage.style.removeProperty("--sticky-demo-gallery-shell-height");
@@ -471,11 +449,44 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
       ref={demoVariant === "sticky-contact" ? stickyContactSummaryRef : null}
       className={
         demoVariant === "sticky-contact"
-          ? "property-sticky-contact-summary property-sticky-contact-fade property-sticky-contact-fade-delay-1"
+          ? "property-sticky-contact-summary property-sticky-contact-summary-sidebar property-sticky-contact-fade property-sticky-contact-fade-delay-1"
           : "property-sticky-contact-summary"
       }
       aria-label={`Resumen de ${property.title}`}
     >
+      <h1>{property.title}</h1>
+
+      <div className="property-location-price-row">
+        <div className="property-location-line">
+          <span className="property-location-item">
+            <span>{property.location}</span>
+          </span>
+        </div>
+
+        <div className="property-price-row">
+          <strong className="property-price-value property-price-font-lato">{property.price}</strong>
+        </div>
+      </div>
+
+      <div className="property-intro-stats" aria-label={`Datos principales de ${property.title}`}>
+        <div className="property-intro-stat">
+          <img src="/optimized/home/icon-dorm.webp" alt="" width="40" height="36" />
+          <span>{getBedroomStatLabel(property.rooms)}</span>
+        </div>
+        <div className="property-intro-stat">
+          <img src="/optimized/home/icon-banos.webp" alt="" width="39" height="40" />
+          <span>{property.bathrooms}</span>
+        </div>
+        <div className="property-intro-stat">
+          <img src="/optimized/home/icon-sup.webp" alt="" width="40" height="36" />
+          <span>{property.size}</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const mobileStickyContactSummaryBlock = (
+    <div className="property-sticky-contact-summary property-sticky-contact-summary-mobile" aria-label={`Resumen de ${property.title}`}>
       <h1>{property.title}</h1>
 
       <div className="property-location-price-row">
@@ -512,7 +523,6 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
     demoVariant === "sticky-contact"
       ? "property-sticky-contact-fade property-sticky-contact-fade-delay-2"
       : "reveal reveal-delay-2",
-    demoVariant === "sticky-contact" && isStickyDemoContactLight ? "is-light" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -524,12 +534,14 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
     >
       <h2>Quiero recibir información sobre esta propiedad</h2>
 
-      <form className="property-contact-form" onSubmit={handleContactSubmit}>
-        <input type="text" placeholder="Nombre" />
-        <input type="email" placeholder="Email" />
-        <input type="text" placeholder="Teléfono" />
+      <form id={`property-contact-form-${property.id}`} className="property-contact-form" onSubmit={handleContactSubmit}>
+        <input type="text" placeholder="Nombre" aria-label="Nombre" />
+        <input type="tel" placeholder="Celular" aria-label="Celular" />
+        <input type="email" placeholder="Email" aria-label="Email" />
         <textarea
-          rows={4}
+          rows={3}
+          aria-label="Comentarios"
+          placeholder="Comentarios"
           defaultValue={`Me interesa ${property.title} (Ref. ${property.ref}). Quiero recibir más información.`}
         />
       </form>
@@ -546,15 +558,13 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
           </span>
           <span>WhatsApp</span>
         </a>
-        <a className="property-contact-quicklink property-contact-quicklink-email" href="mailto:inmobiliaria@lars.com.uy">
-          <span className="property-contact-quicklink-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M3.5 5.25h17v13.5h-17V5.25Z" />
-              <path d="m4.2 6.2 7.8 6.25 7.8-6.25" />
-            </svg>
-          </span>
-          <span>Email</span>
-        </a>
+        <button
+          type="submit"
+          className="property-contact-quicklink property-contact-quicklink-submit"
+          form={`property-contact-form-${property.id}`}
+        >
+          <span>Enviar</span>
+        </button>
       </div>
 
     </div>
@@ -627,6 +637,7 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
             <div className="property-details-demo-main">
               <section ref={stickyDemoHeroRef} className="property-details-hero">
                 {galleryBlock}
+                {mobileStickyContactSummaryBlock}
                 {demoVariant === "sticky-contact" ? null : introBlock}
               </section>
 

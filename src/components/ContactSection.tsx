@@ -14,7 +14,7 @@ type ContactSectionProps = {
 
 const contactCards: ContactCard[] = [
   {
-    title: "Casa central Cordón",
+    title: "Casa central",
     address: "Minas 1401",
     addressHref: "https://www.google.com/maps/search/?api=1&query=Minas+1401,+Montevideo,+Uruguay",
     schedule: "Lunes a viernes de 9:45 a 18:30",
@@ -117,19 +117,21 @@ export default function ContactSection({ variant = "default" }: ContactSectionPr
             </label>
           </div>
 
-          <button type="button" className="primary-button contact-submit">
-            Enviar consulta
-          </button>
+          <div className="contact-form-actions">
+            <a
+              className="contact-whatsapp-button"
+              href="https://wa.me/59824010101"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <WhatsAppIcon />
+              <span>WhatsApp</span>
+            </a>
 
-          <a
-            className="contact-whatsapp-button"
-            href="https://wa.me/59824010101"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <WhatsAppIcon />
-            <span>WhatsApp</span>
-          </a>
+            <button type="button" className="primary-button contact-submit">
+              <span>Enviar</span>
+            </button>
+          </div>
         </form>
       </div>
     </section>

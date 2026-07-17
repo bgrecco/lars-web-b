@@ -126,23 +126,9 @@ function ServiceItemCard(props: { item: ServiceItem; index: number }) {
 export default function CommonExpensesPage() {
   return (
     <div className="common-expenses-page">
-      <section className="common-expenses-hero">
-        <div className="container common-expenses-hero-layout">
-          <div className="common-expenses-hero-copy reveal">
-            <h1>
-              <span>Gastos comunes</span>
-              <span>Más de medio siglo de seriedad</span>
-            </h1>
-          </div>
-        </div>
-      </section>
-
       <section className="common-expenses-section" id="gestion">
         <div className="container common-expenses-management-layout">
           <div className="common-expenses-management-copy">
-            <div className="common-expenses-section-head reveal">
-              <h2>Gestión integral adaptada a cada edificio</h2>
-            </div>
 
             <div className="common-expenses-card-grid">
               {serviceItems.slice(0, serviceItemsSplitIndex).map((item, index) => (
@@ -162,12 +148,7 @@ export default function CommonExpensesPage() {
                 decoding="async"
               />
             </div>
-            <div className="spotlight-body">
-              <p>
-                Soluciones integrales para su edificio, con atención ejecutiva personalizada y respaldo
-administrativo transparente.
-              </p>
-            </div>
+            
           </aside>
 
           <div className="common-expenses-card-grid common-expenses-card-grid-secondary">

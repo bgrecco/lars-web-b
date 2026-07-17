@@ -462,6 +462,44 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
     setActiveImageIndex(index);
     setLightboxImageIndex(index);
   };
+  const contactCard = (
+    <div className="property-contact-card reveal reveal-delay-2">
+      <h2>Quiero recibir información sobre este proyecto</h2>
+
+      <form className="property-contact-form" onSubmit={handleContactSubmit}>
+        <input type="text" placeholder="Nombre" />
+        <input type="email" placeholder="Email" />
+        <input type="text" placeholder="Teléfono" />
+        <textarea
+          rows={4}
+          defaultValue={`Me interesa ${project.title}. Quiero recibir más información sobre unidades disponibles.`}
+        />
+      </form>
+
+      <div className="property-contact-quicklinks">
+        <a
+          className="property-contact-quicklink property-contact-quicklink-whatsapp"
+          href="https://wa.me/59824010101"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span className="property-contact-quicklink-icon" aria-hidden="true">
+            <WhatsAppIcon />
+          </span>
+          <span>WhatsApp</span>
+        </a>
+        <a className="property-contact-quicklink property-contact-quicklink-email" href="mailto:inmobiliaria@lars.com.uy">
+          <span className="property-contact-quicklink-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M3.5 5.25h17v13.5h-17V5.25Z" />
+              <path d="m4.2 6.2 7.8 6.25 7.8-6.25" />
+            </svg>
+          </span>
+          <span>Email</span>
+        </a>
+      </div>
+    </div>
+  );
 
   return (
     <div className="property-details-page project-details-page">
@@ -598,42 +636,7 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
             </div>
 
             <aside className="property-contact-sidebar">
-              <div className="property-contact-card reveal reveal-delay-2">
-                <h2>Quiero recibir información sobre este proyecto</h2>
-
-                <form className="property-contact-form" onSubmit={handleContactSubmit}>
-                  <input type="text" placeholder="Nombre" />
-                  <input type="email" placeholder="Email" />
-                  <input type="text" placeholder="Teléfono" />
-                  <textarea
-                    rows={4}
-                    defaultValue={`Me interesa ${project.title}. Quiero recibir más información sobre unidades disponibles.`}
-                  />
-                </form>
-
-                <div className="property-contact-quicklinks">
-                  <a
-                    className="property-contact-quicklink property-contact-quicklink-whatsapp"
-                    href="https://wa.me/59824010101"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <span className="property-contact-quicklink-icon" aria-hidden="true">
-                      <WhatsAppIcon />
-                    </span>
-                    <span>WhatsApp</span>
-                  </a>
-                  <a className="property-contact-quicklink property-contact-quicklink-email" href="mailto:inmobiliaria@lars.com.uy">
-                    <span className="property-contact-quicklink-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24">
-                        <path d="M3.5 5.25h17v13.5h-17V5.25Z" />
-                        <path d="m4.2 6.2 7.8 6.25 7.8-6.25" />
-                      </svg>
-                    </span>
-                    <span>Email</span>
-                  </a>
-                </div>
-              </div>
+              {contactCard}
             </aside>
           </div>
         </div>
@@ -653,6 +656,10 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
               <h2>Cocheras disponibles</h2>
             </div>
             <ProjectParkingTable rows={project.availableParking} />
+          </div>
+
+          <div className="project-mobile-contact">
+            {contactCard}
           </div>
         </div>
       </section>
