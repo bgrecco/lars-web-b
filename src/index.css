@@ -25,6 +25,7 @@
     --site-header-height: 5.4rem;
     --site-header-stack-offset: calc(var(--site-topbar-height) + var(--site-header-height));
     --site-scale: .8;
+    --site-inverse-scale: 1.25;
     --container: min(92rem, calc(100vw - 4rem));
     --title-font: Poppins, sans-serif;
     --subtitle-font: Lato, "Poppins", sans-serif
@@ -6393,7 +6394,7 @@ button {
     position:absolute;
     top:0;
     left:50%;
-    width:100vw;
+    width:calc(100vw * var(--site-inverse-scale));
     height:var(--sticky-demo-hero-height);
     transform:translateX(-50%);
     background:linear-gradient(180deg,#020c3c,#000b4b);

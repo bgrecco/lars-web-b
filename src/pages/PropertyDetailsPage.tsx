@@ -255,20 +255,25 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
     }
 
     const updateStickyDemoDimensions = () => {
+      const bodyZoomValue = window.getComputedStyle(document.body).getPropertyValue("zoom");
+      const bodyZoom = Number.parseFloat(bodyZoomValue);
+      const layoutScale = Number.isFinite(bodyZoom) && bodyZoom > 0 ? bodyZoom : 1;
       const stageRect = stage.getBoundingClientRect();
       const heroRect = hero.getBoundingClientRect();
       const galleryShellRect = galleryShell.getBoundingClientRect();
       const stickyContactSummaryRect = stickyContactSummary.getBoundingClientRect();
       const stickyContactColumnStyle = window.getComputedStyle(stickyContactColumn);
       const stickyContactGap = Number.parseFloat(stickyContactColumnStyle.rowGap || stickyContactColumnStyle.gap);
-      const heroHeight = heroRect.bottom - stageRect.top;
+      const heroHeight = (heroRect.bottom - stageRect.top) / layoutScale;
+      const galleryShellHeight = galleryShellRect.height / layoutScale;
+      const stickyContactSummaryHeight = stickyContactSummaryRect.height / layoutScale;
       const contactCardHeight = Math.max(
-        galleryShellRect.height - stickyContactSummaryRect.height - (Number.isFinite(stickyContactGap) ? stickyContactGap : 0) + 6,
+        galleryShellHeight - stickyContactSummaryHeight - (Number.isFinite(stickyContactGap) ? stickyContactGap : 0) + 6,
         0,
       );
 
       stage.style.setProperty("--sticky-demo-hero-height", `${Math.ceil(heroHeight)}px`);
-      stage.style.setProperty("--sticky-demo-gallery-shell-height", `${Math.ceil(galleryShellRect.height)}px`);
+      stage.style.setProperty("--sticky-demo-gallery-shell-height", `${Math.ceil(galleryShellHeight)}px`);
       stage.style.setProperty("--sticky-demo-contact-card-height", `${Math.ceil(contactCardHeight)}px`);
     };
 
