@@ -176,7 +176,6 @@ const navLinks: NavLink[] = [
       { label: "Administración de propiedades", href: "/alquileres/administracion-de-propiedades" },
     ],
   },
-  { label: "Propietarios", href: "/propietarios", route: "propietarios" },
   { label: "Proyectos", href: "/proyectos", route: "proyectos" },
   { label: "Nosotros", href: "/acerca", route: "acerca" },
   { label: "Contacto", href: "/contacto", route: "contacto" },
@@ -717,9 +716,15 @@ type SearchPriceCurrency = "usd" | "uyu";
 
 const searchPriceMinLimit = 0;
 const searchPriceMaxLimit = 500000;
+const searchPriceStep = 5000;
 
 function clampSearchPriceValue(value: number) {
   return Math.min(searchPriceMaxLimit, Math.max(searchPriceMinLimit, value));
+}
+
+function formatSearchPriceValue(currency: SearchPriceCurrency, value: number) {
+  const symbol = currency === "usd" ? "US$" : "$";
+  return `${symbol} ${value.toLocaleString("es-UY")}`;
 }
 
 function App() {
@@ -745,19 +750,16 @@ function App() {
   const [isMobileSearchFiltersOpen, setIsMobileSearchFiltersOpen] = useState(false);
   const [shouldLoadHeroVideo, setShouldLoadHeroVideo] = useState(false);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
-  const [isHomeHeroLogoInView, setIsHomeHeroLogoInView] = useState(true);
-  const [searchPriceMax, setSearchPriceMax] = useState(250000);
+  const [searchPriceMin, setSearchPriceMin] = useState(0);
+  const [searchPriceMax, setSearchPriceMax] = useState(searchPriceMaxLimit);
   const [hasSearchPriceRange, setHasSearchPriceRange] = useState(false);
-  const [searchPriceFieldValue, setSearchPriceFieldValue] = useState("");
-  const [isSearchPriceFieldEditing, setIsSearchPriceFieldEditing] = useState(false);
   const [searchOperation, setSearchOperation] = useState("venta");
   const [searchType, setSearchType] = useState("apartamento");
   const [searchBedrooms, setSearchBedrooms] = useState("");
   const [searchZone, setSearchZone] = useState("");
-  const [activeSearchDropdown, setActiveSearchDropdown] = useState<"operation" | "type" | "zone" | "bedrooms" | null>(null);
+  const [activeSearchDropdown, setActiveSearchDropdown] = useState<"operation" | "type" | "zone" | "price" | "bedrooms" | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const homeSearchFormRef = useRef<HTMLFormElement | null>(null);
-  const homeHeroLogoRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 480px)");
@@ -781,40 +783,6 @@ function App() {
     legacyMediaQuery.addListener(handleChange);
     return () => legacyMediaQuery.removeListener(handleChange);
   }, []);
-
-  useEffect(() => {
-    if (route.name !== "home" || !isSmallScreen) {
-      setIsHomeHeroLogoInView(false);
-      return;
-    }
-
-    const target = homeHeroLogoRef.current;
-
-    if (!target) {
-      setIsHomeHeroLogoInView(false);
-      return;
-    }
-
-    if (!("IntersectionObserver" in window)) {
-      setIsHomeHeroLogoInView(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        setIsHomeHeroLogoInView(entry?.isIntersecting ?? false);
-      },
-      {
-        threshold: 0.35,
-        rootMargin: "-72px 0px 0px 0px",
-      },
-    );
-
-    observer.observe(target);
-
-    return () => observer.disconnect();
-  }, [isSmallScreen, route.name]);
 
   useEffect(() => {
     const elements = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
@@ -1084,37 +1052,51 @@ function App() {
     setListingIndex(index);
   };
 
-  const handleSearchPriceFieldFocus = () => {
-    setActiveSearchDropdown(null);
-    setIsSearchPriceFieldEditing(true);
-    setSearchPriceFieldValue(hasSearchPriceRange ? String(searchPriceMax) : "");
+  const handleSearchPriceMinChange = (value: string) => {
+    const nextMin = Math.min(clampSearchPriceValue(Number(value)), searchPriceMax);
+    setSearchPriceMin(nextMin);
+    setHasSearchPriceRange(nextMin > searchPriceMinLimit || searchPriceMax < searchPriceMaxLimit);
   };
 
-  const handleSearchPriceFieldChange = (value: string) => {
-    setSearchPriceFieldValue(value.replace(/\D/g, ""));
+  const handleSearchPriceMaxChange = (value: string) => {
+    const nextMax = Math.max(clampSearchPriceValue(Number(value)), searchPriceMin);
+    setSearchPriceMax(nextMax);
+    setHasSearchPriceRange(searchPriceMin > searchPriceMinLimit || nextMax < searchPriceMaxLimit);
   };
 
-  const handleSearchPriceFieldBlur = () => {
-    setIsSearchPriceFieldEditing(false);
+  const handleSearchPriceMinInputChange = (value: string) => {
+    const numericValue = value.replace(/\D/g, "");
 
-    if (!searchPriceFieldValue) {
-      setHasSearchPriceRange(false);
-      setSearchPriceFieldValue("");
+    if (!numericValue) {
+      setSearchPriceMin(searchPriceMinLimit);
+      setHasSearchPriceRange(searchPriceMax < searchPriceMaxLimit);
       return;
     }
 
-    const nextMax = clampSearchPriceValue(Number(searchPriceFieldValue));
-    setHasSearchPriceRange(true);
-    setSearchPriceMax(nextMax);
+    handleSearchPriceMinChange(numericValue);
+  };
+
+  const handleSearchPriceMaxInputChange = (value: string) => {
+    const numericValue = value.replace(/\D/g, "");
+
+    if (!numericValue) {
+      setSearchPriceMax(searchPriceMaxLimit);
+      setHasSearchPriceRange(searchPriceMin > searchPriceMinLimit);
+      return;
+    }
+
+    handleSearchPriceMaxChange(numericValue);
   };
 
   const searchPriceCurrency: SearchPriceCurrency = searchOperation === "venta" ? "usd" : "uyu";
-
-  useEffect(() => {
-    if (!isSearchPriceFieldEditing) {
-      setSearchPriceFieldValue(hasSearchPriceRange ? String(searchPriceMax) : "");
-    }
-  }, [hasSearchPriceRange, isSearchPriceFieldEditing, searchPriceMax]);
+  const searchPriceSummary = !hasSearchPriceRange
+    ? "Todos"
+    : searchPriceMin > searchPriceMinLimit && searchPriceMax < searchPriceMaxLimit
+      ? `${formatSearchPriceValue(searchPriceCurrency, searchPriceMin)} - ${formatSearchPriceValue(searchPriceCurrency, searchPriceMax)}`
+      : searchPriceMin > searchPriceMinLimit
+        ? `Desde ${formatSearchPriceValue(searchPriceCurrency, searchPriceMin)}`
+        : `Hasta ${formatSearchPriceValue(searchPriceCurrency, searchPriceMax)}`;
+  const hasFullSearchPriceRange = searchPriceMin > searchPriceMinLimit && searchPriceMax < searchPriceMaxLimit;
 
   const activeFooterBranch = topbarBranches[getWrappedIndex(footerBranchIndex, topbarBranches.length)];
   const pageShellClassName = [
@@ -1123,7 +1105,6 @@ function App() {
   ]
     .filter(Boolean)
     .join(" ");
-  const shouldHideHeaderLogoOnHomeTop = route.name === "home" && isSmallScreen && isHomeHeroLogoInView;
 
   return (
     <div className={pageShellClassName}>
@@ -1140,7 +1121,7 @@ function App() {
         </div>
       </div>
 
-      <header className={`site-header${isMobileMenuOpen ? " is-mobile-menu-open" : ""}${shouldHideHeaderLogoOnHomeTop ? " is-home-hero-logo-visible" : ""}`}>
+      <header className={`site-header${isMobileMenuOpen ? " is-mobile-menu-open" : ""}`}>
         <div className="container header-inner" ref={mobileMenuRef}>
           <a className="logo-link" href="/#inicio" aria-label="Volver al inicio">
             <img src="/optimized/home/logo.webp" alt="Lars" className="brand-logo" width="352" height="93" />
@@ -1329,16 +1310,16 @@ function App() {
           <div className="hero-backdrop" aria-hidden="true" />
           <div className="container hero-stage">
             <div className="hero-content reveal">
-              <div className="hero-brand-mark" ref={homeHeroLogoRef} aria-hidden={!isSmallScreen}>
+              <div className="hero-brand-mark" aria-hidden={!isSmallScreen}>
                 <img src="/optimized/home/logo.webp" alt="Lars" className="hero-brand-logo" width="352" height="93" />
               </div>
-              <h1>"Servimos bien para servir siempre"</h1>
+              <h1>Servimos bien para servir siempre</h1>
               <div className="hero-actions">
-                <a className="primary-button" href="#propiedades">
-                  Ver propiedades
+                <a className="primary-button" href="/gastos-comunes">
+                  Gastos comunes
                 </a>
-                <a className="hero-link-button" href="/gastos-comunes">
-                  Consultar por gastos comunes
+                <a className="hero-link-button" href="/propietarios">
+                  Alquilá o vendé tu propiedad con Lars
                 </a>
               </div>
             </div>
@@ -1420,25 +1401,79 @@ function App() {
                           <span className="search-field-label search-field-heading" id="search-price-field-label">
                             Precio
                           </span>
-                          <div className="search-price-trigger-input-shell">
-                            <span className="search-price-trigger-prefix">
-                              Hasta{" "}
-                              <span className="search-price-trigger-prefix-currency">
-                                {searchPriceCurrency === "usd" ? "US$" : "$"}
-                              </span>
+                          <button
+                            type="button"
+                            className={`search-select-trigger price-range-trigger${activeSearchDropdown === "price" ? " is-open" : ""}`}
+                            aria-expanded={activeSearchDropdown === "price"}
+                            aria-haspopup="dialog"
+                            aria-labelledby="search-price-field-label"
+                            onClick={() => {
+                              setActiveSearchDropdown((currentValue) => (currentValue === "price" ? null : "price"));
+                            }}
+                          >
+                            <span className="price-range-trigger-text">{searchPriceSummary}</span>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="m6 9 6 6 6-6" />
+                            </svg>
+                          </button>
+                          {hasFullSearchPriceRange ? (
+                            <span className="search-select-tooltip price-range-tooltip" role="tooltip">
+                              <span>Desde: {formatSearchPriceValue(searchPriceCurrency, searchPriceMin)}</span>
+                              <span>Hasta: {formatSearchPriceValue(searchPriceCurrency, searchPriceMax)}</span>
                             </span>
-                            <input
-                              className="search-price-trigger-input"
-                              type="text"
-                              inputMode="numeric"
-                              aria-labelledby="search-price-field-label"
-                              value={searchPriceFieldValue}
-                              placeholder=""
-                              onFocus={handleSearchPriceFieldFocus}
-                              onChange={(event) => handleSearchPriceFieldChange(event.currentTarget.value)}
-                              onBlur={handleSearchPriceFieldBlur}
-                            />
-                          </div>
+                          ) : null}
+                          {activeSearchDropdown === "price" ? (
+                            <div className="price-range-popover" role="dialog" aria-label="Rango de precio">
+                              <div className="price-range-control home-price-range-control">
+                                <label>
+                                  <span>
+                                    <span>Desde</span>
+                                    <input
+                                      className="price-range-value-input"
+                                      type="text"
+                                      inputMode="numeric"
+                                      aria-label="Precio desde"
+                                      value={searchPriceMin > searchPriceMinLimit ? formatSearchPriceValue(searchPriceCurrency, searchPriceMin) : ""}
+                                      placeholder="Sin mínimo"
+                                      onChange={(event) => handleSearchPriceMinInputChange(event.currentTarget.value)}
+                                      onFocus={(event) => event.currentTarget.select()}
+                                    />
+                                  </span>
+                                  <input
+                                    type="range"
+                                    min={searchPriceMinLimit}
+                                    max={searchPriceMaxLimit}
+                                    step={searchPriceStep}
+                                    value={searchPriceMin}
+                                    onChange={(event) => handleSearchPriceMinChange(event.currentTarget.value)}
+                                  />
+                                </label>
+                                <label>
+                                  <span>
+                                    <span>Hasta</span>
+                                    <input
+                                      className="price-range-value-input"
+                                      type="text"
+                                      inputMode="numeric"
+                                      aria-label="Precio hasta"
+                                      value={searchPriceMax < searchPriceMaxLimit ? formatSearchPriceValue(searchPriceCurrency, searchPriceMax) : ""}
+                                      placeholder="Sin máximo"
+                                      onChange={(event) => handleSearchPriceMaxInputChange(event.currentTarget.value)}
+                                      onFocus={(event) => event.currentTarget.select()}
+                                    />
+                                  </span>
+                                  <input
+                                    type="range"
+                                    min={searchPriceMinLimit}
+                                    max={searchPriceMaxLimit}
+                                    step={searchPriceStep}
+                                    value={searchPriceMax}
+                                    onChange={(event) => handleSearchPriceMaxChange(event.currentTarget.value)}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                       <SearchDropdownField

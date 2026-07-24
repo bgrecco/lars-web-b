@@ -24,6 +24,7 @@
     --site-topbar-height: 3.25rem;
     --site-header-height: 5.4rem;
     --site-header-stack-offset: calc(var(--site-topbar-height) + var(--site-header-height));
+    --site-scale: .8;
     --container: min(92rem, calc(100vw - 4rem));
     --title-font: Poppins, sans-serif;
     --subtitle-font: Lato, "Poppins", sans-serif
@@ -40,6 +41,7 @@ body,#root {
     min-height:100vh
 }
 body {
+    zoom:var(--site-scale);
     overflow-x:clip;
     background:radial-gradient(circle at 12% 0%,rgba(77,228,201,.12),transparent 24%),linear-gradient(180deg,#fbfdff,#f4f8ff 42%,#edf3ff);
     color:var(--ink);
@@ -1010,6 +1012,12 @@ button {
     position:relative;
     display:block
 }
+.search-field-select:has(.search-select-trigger.is-open),
+.sales-filter-field.search-field-select:has(.search-select-trigger.is-open),
+.search-field-price:has(.price-range-trigger.is-open),
+.sales-filter-field-price:has(.price-range-trigger.is-open) {
+    z-index:1200
+}
 .search-field-select:before,
 .search-field-reference:before,
 .search-field-price:before {
@@ -1058,7 +1066,16 @@ button {
     align-items:center;
     justify-content:space-between;
     gap:1rem;
+    min-width:0;
     text-align:left
+}
+.search-select-trigger>span {
+    display:block;
+    flex:1 1 auto;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap
 }
 .search-select-trigger svg {
     width:1rem;
@@ -1255,6 +1272,129 @@ button {
 .search-card-variant-4 .search-field-price .search-price-trigger-input {
     align-self:baseline
 }
+.price-range-control {
+    display:grid;
+    gap:.48rem;
+    min-width:0;
+    padding-top:0
+}
+.price-range-trigger {
+    min-width:0
+}
+.price-range-trigger-text {
+    display:block;
+    flex:1 1 auto;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap
+}
+.price-range-popover {
+    position:absolute;
+    top:calc(100% + .7rem);
+    left:0;
+    z-index:14;
+    width:min(24rem,calc(100vw - 2rem));
+    min-width:max(100%,20rem);
+    padding:1rem;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,.2);
+    background:linear-gradient(180deg,rgba(18,35,92,.98),rgba(9,18,58,.96));
+    box-shadow:0 24px 48px rgba(0,11,75,.3),inset 0 1px rgba(255,255,255,.08);
+    -webkit-backdrop-filter:blur(18px);
+    backdrop-filter:blur(18px)
+}
+.sales-filter-card .price-range-popover {
+    z-index:1250;
+    background:linear-gradient(180deg,rgba(5,5,7,.98),rgba(0,0,0,.96));
+    box-shadow:0 24px 48px rgba(0,11,75,.34),inset 0 1px rgba(255,255,255,.08)
+}
+.price-range-control label {
+    display:grid!important;
+    gap:.16rem!important;
+    min-height:0!important;
+    height:auto!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important
+}
+.price-range-control label>span {
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:.45rem;
+    min-width:0;
+    color:#fff;
+    font-family:var(--subtitle-font);
+    font-size:1rem;
+    font-weight:700;
+    line-height:1.05
+}
+.sales-price-range-control label>span {
+    font-size:1rem
+}
+.price-range-control label>span span {
+    flex:0 0 auto;
+    color:rgba(255,255,255,.78);
+    text-transform:uppercase
+}
+.price-range-control strong,
+.price-range-value-input {
+    min-width:0;
+    color:#fff;
+    font-size:1.08rem;
+    font-weight:800;
+    text-align:right;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap
+}
+.price-range-value-input {
+    width:min(11rem,58%)!important;
+    min-height:1.6rem!important;
+    height:1.6rem!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    font-family:var(--subtitle-font)!important;
+    line-height:1.05!important;
+    outline:none;
+    box-shadow:none!important
+}
+.price-range-value-input::placeholder {
+    color:#fff;
+    opacity:1
+}
+.price-range-value-input:focus {
+    color:var(--brand-gold)!important;
+    box-shadow:0 2px 0 rgba(230,181,92,.72)!important
+}
+.sales-price-range-control strong {
+    font-size:1.08rem
+}
+.price-range-control input[type=range] {
+    width:100%!important;
+    min-height:0!important;
+    height:.7rem!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:999px!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    accent-color:#e6b55c;
+    cursor:pointer;
+    transform:none!important
+}
+.price-range-control input[type=range]:focus-visible {
+    outline:2px solid rgba(230,181,92,.72);
+    outline-offset:2px;
+    box-shadow:none!important
+}
 .search-card-variant-4 .search-grid input:hover,
 .search-card-variant-4 .search-select-trigger:hover,
 .search-card-variant-4 .search-price-trigger-input-shell:hover,
@@ -1269,6 +1409,7 @@ button {
 .search-card-variant-4 .search-field-operation .search-select-trigger,
 .search-card-variant-4 .search-field-type .search-select-trigger,
 .search-card-variant-4 .search-field-zone .search-select-trigger,
+.search-card-variant-4 .search-field-price .price-range-trigger,
 .search-card-variant-4 .search-field-reference input,
 .search-card-variant-4 .search-price-trigger {
     padding-left:0
@@ -5003,8 +5144,8 @@ button {
 }
 .sales-filter-grid {
     display:grid;
-    grid-template-columns:236px 4px 236px 4px 236px 4px 164px 4px 164px 30px 8.6rem;
-    column-gap:0;
+    grid-template-columns:minmax(0,1.18fr) minmax(0,1.18fr) minmax(0,1.18fr) minmax(0,.82fr) minmax(0,.82fr) minmax(7.4rem,.72fr);
+    column-gap:.35rem;
     row-gap:.85rem;
     margin-top:0;
     justify-content:center
@@ -5045,10 +5186,10 @@ button {
 }
 .sales-filter-field-price {
     position:relative;
-    grid-column:5;
-    width:236px;
-    min-width:236px;
-    max-width:236px
+    grid-column:3;
+    width:100%;
+    min-width:0;
+    max-width:none
 }
 .sales-filter-field-label {
     display:block;
@@ -5111,7 +5252,7 @@ button {
     position:absolute;
     left:0;
     top:calc(100% + .62rem);
-    z-index:12;
+    z-index:1250;
     display:grid;
     gap:.18rem;
     min-width:100%;
@@ -5129,10 +5270,27 @@ button {
     transform:translateY(-.2rem);
     transition:opacity .16s ease,transform .16s ease
 }
+.search-field-select:hover,
+.search-field-select:focus-within,
+.sales-filter-field:hover,
+.sales-filter-field:focus-within {
+    z-index:1200
+}
 .sales-filter-field.search-field-select:hover .search-select-tooltip,
 .sales-filter-field.search-field-select:focus-within .search-select-tooltip {
     opacity:1;
     transform:translateY(0)
+}
+.price-range-tooltip {
+    display:none
+}
+@media (min-width:481px) {
+    .price-range-trigger:hover + .price-range-tooltip,
+    .price-range-trigger:focus-visible + .price-range-tooltip {
+        display:grid;
+        opacity:1;
+        transform:translateY(0)
+    }
 }
 .sales-filter-field .search-select-trigger.is-open svg {
     transform:rotate(180deg)
@@ -5223,32 +5381,33 @@ button {
     gap:.75rem;
     align-self:center;
     margin-left:0;
-    grid-column:11;
+    grid-column:6;
+    min-width:0;
     justify-self:stretch
 }
 .sales-filter-field-type {
     grid-column:1;
-    width:236px;
-    min-width:236px;
-    max-width:236px
+    width:100%;
+    min-width:0;
+    max-width:none
 }
 .sales-filter-field-zone {
-    grid-column:3;
-    width:236px;
-    min-width:236px;
-    max-width:236px
+    grid-column:2;
+    width:100%;
+    min-width:0;
+    max-width:none
 }
 .sales-filter-field-bedrooms {
-    grid-column:7;
-    width:164px;
-    min-width:164px;
-    max-width:164px
+    grid-column:4;
+    width:100%;
+    min-width:0;
+    max-width:none
 }
 .sales-filter-field-reference {
-    grid-column:9;
-    width:164px;
-    min-width:164px;
-    max-width:164px
+    grid-column:5;
+    width:100%;
+    min-width:0;
+    max-width:none
 }
 .sales-filter-field-bedrooms .search-select-trigger {
     position:relative;
@@ -5280,7 +5439,8 @@ button {
     align-items:center;
     justify-content:center;
     gap:.42rem;
-    min-width:8.6rem;
+    min-width:0;
+    width:100%;
     min-height:4.2rem;
     padding:1rem 1.1rem;
     border-radius:14px;
@@ -6385,7 +6545,7 @@ button {
     color:#fff;
     transition:color .24s ease
 }
-.property-sticky-contact-summary-mobile {
+.property-details-page-demo-sticky-contact .property-sticky-contact-summary-mobile {
     display:none
 }
 .property-details-page-demo-sticky-contact .property-sticky-contact-summary h1 {
@@ -7797,6 +7957,48 @@ button {
         min-width:0;
         max-width:none
   }
+  .sales-filter-grid {
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        column-gap:.75rem;
+        row-gap:1.05rem
+  }
+  .sales-filter-card {
+        padding-bottom:2.35rem
+  }
+  .sales-filter-field-type {
+        order:1
+  }
+  .sales-filter-field-zone {
+        order:2
+  }
+  .sales-filter-field-price {
+        order:3
+  }
+  .sales-filter-field-bedrooms {
+        order:4
+  }
+  .sales-filter-field-reference {
+        order:5
+  }
+  .sales-filter-buttons {
+        order:6;
+        grid-column:1 / -1;
+        width:100%;
+        min-width:0;
+        justify-self:stretch;
+        justify-content:center;
+        margin-top:.15rem
+  }
+  .sales-filter-buttons .search-cta-button {
+        width:100%;
+        min-width:0;
+        min-height:3.85rem;
+        padding:.85rem 1rem
+  }
+  .sales-filter-card .price-range-popover {
+        left:auto;
+        right:0
+  }
   .property-details-hero-split-layout,
   .property-details-demo-sticky-layout {
         grid-template-columns:1fr
@@ -7805,10 +8007,53 @@ button {
         padding-top:0
   }
   .search-grid {
-        grid-template-columns:repeat(4,minmax(0,1fr))
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:.75rem
   }
-  .search-field-zone,.search-field-reference {
-        grid-column:span 1
+  .search-field-operation,
+  .search-field-type,
+  .search-field-zone,
+  .search-field-price,
+  .search-field-bedrooms,
+  .search-field-reference {
+        grid-column:auto;
+        width:100%;
+        min-width:0;
+        max-width:none
+  }
+  .search-action-buttons {
+        grid-column:1 / -1;
+        width:100%
+  }
+  .search-mobile-advanced-panel {
+        display:contents
+  }
+  .search-mobile-more-toggle {
+        display:none
+  }
+  .search-action-buttons .search-cta-button {
+        width:100%
+  }
+  .search-grid>.search-field-operation {
+        order:1
+  }
+  .search-grid>.search-field-type {
+        order:2
+  }
+  .search-grid .search-field-zone {
+        order:3
+  }
+  .search-grid .search-field-price {
+        order:4
+  }
+  .search-grid>.search-field-bedrooms {
+        order:5
+  }
+  .search-grid>.search-field-reference {
+        order:6
+  }
+  .search-grid>.search-action-buttons {
+        order:7
   }
   .sales-filter-header,.sales-results-head,.property-disclaimer-card {
         align-items:flex-start;
@@ -8084,6 +8329,7 @@ button {
         min-height:auto
   }
   .search-card {
+        z-index:60;
         padding:1.3rem .95rem;
         border-color:rgba(216,166,66,.9);
         background:linear-gradient(180deg,rgba(18,35,92,.36),rgba(11,24,72,.32));
@@ -8116,7 +8362,8 @@ button {
   .search-grid>.search-field-operation,
   .search-grid>.search-field-type,
   .search-grid>.search-field-bedrooms,
-  .search-grid>.search-field-reference {
+  .search-grid>.search-field-reference,
+  .search-grid .search-mobile-advanced-field {
         width:100%;
         min-width:0;
         max-width:none
@@ -8124,7 +8371,9 @@ button {
   .search-grid>.search-field-operation .search-select-trigger,
   .search-grid>.search-field-type .search-select-trigger,
   .search-grid>.search-field-bedrooms .search-select-trigger,
-  .search-grid>.search-field-reference input {
+  .search-grid>.search-field-reference input,
+  .search-grid .search-mobile-advanced-field .search-select-trigger,
+  .search-grid .search-mobile-advanced-field .price-range-trigger {
         width:100%;
         min-height:3.7rem
   }
@@ -8163,6 +8412,8 @@ button {
         grid-column:1 / -1
   }
   .search-mobile-advanced-panel {
+        position:relative;
+        z-index:70;
         order:6;
         grid-column:1 / -1;
         display:none;
@@ -8179,9 +8430,14 @@ button {
         display:grid;
         max-height:22rem;
         opacity:1;
+        overflow:visible;
         transform:translateY(0);
         margin-top:1.05rem;
         pointer-events:auto
+  }
+  .search-select-popover,
+  .price-range-popover {
+        z-index:1100
   }
   .search-grid .search-mobile-advanced-field {
         width:100%;
@@ -8193,9 +8449,15 @@ button {
         min-width:0;
         max-width:none
   }
+  .search-grid .search-select-popover,
   .search-grid .search-field-zone .search-select-popover {
         width:100%;
         min-width:100%
+  }
+  .search-grid .price-range-popover {
+        width:100%;
+        min-width:100%;
+        max-width:100%
   }
   .search-card-variant-4 .search-grid label,
   .search-card-variant-4 .search-field-price {
@@ -8872,22 +9134,21 @@ button {
         width:1.2rem;
         height:1.2rem
   }
-  .site-header.is-home-hero-logo-visible .logo-link {
-        opacity:0;
-        transform:translateY(-4px);
-        pointer-events:none
-  }
   .hero-brand-mark {
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        margin:0 auto 1rem
+        display:none
   }
-  .hero-brand-logo {
-        width:min(220px,70vw)
+  .hero-content {
+        display:grid;
+        justify-items:center;
+        text-align:center
   }
   .hero h1 {
-        display:none
+        display:block;
+        max-width:18ch;
+        margin:0 auto;
+        text-align:center;
+        font-size:clamp(2rem,10vw,3.1rem);
+        line-height:1.08
   }
   .property-details-hero {
         padding:1.25rem 0 3rem
@@ -9071,12 +9332,18 @@ button {
   .sales-filter-collapse.is-open {
         max-height:44rem;
         opacity:1;
+        overflow:visible;
+        position:relative;
+        z-index:70;
         transform:translateY(0);
         margin-top:1rem;
         pointer-events:auto
   }
   .sales-filter-card {
         display:block
+  }
+  .sales-filter-card:has(.sales-filter-collapse.is-open) {
+        z-index:80
   }
   .sales-filter-grid {
         grid-template-columns:1fr;
@@ -9100,6 +9367,13 @@ button {
   }
   .sales-filter-field-price {
         grid-column:auto
+  }
+  .sales-filter-card .price-range-popover {
+        left:0;
+        right:auto;
+        width:100%;
+        min-width:100%;
+        max-width:100%
   }
   .sales-filter-buttons {
         width:100%;
@@ -9293,9 +9567,6 @@ button {
   .mobile-menu-toggle svg {
         width:1.08rem;
         height:1.08rem
-  }
-  .hero-brand-logo {
-        width:min(188px,68vw)
   }
   .property-intro-shell {
         margin-top:0;
