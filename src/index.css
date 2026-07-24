@@ -8124,7 +8124,9 @@ button {
   .project-details-page {
         overflow-x:clip
   }
-  .project-details-page .container,
+  .project-details-page .container {
+        max-width:100%
+  }
   .project-details-page .property-gallery-shell {
         max-width:100%;
         overflow-x:clip
@@ -8176,9 +8178,18 @@ button {
 }
 @media(max-width:760px) {
     :root {
-        --container: calc(100vw - 2rem);
+        --container: calc(100vw - 1rem);
+        --mobile-edge-width: calc((100vw * var(--site-inverse-scale)) - .4rem);
+        --mobile-catalog-width: calc((100vw * var(--site-inverse-scale)) - 30px);
         --site-topbar-height: 0rem;
         --site-header-height: 3.9rem
+  }
+  .sales-results {
+        --sales-results-width:var(--mobile-catalog-width)
+  }
+  .property-details-page {
+        --property-details-width:calc(100vw - 1rem);
+        --property-details-mobile-hero-width:var(--mobile-edge-width)
   }
   .common-expenses-page .spotlight-panel.common-expenses-management-visual .spotlight-image-wrap,
   .property-management-page .spotlight-panel.property-management-visual .spotlight-image-wrap,
@@ -8192,6 +8203,8 @@ button {
         padding:.4rem 0
   }
   .header-inner {
+        width:var(--mobile-edge-width);
+        max-width:var(--mobile-edge-width);
         justify-content:space-between;
         row-gap:.2rem
   }
@@ -8629,6 +8642,74 @@ button {
   }
   .property-details-page .container {
         width:var(--property-details-width)
+  }
+  .property-details-page:not(.project-details-page):not(.property-details-page-demo-sticky-contact) .property-details-hero > .container,
+  .property-details-page-demo-sticky-contact .property-details-demo-main .property-details-hero {
+        width:var(--property-details-mobile-hero-width);
+        max-width:var(--property-details-mobile-hero-width);
+        margin-left:50%;
+        margin-right:0;
+        transform:translateX(-50%)
+  }
+  .project-details-hero .property-gallery-shell {
+        width:var(--property-details-mobile-hero-width);
+        max-width:var(--property-details-mobile-hero-width);
+        margin-left:50%;
+        margin-right:0;
+        transform:translateX(-50%)
+  }
+  .project-availability-layout {
+        width:var(--mobile-catalog-width);
+        max-width:var(--mobile-catalog-width);
+        margin-left:50%;
+        margin-right:0;
+        transform:translateX(-50%)
+  }
+  .project-details-page .project-intro-previews {
+        width:calc(100vw - 16px);
+        max-width:calc(100vw - 16px);
+        margin-left:50%;
+        margin-right:0;
+        transform:translateX(-50%)
+  }
+  .project-details-page .project-preview-card {
+        min-width:0;
+        overflow:hidden
+  }
+  .project-details-page .project-preview-card-head,
+  .project-details-page .project-preview-item {
+        min-width:0;
+        flex-wrap:wrap
+  }
+  .project-details-page .project-preview-card-head {
+        gap:.45rem .8rem
+  }
+  .project-details-page .project-preview-card-head a {
+        flex:0 0 auto;
+        white-space:nowrap
+  }
+  .project-details-page .project-preview-item {
+        gap:.55rem .8rem
+  }
+  .project-details-page .project-preview-item-main,
+  .project-details-page .project-preview-item-meta {
+        min-width:0
+  }
+  .project-details-page .project-preview-item-meta {
+        margin-left:auto;
+        flex-wrap:wrap;
+        justify-content:flex-end;
+        gap:.45rem .65rem
+  }
+  .project-availability-block,
+  #tabla-cocheras {
+        width:100%;
+        max-width:100%
+  }
+  .project-availability-block .property-section-header:before {
+        inset:0 auto 0 -100vw;
+        width:calc(100% + 100vw);
+        border-radius:0 1.4rem 1.4rem 0
   }
   .property-breadcrumb {
         align-items:flex-start;
@@ -9104,7 +9185,7 @@ button {
         padding-bottom:2rem
   }
   .section-listings .container {
-        width:calc(100vw - 1.1rem)
+        width:var(--mobile-catalog-width)
   }
   .section-listings .section-heading h2 {
         margin-bottom:0;
@@ -9524,7 +9605,7 @@ button {
         padding-bottom:1.8rem
   }
   .section-listings .container {
-        width:calc(100vw - .8rem)
+        width:var(--mobile-catalog-width)
   }
   .section-listings .section-heading h2 {
         margin-bottom:0;
