@@ -250,6 +250,12 @@ const navLinks: NavLink[] = [
   { label: "Contacto", href: "/contacto", route: "contacto" },
 ];
 
+const mobileNavLinks: NavLink[] = [
+  ...navLinks.slice(0, 3),
+  { label: "Proyectos", href: "/proyectos", route: "proyectos" },
+  ...navLinks.slice(3),
+];
+
 const mobileQuickLinks = [
   { label: "Sueldos" },
   { label: "Clientes" },
@@ -1450,7 +1456,7 @@ function App() {
             aria-label="Principal"
             aria-hidden={!isMobileMenuOpen}
           >
-            {navLinks.map((item) => (
+            {mobileNavLinks.map((item) => (
               <div
                 key={`mobile-${item.label}`}
                 className={`mobile-menu-item${item.route === activeNavRoute ? " is-active" : ""}`}

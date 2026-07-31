@@ -8559,8 +8559,26 @@ button {
         margin:0 auto 1rem;
         font-size:clamp(2.75rem,11vw,3.65rem)
   }
-  .hero .hero-tagline,.hero-actions {
+  .hero .hero-tagline {
         display:none
+  }
+  .hero-actions {
+        display:flex;
+        flex-direction:column;
+        align-items:stretch;
+        width:min(100%,22rem);
+        margin:.8rem auto 0;
+        gap:.65rem
+  }
+  .hero-actions .primary-button {
+        display:none
+  }
+  .hero-actions .hero-link-button {
+        padding:.86rem 1rem;
+        font-size:clamp(.82rem,3.45vw,1rem);
+        letter-spacing:0;
+        line-height:1;
+        white-space:nowrap
   }
   .hero p {
         margin:0 auto
