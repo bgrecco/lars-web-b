@@ -468,7 +468,7 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
 
   if (isLoadingProject) {
     return (
-      <div className="property-details-page project-details-page">
+      <div className="property-details-page project-details-page property-details-page-loading">
         <section className="sales-loader-section" aria-live="polite">
           <LarsLogoLoader />
         </section>
