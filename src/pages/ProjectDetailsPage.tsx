@@ -3,6 +3,7 @@ import { fetchProjectDetail, getLarsApiErrorMessage, isAbortError } from "../api
 import ImageLightbox from "../components/ImageLightbox";
 import LarsLogoLoader from "../components/LarsLogoLoader";
 import WhatsAppIcon from "../components/WhatsAppIcon";
+import { canUseMockCatalogFallback, shouldUseMockCatalog } from "../config/dataSource";
 import {
   getProjectBySlug,
   type Project,
@@ -393,6 +394,12 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
     setLoadError("");
     setIsLoadingProject(true);
 
+    if (shouldUseMockCatalog) {
+      setProject(getProjectBySlug(projectSlug));
+      setIsLoadingProject(false);
+      return;
+    }
+
     fetchProjectDetail(projectSlug, controller.signal)
       .then((nextProject) => {
         setProject(nextProject);
@@ -403,7 +410,7 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
         }
 
         setLoadError(getLarsApiErrorMessage(error));
-        setProject(import.meta.env.DEV ? getProjectBySlug(projectSlug) : undefined);
+        setProject(canUseMockCatalogFallback ? getProjectBySlug(projectSlug) : undefined);
       })
       .finally(() => {
         if (!controller.signal.aborted) {

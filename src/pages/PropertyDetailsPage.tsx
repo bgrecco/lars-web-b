@@ -9,11 +9,11 @@ import {
 import ImageLightbox from "../components/ImageLightbox";
 import LarsLogoLoader from "../components/LarsLogoLoader";
 import WhatsAppIcon from "../components/WhatsAppIcon";
+import { canUseMockCatalogFallback, shouldUseMockCatalog } from "../config/dataSource";
 import {
   getSalesPropertyByRef,
   getSalesPropertyUrl,
   getSimilarSalesProperties,
-  salesCatalog,
   type SalesProperty,
 } from "../data/salesCatalog";
 
@@ -301,6 +301,15 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
     setLoadError("");
     setIsLoadingProperty(true);
 
+    if (shouldUseMockCatalog) {
+      const mockProperty = getSalesPropertyByRef(propertyRef);
+
+      setProperty(mockProperty);
+      setSimilarPropertyCatalog(mockProperty ? getSimilarSalesProperties(mockProperty, 4) : []);
+      setIsLoadingProperty(false);
+      return;
+    }
+
     Promise.all([
       fetchPropertyByRef(propertyRef, controller.signal),
       fetchProperties(propertyOrigin, {}, controller.signal).catch(() => [] as SalesProperty[]),
@@ -315,8 +324,10 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
         }
 
         setLoadError(getLarsApiErrorMessage(error));
-        setProperty(import.meta.env.DEV ? getSalesPropertyByRef(propertyRef) : undefined);
-        setSimilarPropertyCatalog(import.meta.env.DEV ? salesCatalog : []);
+        const mockProperty = canUseMockCatalogFallback ? getSalesPropertyByRef(propertyRef) : undefined;
+
+        setProperty(mockProperty);
+        setSimilarPropertyCatalog(mockProperty ? getSimilarSalesProperties(mockProperty, 4) : []);
       })
       .finally(() => {
         if (!controller.signal.aborted) {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchProjects, getLarsApiErrorMessage, isAbortError } from "../api/larsApi";
 import LarsLogoLoader from "../components/LarsLogoLoader";
+import { canUseMockCatalogFallback, shouldUseMockCatalog } from "../config/dataSource";
 import { featuredProjects, getProjectUrl, type Project } from "../data/projectsCatalog";
 
 export default function ProjectsPage() {
@@ -16,6 +17,12 @@ export default function ProjectsPage() {
     setLoadError("");
     setIsUsingFallbackCatalog(false);
 
+    if (shouldUseMockCatalog) {
+      setProjects(featuredProjects);
+      setIsLoadingProjects(false);
+      return;
+    }
+
     fetchProjects(controller.signal)
       .then((nextProjects) => {
         setProjects(nextProjects);
@@ -26,8 +33,8 @@ export default function ProjectsPage() {
         }
 
         setLoadError(getLarsApiErrorMessage(error));
-        setProjects(import.meta.env.DEV ? featuredProjects : []);
-        setIsUsingFallbackCatalog(import.meta.env.DEV);
+        setProjects(canUseMockCatalogFallback ? featuredProjects : []);
+        setIsUsingFallbackCatalog(canUseMockCatalogFallback);
       })
       .finally(() => {
         if (!controller.signal.aborted) {

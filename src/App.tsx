@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { fetchHome, fetchPropertyByRef, isAbortError } from "./api/larsApi";
 import ContactSection from "./components/ContactSection";
 import WhatsAppFloatingButton from "./components/WhatsAppFloatingButton";
+import { shouldUseMockCatalog } from "./config/dataSource";
 import AboutPage from "./pages/AboutPage";
 import CommonExpensesPage from "./pages/CommonExpensesPage";
 import ProjectDetailsPage from "./pages/ProjectDetailsPage";
@@ -1014,6 +1015,14 @@ function App() {
 
   useEffect(() => {
     if (route.name !== "home") {
+      return;
+    }
+
+    if (shouldUseMockCatalog) {
+      setHomeFeaturedListings(featuredListings);
+      setListingIndex(0);
+      setListingMediaIndex(0);
+      setListingTransitionDirection(null);
       return;
     }
 

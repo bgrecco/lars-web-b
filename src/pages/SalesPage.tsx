@@ -2,6 +2,7 @@ import { startTransition, useEffect, useMemo, useRef, useState, type FormEvent }
 import { fetchProperties, getLarsApiErrorMessage, isAbortError, type PropertyListQuery } from "../api/larsApi";
 import ContactSection from "../components/ContactSection";
 import LarsLogoLoader from "../components/LarsLogoLoader";
+import { canUseMockCatalogFallback, shouldUseMockCatalog } from "../config/dataSource";
 import { getSalesPropertyUrl, salesCatalog, type SalesProperty } from "../data/salesCatalog";
 
 type SearchDropdownOption = {
@@ -463,6 +464,13 @@ export default function SalesPage({
     setLoadError("");
     setIsUsingFallbackCatalog(false);
 
+    if (shouldUseMockCatalog) {
+      setProperties(salesCatalog);
+      setLoadedPropertiesQueryKey(propertyListQueryKey);
+      setIsLoadingProperties(false);
+      return;
+    }
+
     fetchProperties(listingContext, propertyListQuery, controller.signal)
       .then((nextProperties) => {
         setProperties(nextProperties);
@@ -474,9 +482,9 @@ export default function SalesPage({
         }
 
         setLoadError(getLarsApiErrorMessage(error));
-        setProperties(import.meta.env.DEV ? salesCatalog : []);
+        setProperties(canUseMockCatalogFallback ? salesCatalog : []);
         setLoadedPropertiesQueryKey(propertyListQueryKey);
-        setIsUsingFallbackCatalog(import.meta.env.DEV);
+        setIsUsingFallbackCatalog(canUseMockCatalogFallback);
       })
       .finally(() => {
         if (!controller.signal.aborted) {
