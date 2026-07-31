@@ -903,33 +903,48 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const elements = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+    const elements = Array.from(document.querySelectorAll<HTMLElement>(".reveal:not(.reveal-early)"));
+    const earlyElements = Array.from(document.querySelectorAll<HTMLElement>(".reveal-early"));
 
     if (!("IntersectionObserver" in window)) {
-      elements.forEach((element) => element.classList.add("is-visible"));
+      [...elements, ...earlyElements].forEach((element) => element.classList.add("is-visible"));
       return;
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) {
-            return;
-          }
+    const handleRevealEntries: IntersectionObserverCallback = (entries, observer) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) {
+          return;
+        }
 
-          entry.target.classList.add("is-visible");
-          observer.unobserve(entry.target);
-        });
-      },
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      });
+    };
+
+    const observer = new IntersectionObserver(
+      handleRevealEntries,
       {
         threshold: 0.16,
         rootMargin: "0px 0px -10% 0px",
       },
     );
 
-    elements.forEach((element) => observer.observe(element));
+    const earlyObserver = new IntersectionObserver(
+      handleRevealEntries,
+      {
+        threshold: 0.01,
+        rootMargin: "0px 0px 24% 0px",
+      },
+    );
 
-    return () => observer.disconnect();
+    elements.forEach((element) => observer.observe(element));
+    earlyElements.forEach((element) => earlyObserver.observe(element));
+
+    return () => {
+      observer.disconnect();
+      earlyObserver.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -1803,7 +1818,7 @@ function App() {
               description=""
             />
 
-            <div className="listing-carousel reveal">
+            <div className="listing-carousel reveal reveal-early">
               <div className="listing-showcase-shell">
                 {listingCount > 1 && (
                   <div
