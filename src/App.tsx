@@ -863,6 +863,7 @@ function App() {
   const [isMobileRentMenuOpen, setIsMobileRentMenuOpen] = useState(false);
   const [isMobileSearchFiltersOpen, setIsMobileSearchFiltersOpen] = useState(false);
   const [shouldLoadHeroVideo, setShouldLoadHeroVideo] = useState(false);
+  const [isHeroVideoPlaying, setIsHeroVideoPlaying] = useState(false);
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
   const [searchPriceMin, setSearchPriceMin] = useState(0);
@@ -876,6 +877,7 @@ function App() {
   const [activeSearchDropdown, setActiveSearchDropdown] = useState<"operation" | "type" | "zone" | "price" | "bedrooms" | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const homeSearchFormRef = useRef<HTMLFormElement | null>(null);
+  const heroVideoRef = useRef<HTMLVideoElement | null>(null);
   const isHomeRentalSearch = searchOperation === "alquiler";
 
   useEffect(() => {
@@ -1076,8 +1078,11 @@ function App() {
   useEffect(() => {
     if (route.name !== "home") {
       setShouldLoadHeroVideo(false);
+      setIsHeroVideoPlaying(false);
       return;
     }
+
+    setIsHeroVideoPlaying(false);
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const supportsConnection = "connection" in navigator;
@@ -1089,45 +1094,37 @@ function App() {
       return;
     }
 
-    const browserWindow = window as Window & {
-      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
-      cancelIdleCallback?: (handle: number) => void;
-    };
-    let timeoutId = 0;
-    let idleId = 0;
-
-    const queueVideoLoad = () => {
-      if (browserWindow.requestIdleCallback) {
-        idleId = browserWindow.requestIdleCallback(
-          () => {
-            setShouldLoadHeroVideo(true);
-          },
-          { timeout: 1800 },
-        );
-        return;
-      }
-
-      timeoutId = window.setTimeout(() => {
-        setShouldLoadHeroVideo(true);
-      }, 900);
-    };
-
-    if (document.readyState === "complete") {
-      queueVideoLoad();
-    } else {
-      window.addEventListener("load", queueVideoLoad, { once: true });
-    }
+    const timeoutId = window.setTimeout(() => {
+      setShouldLoadHeroVideo(true);
+    }, 500);
 
     return () => {
-      window.removeEventListener("load", queueVideoLoad);
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
-      if (idleId && browserWindow.cancelIdleCallback) {
-        browserWindow.cancelIdleCallback(idleId);
-      }
+      window.clearTimeout(timeoutId);
     };
   }, [route.name]);
+
+  useEffect(() => {
+    const video = heroVideoRef.current;
+
+    if (!shouldLoadHeroVideo || !video) {
+      return;
+    }
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.setAttribute("muted", "");
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+
+    const playback = video.play();
+    playback
+      ?.then(() => {
+        setIsHeroVideoPlaying(true);
+      })
+      .catch(() => {
+        setIsHeroVideoPlaying(false);
+      });
+  }, [shouldLoadHeroVideo]);
 
   useEffect(() => {
     if (!activeSearchDropdown) {
@@ -1536,17 +1533,35 @@ function App() {
           <>
             <section className="hero" id="inicio">
           <div className="hero-media" aria-hidden="true">
-            <video
-              className="hero-video"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="none"
-              poster="/optimized/home/hero-building.webp"
-            >
-              {shouldLoadHeroVideo ? <source src="/hero-bg.mp4" type="video/mp4" /> : null}
-            </video>
+            <img
+              className="hero-poster"
+              src="/optimized/home/hero-video-poster.webp"
+              alt=""
+              width="1920"
+              height="1080"
+              decoding="async"
+              fetchPriority="high"
+            />
+            {shouldLoadHeroVideo ? (
+              <video
+                ref={heroVideoRef}
+                className={`hero-video${isHeroVideoPlaying ? " is-playing" : ""}`}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                controls={false}
+                disablePictureInPicture
+                controlsList="nodownload nofullscreen noremoteplayback"
+                tabIndex={-1}
+                onPlaying={() => setIsHeroVideoPlaying(true)}
+                onPause={() => setIsHeroVideoPlaying(false)}
+                onError={() => setIsHeroVideoPlaying(false)}
+              >
+                <source src="/hero-bg.mp4" type="video/mp4" />
+              </video>
+            ) : null}
           </div>
           <div className="hero-backdrop" aria-hidden="true" />
           <div className="container hero-stage">
