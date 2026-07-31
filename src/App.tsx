@@ -246,7 +246,6 @@ const navLinks: NavLink[] = [
       { label: "Administración de propiedades", href: "/alquileres/administracion-de-propiedades" },
     ],
   },
-  { label: "Proyectos", href: "/proyectos", route: "proyectos" },
   { label: "Nosotros", href: "/acerca", route: "acerca" },
   { label: "Contacto", href: "/contacto", route: "contacto" },
 ];
@@ -1571,8 +1570,8 @@ function App() {
               </div>
               <h1>Servimos bien para servir siempre</h1>
               <div className="hero-actions">
-                <a className="primary-button" href="/gastos-comunes">
-                  Gastos comunes
+                <a className="primary-button" href="/proyectos">
+                  Proyectos
                 </a>
                 <a className="hero-link-button" href="/propietarios">
                   Alquilá o vendé tu propiedad con Lars
