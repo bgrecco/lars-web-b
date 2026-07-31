@@ -8474,6 +8474,23 @@ button {
   .site-header {
         padding:.4rem 0
   }
+  .page-shell-home .site-header {
+        position:absolute;
+        top:0;
+        left:0;
+        right:0;
+        background:transparent;
+        -webkit-backdrop-filter:none;
+        backdrop-filter:none;
+        border-bottom-color:transparent;
+        box-shadow:none
+  }
+  .page-shell-home .site-header.is-mobile-menu-open {
+        background:#000b4bf2;
+        -webkit-backdrop-filter:blur(14px);
+        backdrop-filter:blur(14px);
+        border-bottom-color:rgba(255,255,255,.08)
+  }
   .header-inner {
         width:var(--mobile-edge-width);
         max-width:var(--mobile-edge-width);
@@ -8487,6 +8504,17 @@ button {
         width:2.9rem;
         height:2.9rem
   }
+  .page-shell-home .mobile-menu-toggle {
+        background:#000b4bd6;
+        border-color:rgba(255,255,255,.2);
+        box-shadow:0 10px 24px rgba(1,11,45,.26)
+  }
+  .page-shell-home .mobile-menu-toggle:hover,
+  .page-shell-home .mobile-menu-toggle:focus-visible,
+  .page-shell-home .mobile-menu-toggle.is-open {
+        background:#000b4bf0;
+        border-color:rgba(255,255,255,.34)
+  }
   .mobile-menu-panel {
         padding:0 .85rem
   }
@@ -8497,6 +8525,9 @@ button {
         min-height:auto;
         padding-top:3.1rem;
         padding-bottom:4rem
+  }
+  .page-shell-home .hero {
+        padding-top:7rem
   }
   .hero-stage {
         min-height:auto;
