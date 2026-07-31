@@ -24,8 +24,8 @@
     --site-topbar-height: 3.25rem;
     --site-header-height: 5.4rem;
     --site-header-stack-offset: calc(var(--site-topbar-height) + var(--site-header-height));
-    --site-scale: .8;
-    --site-inverse-scale: 1.25;
+    --site-scale: .75;
+    --site-inverse-scale: 1.3333333333;
     --container: min(92rem, calc(100vw - 4rem));
     --title-font: Poppins, sans-serif;
     --subtitle-font: Lato, "Poppins", sans-serif
