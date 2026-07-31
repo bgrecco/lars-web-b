@@ -8470,11 +8470,16 @@ button {
         --site-topbar-height: 0rem;
         --site-header-height: 3.9rem
   }
+  .section-contact,
+  .about-page,
+  .common-expenses-page {
+        --container:var(--mobile-catalog-width)
+  }
   .sales-results {
         --sales-results-width:var(--mobile-catalog-width)
   }
   .property-details-page {
-        --property-details-width:calc(100vw - 1rem);
+        --property-details-width:var(--mobile-catalog-width);
         --property-details-mobile-hero-width:var(--mobile-edge-width)
   }
   .common-expenses-page .spotlight-panel.common-expenses-management-visual .spotlight-image-wrap,
@@ -8499,11 +8504,40 @@ button {
         border-bottom-color:transparent;
         box-shadow:none
   }
+  .page-shell-home .site-header.is-header-scrolled {
+        position:fixed;
+        top:0;
+        overflow:visible;
+        isolation:isolate;
+        background:transparent;
+        -webkit-backdrop-filter:none;
+        backdrop-filter:none;
+        border-bottom-color:transparent;
+        box-shadow:none
+  }
+  .page-shell-home .site-header.is-header-scrolled .header-inner {
+        position:relative;
+        z-index:1
+  }
+  .page-shell-home .site-header.is-header-scrolled:before {
+        content:"";
+        position:absolute;
+        z-index:0;
+        top:0;
+        left:0;
+        right:0;
+        height:calc(100% + 2.2rem);
+        pointer-events:none;
+        background:linear-gradient(180deg,rgba(0,11,75,.92) 0%,rgba(0,11,75,.68) 48%,rgba(0,11,75,.24) 76%,rgba(0,11,75,0) 100%)
+  }
   .page-shell-home .site-header.is-mobile-menu-open {
         background:#000b4bf2;
         -webkit-backdrop-filter:blur(14px);
         backdrop-filter:blur(14px);
         border-bottom-color:rgba(255,255,255,.08)
+  }
+  .page-shell-home .site-header.is-mobile-menu-open:before {
+        display:none
   }
   .header-inner {
         width:var(--mobile-edge-width);
@@ -8512,11 +8546,11 @@ button {
         row-gap:.2rem
   }
   .brand-logo {
-        width:132px
+        width:164px
   }
   .mobile-menu-toggle {
-        width:2.9rem;
-        height:2.9rem
+        width:3.65rem;
+        height:3.65rem
   }
   .page-shell-home .mobile-menu-toggle {
         background:#000b4bd6;
@@ -8881,7 +8915,7 @@ button {
         padding:3.5rem 0
   }
   .about-page-pillar-card {
-        padding:1.15rem
+        padding:1rem
   }
   .common-expenses-hero h1 {
         max-width:none
@@ -8918,7 +8952,7 @@ button {
         padding-bottom:2.4rem
   }
   .common-expenses-payment-panel,.common-expenses-card {
-        padding:1.15rem
+        padding:1rem
   }
   .common-expenses-logo-grid-online {
         grid-template-columns:repeat(2,minmax(0,1fr))
@@ -8995,11 +9029,24 @@ button {
         transform:translateX(-50%)
   }
   .project-details-hero .property-gallery-shell {
+        display:grid;
+        grid-auto-rows:auto;
+        align-items:start;
+        gap:.65rem;
         width:var(--property-details-mobile-hero-width);
         max-width:var(--property-details-mobile-hero-width);
         margin-left:50%;
+        margin-bottom:1rem;
         margin-right:0;
         transform:translateX(-50%)
+  }
+  .project-details-page .property-details-hero {
+        padding-bottom:1.2rem
+  }
+  .project-details-page .property-intro-shell {
+        margin-top:0;
+        padding-top:0;
+        transform:none
   }
   .project-availability-layout {
         width:var(--mobile-catalog-width);
@@ -9009,8 +9056,8 @@ button {
         transform:translateX(-50%)
   }
   .project-details-page .project-intro-previews {
-        width:calc(100vw - 16px);
-        max-width:calc(100vw - 16px);
+        width:var(--mobile-catalog-width);
+        max-width:var(--mobile-catalog-width);
         margin-left:50%;
         margin-right:0;
         transform:translateX(-50%)
@@ -9060,6 +9107,12 @@ button {
   }
   .property-breadcrumb .property-ref-inline {
         align-self:flex-end
+  }
+  .property-details-page:not(.project-details-page) .property-intro-shell {
+        width:var(--mobile-catalog-width);
+        max-width:var(--mobile-catalog-width);
+        margin-left:auto;
+        margin-right:auto
   }
   .property-gallery-main {
         min-height:0;
@@ -9113,6 +9166,19 @@ button {
         min-height:auto;
         aspect-ratio:1 / .8;
         scroll-snap-align:start
+  }
+  .project-details-page .property-gallery-rail {
+        display:flex;
+        grid-template-columns:none;
+        grid-template-rows:none;
+        max-height:none;
+        overflow-x:auto;
+        overflow-y:hidden
+  }
+  .project-details-page .property-gallery-thumb {
+        flex:0 0 calc((100% - 1.3rem) / 3);
+        min-height:auto;
+        aspect-ratio:1 / .8
   }
   .property-gallery-thumb:hover,.property-gallery-thumb:focus-visible,.property-gallery-thumb.is-active {
         transform:none
@@ -9310,7 +9376,7 @@ button {
         width:100%
   }
   .contact-form {
-        padding:1.45rem
+        padding:1rem
   }
   .contact-form-grid {
         grid-template-columns:1fr
@@ -9476,7 +9542,8 @@ button {
   }
   .contact-card {
         justify-items:center;
-        text-align:center
+        text-align:center;
+        padding:1rem
   }
   .contact-card h3 {
         margin:0 0 .25rem;
@@ -9549,15 +9616,15 @@ button {
         padding:.28rem 0
   }
   .brand-logo {
-        width:118px
+        width:148px
   }
   .mobile-menu-toggle {
-        width:2.6rem;
-        height:2.6rem
+        width:3.25rem;
+        height:3.25rem
   }
   .mobile-menu-toggle svg {
-        width:1.2rem;
-        height:1.2rem
+        width:1.48rem;
+        height:1.48rem
   }
   .hero-brand-mark {
         display:none
@@ -9589,9 +9656,12 @@ button {
         aspect-ratio:16 / 9
   }
   .project-details-page .property-gallery-rail {
-        display:grid;
-        grid-template-columns:repeat(3,minmax(0,1fr));
-        overflow-x:hidden
+        display:flex;
+        grid-template-columns:none;
+        grid-template-rows:none;
+        max-height:none;
+        overflow-x:auto;
+        overflow-y:hidden
   }
   .property-gallery-rail {
         gap:.65rem
@@ -9983,15 +10053,15 @@ button {
         padding:.2rem 0
   }
   .brand-logo {
-        width:108px
+        width:136px
   }
   .mobile-menu-toggle {
-        width:2.45rem;
-        height:2.45rem
+        width:3.05rem;
+        height:3.05rem
   }
   .mobile-menu-toggle svg {
-        width:1.08rem;
-        height:1.08rem
+        width:1.36rem;
+        height:1.36rem
   }
   .property-intro-shell {
         margin-top:0;
