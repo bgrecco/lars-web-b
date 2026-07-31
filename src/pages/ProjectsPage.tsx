@@ -1,8 +1,43 @@
-import { useEffect } from "react";
-import ContactSection from "../components/ContactSection";
-import { featuredProjects, getProjectUrl } from "../data/projectsCatalog";
+import { useEffect, useState } from "react";
+import { fetchProjects, getLarsApiErrorMessage, isAbortError } from "../api/larsApi";
+import LarsLogoLoader from "../components/LarsLogoLoader";
+import { featuredProjects, getProjectUrl, type Project } from "../data/projectsCatalog";
 
 export default function ProjectsPage() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [isUsingFallbackCatalog, setIsUsingFallbackCatalog] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    setIsLoadingProjects(true);
+    setLoadError("");
+    setIsUsingFallbackCatalog(false);
+
+    fetchProjects(controller.signal)
+      .then((nextProjects) => {
+        setProjects(nextProjects);
+      })
+      .catch((error: unknown) => {
+        if (isAbortError(error)) {
+          return;
+        }
+
+        setLoadError(getLarsApiErrorMessage(error));
+        setProjects(import.meta.env.DEV ? featuredProjects : []);
+        setIsUsingFallbackCatalog(import.meta.env.DEV);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsLoadingProjects(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, []);
+
   useEffect(() => {
     const elements = Array.from(document.querySelectorAll<HTMLElement>(".projects-page .reveal:not(.is-visible)"));
 
@@ -35,46 +70,71 @@ export default function ProjectsPage() {
     elements.forEach((element) => observer.observe(element));
 
     return () => observer.disconnect();
-  }, []);
+  }, [isLoadingProjects, projects.length, loadError]);
+
+  if (isLoadingProjects && !projects.length) {
+    return (
+      <div className="sales-page projects-page">
+        <section className="sales-loader-section" aria-live="polite">
+          <LarsLogoLoader />
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="sales-page projects-page">
       <section className="sales-results projects-results" id="proyectos-resultados">
         <div className="container">
-          <div className="sales-grid project-results-grid">
-            {featuredProjects.map((project, index) => (
-              <article
-                key={project.title}
-                className={`project-card project-results-card reveal reveal-delay-${(index % 4) + 1}`}
-              >
-                <a
-                  href={getProjectUrl(project.slug)}
-                  className="project-card-hitarea"
-                  aria-label={`Ver detalles de ${project.title}`}
-                />
-                <div className="project-image-wrap">
-                  <img
-                    src={project.cardImage}
-                    alt={project.title}
-                    className="project-image"
-                    width="700"
-                    height={project.slug === "tempo-guayabos" ? 543 : project.slug === "vila" ? 804 : 750}
-                    loading="lazy"
-                    decoding="async"
+          {loadError ? (
+            <div className="sales-data-alert reveal is-visible" role={isUsingFallbackCatalog ? "status" : "alert"}>
+              <strong>
+                {isUsingFallbackCatalog
+                  ? "Mostrando proyectos de prueba mientras el catálogo público no responde."
+                  : "No pudimos cargar los proyectos."}
+              </strong>
+              <span>{loadError}</span>
+            </div>
+          ) : null}
+
+          {projects.length ? (
+            <div className="sales-grid project-results-grid">
+              {projects.map((project, index) => (
+                <article
+                  key={project.slug || project.title}
+                  className={`project-card project-results-card reveal reveal-delay-${(index % 4) + 1}`}
+                >
+                  <a
+                    href={getProjectUrl(project.slug)}
+                    className="project-card-hitarea"
+                    aria-label={`Ver detalles de ${project.title}`}
                   />
-                </div>
-                <div className="project-body">
-                  <h3>{project.title}</h3>
-                  <p className="project-meta">{project.location}</p>
-                  <p>{project.description}</p>
-                </div>
-              </article>
-            ))}
-          </div>
+                  <div className="project-image-wrap">
+                    <img
+                      src={project.cardImage}
+                      alt={project.title}
+                      className="project-image"
+                      width="700"
+                      height={project.slug === "tempo-guayabos" ? 543 : project.slug === "vila" ? 804 : 750}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                  <div className="project-body">
+                    <h3>{project.title}</h3>
+                    <p className="project-meta">{project.location}</p>
+                    <p className="project-card-description">{project.description}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="sales-empty-state reveal is-visible">
+              <h3>No hay proyectos disponibles.</h3>
+            </div>
+          )}
         </div>
       </section>
-
-      <ContactSection />
     </div>
   );
 }

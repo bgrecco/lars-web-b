@@ -16,6 +16,7 @@ export type Project = {
   services: string[];
   availableUnits: ProjectUnit[];
   availableParking: ProjectParking[];
+  availableCommercialUnits?: ProjectUnit[];
 };
 
 export type ProjectGalleryItem = {
@@ -35,7 +36,7 @@ function withOptimizedGalleryImage(image: string, alt: string): ProjectGalleryIt
 
 export type ProjectUnit = {
   unit: string;
-  orientation: "Frente" | "Contrafrente";
+  orientation: string;
   bedrooms: number;
   coveredArea: number;
   totalArea: number;

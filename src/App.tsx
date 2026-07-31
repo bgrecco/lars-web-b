@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { fetchHome, fetchPropertyByRef, isAbortError } from "./api/larsApi";
 import ContactSection from "./components/ContactSection";
 import WhatsAppFloatingButton from "./components/WhatsAppFloatingButton";
 import AboutPage from "./pages/AboutPage";
@@ -9,7 +10,7 @@ import PropertyDetailsPage from "./pages/PropertyDetailsPage";
 import PropertyManagementPage from "./pages/PropertyManagementPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import SalesPage from "./pages/SalesPage";
-import { getSalesPropertyUrl } from "./data/salesCatalog";
+import { getSalesPropertyUrl, type SalesProperty } from "./data/salesCatalog";
 
 type NavRoute =
   | "home"
@@ -42,7 +43,7 @@ type AppRoute =
   | { name: "proyectos" }
   | { name: "proyecto"; projectSlug: string | null }
   | { name: "contacto" }
-  | { name: "propiedad"; propertyId: number | null };
+  | { name: "propiedad"; propertyRef: string | null; propertyOrigin: "ventas" | "alquileres" };
 
 type ListingMedia = {
   image: string;
@@ -53,6 +54,7 @@ type ListingMedia = {
 
 type Listing = {
   id: number;
+  ref: string;
   origin?: "ventas" | "alquileres";
   operation: string;
   title: string;
@@ -83,6 +85,7 @@ type SearchDropdownFieldProps = {
 
 const homeSearchButtonVariant = "glow" as const;
 const homeHeaderAccessVariant = "icon-links" as const;
+const maxFeaturedListingSecondaryImages = 4;
 
 function buildListingGallery(title: string, primaryImage: string): ListingMedia[] {
   return [
@@ -111,6 +114,72 @@ function buildListingGallery(title: string, primaryImage: string): ListingMedia[
       objectPosition: "center center",
     },
   ];
+}
+
+function getPropertyListingOrigin(property: SalesProperty): "ventas" | "alquileres" {
+  const operationText = property.operation?.toLowerCase() ?? "";
+
+  if (operationText.includes("alquiler")) {
+    return "alquileres";
+  }
+
+  if (operationText.includes("venta")) {
+    return "ventas";
+  }
+
+  const operationsText = (property.operations ?? []).join(" ").toLowerCase();
+
+  return operationsText.includes("alquiler") ? "alquileres" : "ventas";
+}
+
+function getPropertyOperationLabel(property: SalesProperty) {
+  const operation = property.operation?.trim();
+
+  if (operation?.toLowerCase().includes("alquiler")) {
+    return "Alquiler";
+  }
+
+  if (operation?.toLowerCase().includes("venta")) {
+    return "Venta";
+  }
+
+  return getPropertyListingOrigin(property) === "alquileres" ? "Alquiler" : "Venta";
+}
+
+function propertyToListing(property: SalesProperty): Listing {
+  const fallbackImage = property.image || property.cardImage;
+  const gallery = property.gallery.length
+    ? property.gallery
+    : [
+        {
+          image: fallbackImage,
+          thumbImage: property.cardImage || fallbackImage,
+          alt: `${property.title} vista principal`,
+          objectPosition: property.imagePosition,
+        },
+      ];
+  const listingGallery = gallery.slice(0, maxFeaturedListingSecondaryImages + 1);
+  const firstImage = listingGallery[0]?.image || fallbackImage;
+
+  return {
+    id: property.id,
+    ref: property.ref,
+    origin: getPropertyListingOrigin(property),
+    operation: getPropertyOperationLabel(property),
+    title: property.title,
+    price: property.price,
+    location: property.location,
+    rooms: property.rooms,
+    bathrooms: property.bathrooms,
+    size: property.size,
+    image: firstImage,
+    gallery: listingGallery.map((media, index) => ({
+      image: media.image,
+      thumbImage: media.thumbImage,
+      alt: media.alt || `${property.title} imagen ${index + 1}`,
+      objectPosition: media.objectPosition ?? property.imagePosition,
+    })),
+  };
 }
 
 function SearchDropdownField(props: SearchDropdownFieldProps) {
@@ -185,9 +254,11 @@ const mobileQuickLinks = [
   { label: "Sueldos" },
   { label: "Clientes" },
 ];
+const featuredPropertyRef = "10000";
 const featuredListings: Listing[] = [
   {
     id: 4,
+    ref: "0004",
     origin: "alquileres",
     operation: "Alquiler",
     title: "Villa Dolores Loft",
@@ -202,6 +273,7 @@ const featuredListings: Listing[] = [
   },
   {
     id: 1,
+    ref: "0001",
     operation: "Venta",
     title: "Pocitos Classic",
     price: "US$ 321.000",
@@ -214,6 +286,7 @@ const featuredListings: Listing[] = [
   },
   {
     id: 2,
+    ref: "0002",
     operation: "Venta",
     title: "Punta Carretas Loft",
     price: "US$ 121.000",
@@ -226,6 +299,7 @@ const featuredListings: Listing[] = [
   },
   {
     id: 3,
+    ref: "0003",
     operation: "Venta",
     title: "La Blanqueada Studio",
     price: "US$ 121.000",
@@ -280,9 +354,11 @@ const searchTypeOptions: SearchDropdownOption[] = [
   { value: "casa", label: "Casa" },
   { value: "oficina", label: "Oficina" },
   { value: "terreno", label: "Terreno" },
+  { value: "proyectos", label: "Proyectos" },
 ];
 
 const searchBedroomOptions: SearchDropdownOption[] = [
+  { value: "0", label: "0" },
   { value: "1", label: "1" },
   { value: "2", label: "2" },
   { value: "3", label: "3" },
@@ -317,6 +393,21 @@ function getWrappedIndex(index: number, length: number) {
 
 function normalizePathname(pathname: string) {
   return pathname.replace(/\/+$/, "") || "/";
+}
+
+function getCanonicalPropertyPath(pathname: string) {
+  const normalizedPathname = normalizePathname(pathname);
+  const legacyPropertyMatch = normalizedPathname.match(/^\/propiedades\/([^/]+)$/);
+  const shortPropertyMatch = normalizedPathname.match(/^\/(\d+)$/);
+  const propertyRef = legacyPropertyMatch?.[1] ?? shortPropertyMatch?.[1];
+
+  return propertyRef ? `/ficha/${propertyRef}` : null;
+}
+
+function getPropertyOriginFromSearch() {
+  const origin = new URLSearchParams(window.location.search).get("origen");
+
+  return origin === "alquileres" || origin === "alquiler" ? "alquileres" : "ventas";
 }
 
 function getRouteFromPathname(pathname: string): AppRoute {
@@ -363,11 +454,15 @@ function getRouteFromPathname(pathname: string): AppRoute {
     return { name: "contacto" };
   }
 
-  const propertyMatch = normalizedPathname.match(/^\/propiedades\/([^/]+)$/);
+  const propertyMatch = normalizedPathname.match(/^\/ficha\/([^/]+)$/);
 
   if (propertyMatch) {
-    const parsedId = Number(propertyMatch[1]);
-    return { name: "propiedad", propertyId: Number.isFinite(parsedId) ? parsedId : null };
+    const propertyRef = decodeURIComponent(propertyMatch[1]).trim();
+    return {
+      name: "propiedad",
+      propertyRef: propertyRef || null,
+      propertyOrigin: getPropertyOriginFromSearch(),
+    };
   }
 
   return { name: "home" };
@@ -393,7 +488,8 @@ function ListingShowcaseCard(props: ListingShowcaseCardProps) {
   } = props;
 
   const currentMedia = listing.gallery[getWrappedIndex(activeMediaIndex, listing.gallery.length)];
-  const listingHref = getSalesPropertyUrl(listing.id, listing.origin);
+  const secondaryMedia = listing.gallery.slice(1, maxFeaturedListingSecondaryImages + 1);
+  const listingHref = getSalesPropertyUrl(listing.ref, listing.origin);
   const [isVideoPreviewActive, setIsVideoPreviewActive] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hasVideoPreview = Boolean(listing.videoSrc);
@@ -481,9 +577,11 @@ function ListingShowcaseCard(props: ListingShowcaseCardProps) {
           </div>
         </div>
 
-          <div className="listing-showcase-thumbs" aria-label={`Imágenes secundarias de ${listing.title}`}>
-          {listing.gallery.map((media, index) =>
-            interactive && onMediaSelect ? (
+        <div className="listing-showcase-thumbs" aria-label={`Imágenes secundarias de ${listing.title}`}>
+          {secondaryMedia.map((media, mediaIndex) => {
+            const index = mediaIndex + 1;
+
+            return interactive && onMediaSelect ? (
               <button
                 key={`${listing.title}-${media.image}-${index}`}
                 type="button"
@@ -507,7 +605,7 @@ function ListingShowcaseCard(props: ListingShowcaseCardProps) {
             ) : (
               <div
                 key={`${listing.title}-${media.image}-${index}`}
-                className={`listing-showcase-thumb${index === 0 ? " is-active" : ""}`}
+                className={`listing-showcase-thumb${index === 1 ? " is-active" : ""}`}
                 aria-hidden="true"
               >
                 <img
@@ -520,8 +618,8 @@ function ListingShowcaseCard(props: ListingShowcaseCardProps) {
                   style={{ objectPosition: media.objectPosition ?? "center center" }}
                 />
               </div>
-            ),
-          )}
+            );
+          })}
         </div>
 
         <div className="listing-showcase-footer">
@@ -727,12 +825,26 @@ function formatSearchPriceValue(currency: SearchPriceCurrency, value: number) {
   return `${symbol} ${value.toLocaleString("es-UY")}`;
 }
 
+function getHomeSearchTypeParam(type: string) {
+  return searchTypeOptions.find((option) => option.value === type)?.label ?? "";
+}
+
 function App() {
+  const canonicalPropertyPath = getCanonicalPropertyPath(window.location.pathname);
+
+  if (canonicalPropertyPath) {
+    window.history.replaceState(
+      null,
+      "",
+      `${canonicalPropertyPath}${window.location.search}${window.location.hash}`,
+    );
+  }
+
   const pathname = normalizePathname(window.location.pathname);
   const route = getRouteFromPathname(pathname);
   const activeNavRoute: NavRoute =
     route.name === "propiedad"
-      ? "ventas"
+      ? route.propertyOrigin
       : route.name === "proyecto"
         ? "proyectos"
         : route.name === "administracion-propiedades"
@@ -744,11 +856,13 @@ function App() {
   const [listingMediaIndex, setListingMediaIndex] = useState(0);
   const [listingTransitionDirection, setListingTransitionDirection] = useState<"left" | "right" | null>(null);
   const [listingMotionKey, setListingMotionKey] = useState(0);
+  const [homeFeaturedListings, setHomeFeaturedListings] = useState<Listing[]>(featuredListings);
   const [footerBranchIndex, setFooterBranchIndex] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileRentMenuOpen, setIsMobileRentMenuOpen] = useState(false);
   const [isMobileSearchFiltersOpen, setIsMobileSearchFiltersOpen] = useState(false);
   const [shouldLoadHeroVideo, setShouldLoadHeroVideo] = useState(false);
+  const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
   const [searchPriceMin, setSearchPriceMin] = useState(0);
   const [searchPriceMax, setSearchPriceMax] = useState(searchPriceMaxLimit);
@@ -757,9 +871,11 @@ function App() {
   const [searchType, setSearchType] = useState("apartamento");
   const [searchBedrooms, setSearchBedrooms] = useState("");
   const [searchZone, setSearchZone] = useState("");
+  const [searchReference, setSearchReference] = useState("");
   const [activeSearchDropdown, setActiveSearchDropdown] = useState<"operation" | "type" | "zone" | "price" | "bedrooms" | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const homeSearchFormRef = useRef<HTMLFormElement | null>(null);
+  const isHomeRentalSearch = searchOperation === "alquiler";
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 480px)");
@@ -873,12 +989,68 @@ function App() {
     setIsMobileRentMenuOpen(false);
   }, [pathname]);
 
-  const listingCount = featuredListings.length;
-  const activeListing = featuredListings[getWrappedIndex(listingIndex, listingCount)];
-  const previousPreviewListing = featuredListings[getWrappedIndex(listingIndex - 1, listingCount)];
-  const nextPreviewListing = featuredListings[getWrappedIndex(listingIndex + 1, listingCount)];
+  useEffect(() => {
+    if (route.name !== "home" && route.name !== "acerca") {
+      setIsHeaderScrolled(false);
+      return;
+    }
+
+    const handleScroll = () => {
+      setIsHeaderScrolled(window.scrollY > 8);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [route.name]);
+
+  const listingCount = homeFeaturedListings.length;
+  const activeListing = homeFeaturedListings[getWrappedIndex(listingIndex, listingCount)];
+  const previousPreviewListing = homeFeaturedListings[getWrappedIndex(listingIndex - 1, listingCount)];
+  const nextPreviewListing = homeFeaturedListings[getWrappedIndex(listingIndex + 1, listingCount)];
   const activeHomeSearchButtonDemo = homeSearchButtonVariant;
   const activeHomeHeaderAccessDemo = homeHeaderAccessVariant;
+
+  useEffect(() => {
+    if (route.name !== "home") {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    Promise.all([
+      fetchHome(controller.signal),
+      fetchPropertyByRef(featuredPropertyRef, controller.signal).catch(() => undefined),
+    ])
+      .then(([home, featuredProperty]) => {
+        const baseFeaturedProperties = home.destacadas.length
+          ? home.destacadas
+          : [...home.alquileres.slice(0, 1), ...home.ventas].slice(0, featuredListings.length);
+        const featuredProperties =
+          featuredProperty && !baseFeaturedProperties.some((property) => property.ref === featuredProperty.ref)
+            ? [featuredProperty, ...baseFeaturedProperties].slice(0, featuredListings.length)
+            : baseFeaturedProperties;
+        const nextListings = featuredProperties.map(propertyToListing);
+
+        if (!nextListings.length) {
+          return;
+        }
+
+        setHomeFeaturedListings(nextListings);
+        setListingIndex(0);
+        setListingMediaIndex(0);
+        setListingTransitionDirection(null);
+        setListingMotionKey((currentKey) => currentKey + 1);
+      })
+      .catch((error: unknown) => {
+        if (!isAbortError(error)) {
+          setHomeFeaturedListings(featuredListings);
+        }
+      });
+
+    return () => controller.abort();
+  }, [route.name]);
 
   useEffect(() => {
     setListingMediaIndex(0);
@@ -1053,15 +1225,22 @@ function App() {
   };
 
   const handleSearchPriceMinChange = (value: string) => {
+    if (isHomeRentalSearch) {
+      setSearchPriceMin(searchPriceMinLimit);
+      setHasSearchPriceRange(searchPriceMax < searchPriceMaxLimit);
+      return;
+    }
+
     const nextMin = Math.min(clampSearchPriceValue(Number(value)), searchPriceMax);
     setSearchPriceMin(nextMin);
     setHasSearchPriceRange(nextMin > searchPriceMinLimit || searchPriceMax < searchPriceMaxLimit);
   };
 
   const handleSearchPriceMaxChange = (value: string) => {
-    const nextMax = Math.max(clampSearchPriceValue(Number(value)), searchPriceMin);
+    const minimumPrice = isHomeRentalSearch ? searchPriceMinLimit : searchPriceMin;
+    const nextMax = Math.max(clampSearchPriceValue(Number(value)), minimumPrice);
     setSearchPriceMax(nextMax);
-    setHasSearchPriceRange(searchPriceMin > searchPriceMinLimit || nextMax < searchPriceMaxLimit);
+    setHasSearchPriceRange(minimumPrice > searchPriceMinLimit || nextMax < searchPriceMaxLimit);
   };
 
   const handleSearchPriceMinInputChange = (value: string) => {
@@ -1089,9 +1268,60 @@ function App() {
   };
 
   const searchPriceCurrency: SearchPriceCurrency = searchOperation === "venta" ? "usd" : "uyu";
+
+  const handleHomeSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (searchOperation === "proyectos" || searchType === "proyectos") {
+      window.location.href = "/proyectos";
+      return;
+    }
+
+    const searchParams = new URLSearchParams();
+    const typeParam = getHomeSearchTypeParam(searchType);
+    const trimmedReference = searchReference.trim();
+    const effectiveSearchPriceMin = isHomeRentalSearch ? searchPriceMinLimit : searchPriceMin;
+    const hasPriceFilter = effectiveSearchPriceMin > searchPriceMinLimit || searchPriceMax < searchPriceMaxLimit;
+    const targetPath = searchOperation === "alquiler" ? "/alquileres" : "/ventas";
+
+    if (typeParam && typeParam !== "Proyectos") {
+      searchParams.set("tipo", typeParam);
+    }
+
+    if (searchZone) {
+      searchParams.set("barrio", searchZone);
+    }
+
+    if (searchBedrooms) {
+      searchParams.set("dormitorios", searchBedrooms);
+    }
+
+    if (hasPriceFilter) {
+      searchParams.set("precioMoneda", searchPriceCurrency);
+    }
+
+    if (effectiveSearchPriceMin > searchPriceMinLimit) {
+      searchParams.set("precioMinimo", String(effectiveSearchPriceMin));
+    }
+
+    if (searchPriceMax < searchPriceMaxLimit) {
+      searchParams.set("precioMaximo", String(searchPriceMax));
+    }
+
+    if (trimmedReference) {
+      searchParams.set("ref", trimmedReference);
+    }
+
+    const queryString = searchParams.toString();
+
+    window.location.href = `${targetPath}${queryString ? `?${queryString}` : ""}`;
+  };
+
   const searchPriceSummary = !hasSearchPriceRange
     ? "Todos"
-    : searchPriceMin > searchPriceMinLimit && searchPriceMax < searchPriceMaxLimit
+    : isHomeRentalSearch && searchPriceMax < searchPriceMaxLimit
+      ? `Hasta ${formatSearchPriceValue(searchPriceCurrency, searchPriceMax)}`
+      : searchPriceMin > searchPriceMinLimit && searchPriceMax < searchPriceMaxLimit
       ? `${formatSearchPriceValue(searchPriceCurrency, searchPriceMin)} - ${formatSearchPriceValue(searchPriceCurrency, searchPriceMax)}`
       : searchPriceMin > searchPriceMinLimit
         ? `Desde ${formatSearchPriceValue(searchPriceCurrency, searchPriceMin)}`
@@ -1101,7 +1331,9 @@ function App() {
   const activeFooterBranch = topbarBranches[getWrappedIndex(footerBranchIndex, topbarBranches.length)];
   const pageShellClassName = [
     "page-shell",
-    route.name !== "home" ? "page-shell-sales" : "",
+    route.name === "home" ? "page-shell-home" : "",
+    route.name === "acerca" ? "page-shell-about" : "",
+    route.name !== "home" && route.name !== "acerca" ? "page-shell-sales" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -1121,7 +1353,7 @@ function App() {
         </div>
       </div>
 
-      <header className={`site-header${isMobileMenuOpen ? " is-mobile-menu-open" : ""}`}>
+      <header className={`site-header${isMobileMenuOpen ? " is-mobile-menu-open" : ""}${isHeaderScrolled ? " is-header-scrolled" : ""}`}>
         <div className="container header-inner" ref={mobileMenuRef}>
           <a className="logo-link" href="/#inicio" aria-label="Volver al inicio">
             <img src="/optimized/home/logo.webp" alt="Lars" className="brand-logo" width="352" height="93" />
@@ -1288,7 +1520,7 @@ function App() {
         ) : route.name === "proyecto" ? (
           <ProjectDetailsPage projectSlug={route.projectSlug} />
         ) : route.name === "propiedad" ? (
-          <PropertyDetailsPage propertyId={route.propertyId} />
+          <PropertyDetailsPage propertyRef={route.propertyRef} propertyOrigin={route.propertyOrigin} />
         ) : route.name === "contacto" ? (
           <ContactSection />
         ) : (
@@ -1327,14 +1559,23 @@ function App() {
             <section className="hero-search-band" id="buscador">
               <div className="search-wrap">
                 <div className="search-stack">
-                  <form className="search-card search-card-variant-4" ref={homeSearchFormRef}>
+                  <form className="search-card search-card-variant-4" ref={homeSearchFormRef} onSubmit={handleHomeSearchSubmit}>
                     <div className="search-grid">
                       <SearchDropdownField
                         active={activeSearchDropdown === "operation"}
                         className="search-field-compact search-field-operation"
                         label="Operación"
                         onSelect={(value) => {
+                          if (value === "proyectos") {
+                            window.location.href = "/proyectos";
+                            return;
+                          }
+
                           setSearchOperation(value);
+                          if (value === "alquiler") {
+                            setSearchPriceMin(searchPriceMinLimit);
+                            setHasSearchPriceRange(searchPriceMax < searchPriceMaxLimit);
+                          }
                           setActiveSearchDropdown(null);
                         }}
                         onToggle={() => {
@@ -1352,6 +1593,11 @@ function App() {
                         }`}
                         label="Tipo"
                         onSelect={(value) => {
+                          if (value === "proyectos") {
+                            window.location.href = "/proyectos";
+                            return;
+                          }
+
                           setSearchType(value);
                           setActiveSearchDropdown(null);
                         }}
@@ -1425,29 +1671,31 @@ function App() {
                           {activeSearchDropdown === "price" ? (
                             <div className="price-range-popover" role="dialog" aria-label="Rango de precio">
                               <div className="price-range-control home-price-range-control">
-                                <label>
-                                  <span>
-                                    <span>Desde</span>
+                                {!isHomeRentalSearch ? (
+                                  <label>
+                                    <span>
+                                      <span>Desde</span>
+                                      <input
+                                        className="price-range-value-input"
+                                        type="text"
+                                        inputMode="numeric"
+                                        aria-label="Precio desde"
+                                        value={searchPriceMin > searchPriceMinLimit ? formatSearchPriceValue(searchPriceCurrency, searchPriceMin) : ""}
+                                        placeholder="Sin mínimo"
+                                        onChange={(event) => handleSearchPriceMinInputChange(event.currentTarget.value)}
+                                        onFocus={(event) => event.currentTarget.select()}
+                                      />
+                                    </span>
                                     <input
-                                      className="price-range-value-input"
-                                      type="text"
-                                      inputMode="numeric"
-                                      aria-label="Precio desde"
-                                      value={searchPriceMin > searchPriceMinLimit ? formatSearchPriceValue(searchPriceCurrency, searchPriceMin) : ""}
-                                      placeholder="Sin mínimo"
-                                      onChange={(event) => handleSearchPriceMinInputChange(event.currentTarget.value)}
-                                      onFocus={(event) => event.currentTarget.select()}
+                                      type="range"
+                                      min={searchPriceMinLimit}
+                                      max={searchPriceMaxLimit}
+                                      step={searchPriceStep}
+                                      value={searchPriceMin}
+                                      onChange={(event) => handleSearchPriceMinChange(event.currentTarget.value)}
                                     />
-                                  </span>
-                                  <input
-                                    type="range"
-                                    min={searchPriceMinLimit}
-                                    max={searchPriceMaxLimit}
-                                    step={searchPriceStep}
-                                    value={searchPriceMin}
-                                    onChange={(event) => handleSearchPriceMinChange(event.currentTarget.value)}
-                                  />
-                                </label>
+                                  </label>
+                                ) : null}
                                 <label>
                                   <span>
                                     <span>Hasta</span>
@@ -1494,12 +1742,18 @@ function App() {
                       />
                       <label className="search-field-compact search-field-reference">
                         <span className="search-field-heading">REF.</span>
-                        <input type="text" placeholder="Ej: 1234" maxLength={4} inputMode="numeric" />
+                        <input
+                          type="text"
+                          placeholder="Ej: 1234"
+                          inputMode="numeric"
+                          value={searchReference}
+                          onChange={(event) => setSearchReference(event.currentTarget.value.replace(/\D/g, ""))}
+                        />
                       </label>
                       <div className="search-action-buttons">
                         <button
                           key={activeHomeSearchButtonDemo}
-                          type="button"
+                          type="submit"
                           className={`primary-button search-cta-button search-cta-button-demo search-cta-button-demo-${activeHomeSearchButtonDemo}`}
                         >
                           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1577,7 +1831,7 @@ function App() {
               </div>
 
               <div className="listing-carousel-dots" aria-label="Paginación de propiedades">
-                {featuredListings.map((listing, index) => (
+                {homeFeaturedListings.map((listing, index) => (
                   <button
                     key={listing.title}
                     type="button"

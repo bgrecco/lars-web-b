@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent, type TouchEvent } from "react";
+import { fetchProjectDetail, getLarsApiErrorMessage, isAbortError } from "../api/larsApi";
 import ImageLightbox from "../components/ImageLightbox";
+import LarsLogoLoader from "../components/LarsLogoLoader";
 import WhatsAppIcon from "../components/WhatsAppIcon";
 import {
   getProjectBySlug,
+  type Project,
   type ProjectParking,
   type ProjectUnit,
 } from "../data/projectsCatalog";
@@ -368,12 +371,48 @@ function ProjectParkingPreview(props: { rows: ProjectParking[] }) {
 }
 
 export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
-  const project = useMemo(
-    () => (props.projectSlug === null ? undefined : getProjectBySlug(props.projectSlug)),
-    [props.projectSlug],
-  );
+  const [project, setProject] = useState<Project | undefined>();
+  const [isLoadingProject, setIsLoadingProject] = useState(Boolean(props.projectSlug));
+  const [loadError, setLoadError] = useState("");
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxImageIndex, setLightboxImageIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const projectSlug = props.projectSlug;
+
+    if (!projectSlug) {
+      setProject(undefined);
+      setLoadError("");
+      setIsLoadingProject(false);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    setProject(undefined);
+    setLoadError("");
+    setIsLoadingProject(true);
+
+    fetchProjectDetail(projectSlug, controller.signal)
+      .then((nextProject) => {
+        setProject(nextProject);
+      })
+      .catch((error: unknown) => {
+        if (isAbortError(error)) {
+          return;
+        }
+
+        setLoadError(getLarsApiErrorMessage(error));
+        setProject(import.meta.env.DEV ? getProjectBySlug(projectSlug) : undefined);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsLoadingProject(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [props.projectSlug]);
 
   useEffect(() => {
     setActiveImageIndex(0);
@@ -420,6 +459,16 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
     return () => observer.disconnect();
   }, [project?.slug]);
 
+  if (isLoadingProject) {
+    return (
+      <div className="property-details-page project-details-page">
+        <section className="sales-loader-section" aria-live="polite">
+          <LarsLogoLoader />
+        </section>
+      </div>
+    );
+  }
+
   if (!project) {
     return (
       <div className="property-details-page project-details-page property-details-page-missing">
@@ -427,7 +476,11 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
           <div className="container">
             <div className="property-missing-card reveal is-visible">
               <h1>Proyecto no encontrado</h1>
-              <p>La ficha que intentaste abrir ya no está disponible o todavía no tiene información cargada.</p>
+              <p>
+                {loadError
+                  ? "No pudimos cargar la ficha desde el catálogo público."
+                  : "La ficha que intentaste abrir ya no está disponible o todavía no tiene información cargada."}
+              </p>
               <a href="/proyectos" className="primary-button search-cta-button property-return-button">
                 <BackArrowIcon />
                 Volver a proyectos
@@ -443,6 +496,17 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
     ? project.gallery
     : [{ image: project.image, alt: project.title, objectPosition: project.imagePosition }];
   const activeImage = gallery[Math.min(activeImageIndex, gallery.length - 1)];
+  const showGalleryRail = gallery.length > 1;
+  const galleryThumbnailItems = gallery.slice(1, 4);
+  const remainingGalleryCount = Math.max(gallery.length - 4, 0);
+  const galleryClassName = [
+    "property-gallery-shell",
+    "project-gallery-shell",
+    !showGalleryRail ? "is-single-image" : "",
+    "reveal reveal-delay-1",
+  ]
+    .filter(Boolean)
+    .join(" ");
   const quickFacts = [
     `Tipo: ${project.tag}`,
     `Ubicación: ${project.location}`,
@@ -505,7 +569,7 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
     <div className="property-details-page project-details-page">
       <section className="property-details-hero project-details-hero">
         <div className="container">
-          <div className="property-gallery-shell project-gallery-shell reveal reveal-delay-1" id="galeria">
+          <div className={galleryClassName} id="galeria">
             <div className="property-gallery-main">
               <button
                 type="button"
@@ -526,14 +590,23 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
             </div>
 
             <div className="property-gallery-rail" aria-label={`Galería de ${project.title}`}>
-              {gallery.map((image, index) => (
+              {galleryThumbnailItems.map((image, thumbnailIndex) => {
+                const galleryIndex = thumbnailIndex + 1;
+                const showRemainingOverlay =
+                  thumbnailIndex === galleryThumbnailItems.length - 1 && remainingGalleryCount > 0;
+
+                return (
                 <button
-                  key={`${image.image}-${index}`}
+                  key={`${image.image}-${galleryIndex}`}
                   type="button"
-                  className={`property-gallery-thumb${index === activeImageIndex ? " is-active" : ""}`}
-                  onClick={() => handleOpenLightbox(index)}
-                  aria-label={`Abrir imagen ${index + 1}`}
-                  aria-pressed={index === activeImageIndex}
+                  className={`property-gallery-thumb${galleryIndex === activeImageIndex ? " is-active" : ""}${showRemainingOverlay ? " has-more-images" : ""}`}
+                  onClick={() => handleOpenLightbox(galleryIndex)}
+                  aria-label={
+                    showRemainingOverlay
+                      ? `Abrir galerÃ­a, ${remainingGalleryCount} imÃ¡genes mÃ¡s`
+                      : `Abrir imagen ${galleryIndex + 1}`
+                  }
+                  aria-pressed={galleryIndex === activeImageIndex}
                 >
                   <img
                     src={image.thumbImage ?? image.image}
@@ -544,8 +617,14 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
                     decoding="async"
                     style={{ objectPosition: image.objectPosition ?? "center center" }}
                   />
+                  {showRemainingOverlay ? (
+                    <span className="property-gallery-more-count" aria-hidden="true">
+                      {remainingGalleryCount} +
+                    </span>
+                  ) : null}
                 </button>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -628,7 +707,7 @@ export default function ProjectDetailsPage(props: ProjectDetailsPageProps) {
 
               <section className="property-flow-section reveal reveal-delay-2" id="servicios">
                 <div className="property-section-header">
-                  <h2>Servicios incluidos</h2>
+                  <h2>Servicios</h2>
                 </div>
 
                 <ProjectAmenityGrid items={project.services} />

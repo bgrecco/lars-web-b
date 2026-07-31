@@ -1,21 +1,31 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  fetchProperties,
+  fetchPropertyByRef,
+  getLarsApiErrorMessage,
+  isAbortError,
+  type PropertyOperation,
+} from "../api/larsApi";
 import ImageLightbox from "../components/ImageLightbox";
+import LarsLogoLoader from "../components/LarsLogoLoader";
 import WhatsAppIcon from "../components/WhatsAppIcon";
 import {
-  getSalesPropertyById,
+  getSalesPropertyByRef,
   getSalesPropertyUrl,
   getSimilarSalesProperties,
+  salesCatalog,
   type SalesProperty,
 } from "../data/salesCatalog";
 
 type PropertyDetailsPageProps = {
-  propertyId: number | null;
+  propertyRef: string | null;
+  propertyOrigin?: PropertyOperation;
 };
 
 type PropertyDetailsDemoVariant = "default" | "sticky-contact" | "hero-summary";
 
 function getBedroomStatLabel(rooms: number) {
-  return rooms === 0 ? "1" : String(rooms);
+  return String(rooms);
 }
 
 function getBedroomDetailLabel(rooms: number) {
@@ -24,6 +34,114 @@ function getBedroomDetailLabel(rooms: number) {
 
 function getBathroomLabel(bathrooms: number) {
   return `${bathrooms} baño${bathrooms === 1 ? "" : "s"}`;
+}
+
+function normalizePropertyDetailText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+type PropertyFeatureDefinition = {
+  label: string;
+  aliases: string[];
+};
+
+const visibleAmenityDefinitions: PropertyFeatureDefinition[] = [
+  { label: "Cowork", aliases: ["cowork", "coworking"] },
+  { label: "Solarium", aliases: ["solarium"] },
+  { label: "Piscina", aliases: ["piscina"] },
+  { label: "Área verde", aliases: ["area verde", "areas verdes", "espacio verde", "espacios verdes"] },
+  { label: "Barbacoa", aliases: ["barbacoa"] },
+  { label: "Gym", aliases: ["gym", "gimnasio"] },
+  { label: "SUM", aliases: ["sum", "salon de usos multiples", "salon usos multiples"] },
+];
+
+const visibleServiceDefinitions: PropertyFeatureDefinition[] = [
+  { label: "Portería física", aliases: ["porteria fisica", "porteria"] },
+  { label: "Laundry", aliases: ["laundry", "loundry", "lavadero", "lavanderia"] },
+  { label: "Gas natural", aliases: ["gas natural"] },
+  { label: "Vigilancia", aliases: ["vigilancia"] },
+  { label: "Estacionamiento", aliases: ["estacionamiento", "parking", "garaje", "garage", "cochera"] },
+];
+
+function getVisiblePropertyFeatures(items: string[], definitions: PropertyFeatureDefinition[]) {
+  return definitions
+    .flatMap((definition) => {
+      const matchedItem = items.find((item) => {
+        const [label = ""] = item.split(":");
+        const normalizedLabel = normalizePropertyDetailText(label);
+
+        return definition.aliases.some((alias) => normalizedLabel === alias);
+      });
+
+      if (!matchedItem) {
+        return [];
+      }
+
+      const [, ...valueParts] = matchedItem.split(":");
+      const value = valueParts.join(":").trim();
+
+      return value ? [`${definition.label}: ${value}`] : [definition.label];
+    });
+}
+
+function getPropertyDetailFactKey(item: string) {
+  const [label = ""] = item.split(":");
+  const normalizedLabel = normalizePropertyDetailText(label);
+
+  if (normalizedLabel === "tipo") {
+    return "type";
+  }
+
+  if (normalizedLabel === "barrio") {
+    return "location";
+  }
+
+  if (["dormitorio", "dormitorios", "dorm"].includes(normalizedLabel)) {
+    return "rooms";
+  }
+
+  if (["bano", "banos", "bathroom", "bathrooms"].includes(normalizedLabel)) {
+    return "bathrooms";
+  }
+
+  if (["superficie", "m2", "metros cuadrados"].includes(normalizedLabel)) {
+    return "size";
+  }
+
+  if (normalizedLabel === "estado") {
+    return "status";
+  }
+
+  if (normalizedLabel === "perfil") {
+    return "profile";
+  }
+
+  return undefined;
+}
+
+function getVisiblePropertyCharacteristics(items: string[], fixedItems: string[]) {
+  const fixedFactKeys = new Set(
+    fixedItems.map(getPropertyDetailFactKey).filter((key) => key !== undefined),
+  );
+  const seenItems = new Set<string>();
+
+  return items.filter((item) => {
+    const normalizedItem = normalizePropertyDetailText(item);
+
+    if (seenItems.has(normalizedItem)) {
+      return false;
+    }
+
+    seenItems.add(normalizedItem);
+
+    const factKey = getPropertyDetailFactKey(item);
+
+    return !factKey || !fixedFactKeys.has(factKey);
+  });
 }
 
 function PropertyDetailList(props: { items: string[] }) {
@@ -56,7 +174,7 @@ function getPropertyOrigin() {
   return origin === "alquileres" || origin === "alquiler" ? "alquileres" : "ventas";
 }
 
-function getPropertyBackCopy(origin: "ventas" | "alquileres") {
+function getPropertyBackCopy(origin: PropertyOperation) {
   return origin === "alquileres"
     ? { href: "/alquileres", label: "Volver a alquileres" }
     : { href: "/ventas", label: "Volver a ventas" };
@@ -93,12 +211,12 @@ function BackArrowIcon() {
   );
 }
 
-function SimilarPropertyCard(props: { property: SalesProperty; index: number; origin: "ventas" | "alquileres" }) {
+function SimilarPropertyCard(props: { property: SalesProperty; index: number; origin: PropertyOperation }) {
   const { property, index, origin } = props;
 
   return (
     <a
-      href={getSalesPropertyUrl(property.id, origin)}
+      href={getSalesPropertyUrl(property.ref, origin)}
       className={`property-similar-card${property.reserved ? " is-reserved" : ""} reveal reveal-delay-${(index % 3) + 1}`}
     >
       <div className="property-similar-media">
@@ -127,7 +245,7 @@ function SimilarPropertyCard(props: { property: SalesProperty; index: number; or
         <div className="property-similar-stats" aria-label={`Datos de ${property.title}`}>
           <span>
             <img src="/optimized/home/icon-dorm.webp" alt="" width="40" height="36" />
-            {property.rooms === 0 ? "Mono" : property.rooms}
+            {getBedroomStatLabel(property.rooms)}
           </span>
           <span>
             <img src="/optimized/home/icon-banos.webp" alt="" width="39" height="40" />
@@ -147,12 +265,12 @@ function SimilarPropertyCard(props: { property: SalesProperty; index: number; or
 }
 
 export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
-  const { propertyId } = props;
-  const property = useMemo(
-    () => (propertyId === null ? undefined : getSalesPropertyById(propertyId)),
-    [propertyId],
-  );
-  const propertyOrigin = getPropertyOrigin();
+  const { propertyRef } = props;
+  const [property, setProperty] = useState<SalesProperty | undefined>();
+  const [similarPropertyCatalog, setSimilarPropertyCatalog] = useState<SalesProperty[]>([]);
+  const [isLoadingProperty, setIsLoadingProperty] = useState(Boolean(propertyRef));
+  const [loadError, setLoadError] = useState("");
+  const propertyOrigin = useMemo<PropertyOperation>(() => props.propertyOrigin ?? getPropertyOrigin(), [props.propertyOrigin]);
   const backCopy = getPropertyBackCopy(propertyOrigin);
   const demoVariant = getPropertyDetailsDemoVariant();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -166,6 +284,48 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
   const stickyContactSummaryRef = useRef<HTMLDivElement>(null);
   const contactSidebarRef = useRef<HTMLElement>(null);
   const contactCardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (propertyRef === null) {
+      setProperty(undefined);
+      setSimilarPropertyCatalog([]);
+      setLoadError("");
+      setIsLoadingProperty(false);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    setProperty(undefined);
+    setSimilarPropertyCatalog([]);
+    setLoadError("");
+    setIsLoadingProperty(true);
+
+    Promise.all([
+      fetchPropertyByRef(propertyRef, controller.signal),
+      fetchProperties(propertyOrigin, {}, controller.signal).catch(() => [] as SalesProperty[]),
+    ])
+      .then(([nextProperty, nextSimilarProperties]) => {
+        setProperty(nextProperty);
+        setSimilarPropertyCatalog(nextSimilarProperties);
+      })
+      .catch((error: unknown) => {
+        if (isAbortError(error)) {
+          return;
+        }
+
+        setLoadError(getLarsApiErrorMessage(error));
+        setProperty(import.meta.env.DEV ? getSalesPropertyByRef(propertyRef) : undefined);
+        setSimilarPropertyCatalog(import.meta.env.DEV ? salesCatalog : []);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsLoadingProperty(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [propertyRef, propertyOrigin]);
 
   useEffect(() => {
     setActiveImageIndex(0);
@@ -310,6 +470,16 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
     };
   }, [demoVariant, property?.id]);
 
+  if (isLoadingProperty) {
+    return (
+      <div className="property-details-page property-details-page-loading">
+        <section className="sales-loader-section" aria-live="polite">
+          <LarsLogoLoader />
+        </section>
+      </div>
+    );
+  }
+
   if (!property) {
     return (
       <div className="property-details-page property-details-page-missing">
@@ -317,7 +487,11 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
           <div className="container">
             <div className="property-missing-card reveal is-visible">
               <h1>Propiedad no encontrada</h1>
-              <p>La ficha que intentaste abrir ya no está disponible o todavía no tiene información cargada.</p>
+              <p>
+                {loadError
+                  ? "No pudimos cargar la ficha desde el catálogo público."
+                  : "La ficha que intentaste abrir ya no está disponible o todavía no tiene información cargada."}
+              </p>
               <a href={backCopy.href} className="primary-button search-cta-button property-return-button">
                 <BackArrowIcon />
                 {backCopy.label}
@@ -333,8 +507,12 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
     ? property.gallery
     : [{ image: property.image, alt: property.title, objectPosition: property.imagePosition }];
   const activeImage = gallery[Math.min(activeImageIndex, gallery.length - 1)];
+  const showGalleryRail = gallery.length > 1;
+  const galleryThumbnailItems = gallery.slice(1, 5);
+  const remainingGalleryCount = Math.max(gallery.length - 5, 0);
   const descriptionParagraphs = property.description.split(/\n{2,}/g);
   const profileFact = `Perfil: ${property.tags[0] ?? "Residencial"}`;
+  const summaryAddress = property.address.trim() || property.location;
   const quickFacts = [
     `Tipo: ${property.type}`,
     `Barrio: ${property.location}`,
@@ -344,8 +522,13 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
     `Estado: ${property.reserved ? "Reservada" : "Disponible para consulta"}`,
     profileFact,
   ];
-  const characteristics = property.characteristics.filter((item) => item !== profileFact);
-  const similarProperties = getSimilarSalesProperties(property, 4);
+  const characteristics = getVisiblePropertyCharacteristics(property.characteristics, quickFacts);
+  const visibleAmenities = getVisiblePropertyFeatures(property.amenities, visibleAmenityDefinitions);
+  const visibleServices = getVisiblePropertyFeatures(
+    [...property.services, ...property.amenities],
+    visibleServiceDefinitions,
+  );
+  const similarProperties = getSimilarSalesProperties(property, 4, similarPropertyCatalog);
   const handleContactSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
   };
@@ -357,9 +540,16 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
     setActiveImageIndex(index);
     setLightboxImageIndex(index);
   };
+  const galleryClassName = [
+    "property-gallery-shell",
+    !showGalleryRail ? "is-single-image" : "",
+    "reveal reveal-delay-1",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const galleryBlock = (
-    <div ref={galleryShellRef} className="property-gallery-shell reveal reveal-delay-1" id="galeria">
+    <div ref={galleryShellRef} className={galleryClassName} id="galeria">
       <div ref={galleryMainRef} className="property-gallery-main">
         <button
           type="button"
@@ -384,28 +574,44 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
         ) : null}
       </div>
 
-      <div className="property-gallery-rail" aria-label={`Galería de ${property.title}`}>
-        {gallery.map((image, index) => (
-          <button
-            key={`${image.image}-${index}`}
-            type="button"
-            className={`property-gallery-thumb${index === activeImageIndex ? " is-active" : ""}`}
-            onClick={() => handleOpenLightbox(index)}
-            aria-label={`Abrir imagen ${index + 1}`}
-            aria-pressed={index === activeImageIndex}
-          >
-            <img
-              src={image.thumbImage ?? image.image}
-              alt=""
-              width="480"
-              height="270"
-              loading="lazy"
-              decoding="async"
-              style={{ objectPosition: image.objectPosition ?? "center center" }}
-            />
-          </button>
-        ))}
-      </div>
+      {showGalleryRail ? (
+        <div className="property-gallery-rail" aria-label={`Galería de ${property.title}`}>
+          {galleryThumbnailItems.map((image, thumbnailIndex) => {
+            const galleryIndex = thumbnailIndex + 1;
+            const showRemainingOverlay = thumbnailIndex === galleryThumbnailItems.length - 1 && remainingGalleryCount > 0;
+
+            return (
+              <button
+                key={`${image.image}-${galleryIndex}`}
+                type="button"
+                className={`property-gallery-thumb${galleryIndex === activeImageIndex ? " is-active" : ""}${showRemainingOverlay ? " has-more-images" : ""}`}
+                onClick={() => handleOpenLightbox(galleryIndex)}
+                aria-label={
+                  showRemainingOverlay
+                    ? `Abrir galería, ${remainingGalleryCount} imágenes más`
+                    : `Abrir imagen ${galleryIndex + 1}`
+                }
+                aria-pressed={galleryIndex === activeImageIndex}
+              >
+                <img
+                  src={image.thumbImage ?? image.image}
+                  alt=""
+                  width="480"
+                  height="270"
+                  loading="lazy"
+                  decoding="async"
+                  style={{ objectPosition: image.objectPosition ?? "center center" }}
+                />
+                {showRemainingOverlay ? (
+                  <span className="property-gallery-more-count" aria-hidden="true">
+                    {remainingGalleryCount} +
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 
@@ -421,7 +627,7 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
         <div className="property-location-price-row">
           <div className="property-location-line">
             <span className="property-location-item">
-              <span>{property.location}</span>
+              <span>{summaryAddress}</span>
             </span>
           </div>
 
@@ -464,7 +670,7 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
       <div className="property-location-price-row">
         <div className="property-location-line">
           <span className="property-location-item">
-            <span>{property.location}</span>
+            <span>{summaryAddress}</span>
           </span>
         </div>
 
@@ -497,7 +703,7 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
       <div className="property-location-price-row">
         <div className="property-location-line">
           <span className="property-location-item">
-            <span>{property.location}</span>
+            <span>{summaryAddress}</span>
           </span>
         </div>
 
@@ -605,13 +811,29 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
         </div>
       </section>
 
-      <section className="property-flow-section reveal reveal-delay-2" id="amenities">
-        <div className="property-section-header">
-          <h2>Amenities</h2>
-        </div>
+      {visibleAmenities.length || visibleServices.length ? (
+        <section className="property-flow-section reveal reveal-delay-2" id="amenities">
+          {visibleAmenities.length ? (
+            <>
+              <div className="property-section-header">
+                <h2>Amenities</h2>
+              </div>
 
-        <PropertyAmenityGrid items={property.amenities} />
-      </section>
+              <PropertyAmenityGrid items={visibleAmenities} />
+            </>
+          ) : null}
+
+          {visibleServices.length ? (
+            <div className="property-services-block">
+              <div className="property-section-header property-section-header-secondary">
+                <h2>Servicios</h2>
+              </div>
+
+              <PropertyAmenityGrid items={visibleServices} />
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
     </div>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type TouchEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type TouchEvent } from "react";
 
 export type LightboxImage = {
   image: string;
@@ -161,6 +161,15 @@ export default function ImageLightbox(props: ImageLightboxProps) {
 
     onIndexChange(getWrappedIndex(safeIndex + 1, images.length));
   };
+  const handleStageClick = (event: MouseEvent<HTMLDivElement>) => {
+    const target = event.target;
+
+    if (!(target instanceof Element) || target.closest("[data-lightbox-keep-open]")) {
+      return;
+    }
+
+    onClose();
+  };
 
   return (
     <div className="image-lightbox" role="dialog" aria-modal="true" aria-label={`Galería de ${title}`}>
@@ -168,6 +177,7 @@ export default function ImageLightbox(props: ImageLightboxProps) {
 
       <div
         className="image-lightbox-stage"
+        onClick={handleStageClick}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -178,6 +188,7 @@ export default function ImageLightbox(props: ImageLightboxProps) {
           className="image-lightbox-button image-lightbox-close"
           onClick={onClose}
           aria-label="Cerrar galería"
+          data-lightbox-keep-open
         >
           <CloseIcon />
         </button>
@@ -188,6 +199,7 @@ export default function ImageLightbox(props: ImageLightboxProps) {
             className="image-lightbox-button image-lightbox-arrow image-lightbox-arrow-left"
             onClick={() => onIndexChange(getWrappedIndex(safeIndex - 1, images.length))}
             aria-label="Ver imagen anterior"
+            data-lightbox-keep-open
           >
             <LightboxArrowIcon direction="left" />
           </button>
@@ -198,6 +210,7 @@ export default function ImageLightbox(props: ImageLightboxProps) {
           src={activeImage.image}
           alt={activeImage.alt}
           className={`image-lightbox-image${transitionDirection ? ` image-lightbox-image-slide-${transitionDirection}` : ""}${isDragging ? " is-dragging" : ""}`}
+          data-lightbox-keep-open
           style={{
             objectPosition: activeImage.objectPosition ?? "center center",
             transform: isDragging ? `translate3d(${dragOffset}px, 0, 0)` : undefined,
@@ -210,6 +223,7 @@ export default function ImageLightbox(props: ImageLightboxProps) {
             className="image-lightbox-button image-lightbox-arrow image-lightbox-arrow-right"
             onClick={() => onIndexChange(getWrappedIndex(safeIndex + 1, images.length))}
             aria-label="Ver imagen siguiente"
+            data-lightbox-keep-open
           >
             <LightboxArrowIcon direction="right" />
           </button>
@@ -229,6 +243,7 @@ export default function ImageLightbox(props: ImageLightboxProps) {
                 onClick={() => onIndexChange(index)}
                 aria-label={`Abrir imagen ${index + 1}`}
                 aria-pressed={index === safeIndex}
+                data-lightbox-keep-open
               >
                 <img
                   src={image.image}

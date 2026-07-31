@@ -1,5 +1,3 @@
-import ContactSection from "../components/ContactSection";
-
 type Pillar = {
   title: string;
   description: string;
@@ -74,8 +72,6 @@ export default function AboutPage() {
           </aside>
         </div>
       </section>
-
-      <ContactSection variant="contrast" />
     </div>
   );
 }

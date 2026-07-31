@@ -1,4 +1,5 @@
 import { startTransition, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { fetchProperties, getLarsApiErrorMessage, isAbortError, type PropertyListQuery } from "../api/larsApi";
 import ContactSection from "../components/ContactSection";
 import LarsLogoLoader from "../components/LarsLogoLoader";
 import { getSalesPropertyUrl, salesCatalog, type SalesProperty } from "../data/salesCatalog";
@@ -28,6 +29,14 @@ type SalesFilters = {
   precioMaximo: string;
   ref: string;
   orden: string;
+};
+
+type ActiveSalesFilterKey = "tipo" | "barrio" | "dormitorios" | "precio" | "ref";
+
+type SalesFilterChip = {
+  key: ActiveSalesFilterKey;
+  label: string;
+  clearLabel: string;
 };
 
 const initialFilters: SalesFilters = {
@@ -125,22 +134,94 @@ function formatSalesPriceValue(currency: SalesFilters["precioMoneda"], value: nu
   return `${symbol} ${value.toLocaleString("es-UY")}`;
 }
 
-function getInitialFiltersFromUrl(): SalesFilters {
+function getDefaultPriceCurrency(listingContext: SalesPageProps["listingContext"]): SalesFilters["precioMoneda"] {
+  return listingContext === "alquileres" ? "uyu" : "usd";
+}
+
+function parseSalesPriceCurrency(value: string | null, listingContext: SalesPageProps["listingContext"]) {
+  return value === "usd" || value === "uyu" ? value : getDefaultPriceCurrency(listingContext);
+}
+
+function getEmptyFilters(listingContext: SalesPageProps["listingContext"]): SalesFilters {
+  return {
+    ...initialFilters,
+    precioMoneda: getDefaultPriceCurrency(listingContext),
+  };
+}
+
+function getInitialFiltersFromUrl(listingContext: SalesPageProps["listingContext"] = "ventas"): SalesFilters {
   if (typeof window === "undefined") {
-    return initialFilters;
+    return getEmptyFilters(listingContext);
   }
 
   const searchParams = new URLSearchParams(window.location.search);
 
   return {
-    ...initialFilters,
+    ...getEmptyFilters(listingContext),
     tipo: searchParams.get("tipo") ?? "",
     barrio: searchParams.getAll("barrio").join(",") || (searchParams.get("barrio") ?? ""),
     dormitorios: searchParams.get("dormitorios") ?? "",
-    precioMoneda: (searchParams.get("precioMoneda") as SalesFilters["precioMoneda"]) ?? "usd",
+    precioMoneda: parseSalesPriceCurrency(searchParams.get("precioMoneda"), listingContext),
     precioMinimo: searchParams.get("precioMinimo") ?? "",
     precioMaximo: searchParams.get("precioMaximo") ?? "",
+    ref: searchParams.get("ref") ?? "",
+    orden: searchParams.get("orden") ?? "",
   };
+}
+
+function buildSalesFilterSearchParams(filters: SalesFilters) {
+  const searchParams = new URLSearchParams();
+  const selectedNeighborhoods = getSelectedNeighborhoods(filters.barrio);
+  const hasPriceFilter = Boolean(filters.precioMinimo || filters.precioMaximo);
+
+  if (filters.tipo) {
+    searchParams.set("tipo", filters.tipo);
+  }
+
+  selectedNeighborhoods.forEach((neighborhood) => {
+    searchParams.append("barrio", neighborhood);
+  });
+
+  if (filters.dormitorios) {
+    searchParams.set("dormitorios", filters.dormitorios);
+  }
+
+  if (hasPriceFilter) {
+    searchParams.set("precioMoneda", filters.precioMoneda);
+  }
+
+  if (filters.precioMinimo) {
+    searchParams.set("precioMinimo", filters.precioMinimo);
+  }
+
+  if (filters.precioMaximo) {
+    searchParams.set("precioMaximo", filters.precioMaximo);
+  }
+
+  if (filters.ref.trim()) {
+    searchParams.set("ref", filters.ref.trim());
+  }
+
+  if (filters.orden) {
+    searchParams.set("orden", filters.orden);
+  }
+
+  return searchParams;
+}
+
+function writeSalesFilterSearchParams(filters: SalesFilters) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const searchParams = buildSalesFilterSearchParams(filters);
+  const nextSearch = searchParams.toString();
+  const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
+  const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+  if (nextUrl !== currentUrl) {
+    window.history.pushState(null, "", nextUrl);
+  }
 }
 
 function matchesBedrooms(property: SalesProperty, dormitorios: string) {
@@ -163,13 +244,52 @@ function getSelectedNeighborhoods(value: string) {
   return value.split(",").map((item) => item.trim()).filter(Boolean);
 }
 
-function PaginationArrowIcon(props: { direction: "left" | "right" }) {
-  const { direction } = props;
+function getPropertyListQueryKey(listingContext: SalesPageProps["listingContext"], query: PropertyListQuery) {
+  return JSON.stringify({
+    listingContext,
+    barrio: query.barrio ?? "",
+    ref: query.ref ?? "",
+    tipo: query.tipo ?? "",
+  });
+}
+
+function getVisiblePaginationItems(page: number, totalPages: number) {
+  return Array.from({ length: 3 }, (_, index) => page + index).filter((item) => item <= totalPages);
+}
+
+function scrollToCatalogTop() {
+  const scrollToTarget = () => {
+    const target = document.getElementById("ventas-catalogo") ?? document.getElementById("ventas-resultados");
+
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  scrollToTarget();
+  window.requestAnimationFrame(() => {
+    scrollToTarget();
+  });
+  window.setTimeout(scrollToTarget, 80);
+}
+
+function PaginationArrowIcon(props: { direction: "left" | "right"; double?: boolean }) {
+  const { direction, double = false } = props;
+  const primaryPath = direction === "left" ? "M14.5 5.5 8 12l6.5 6.5" : "m9.5 5.5 6.5 6.5-6.5 6.5";
+  const secondaryPath = direction === "left" ? "M19.5 5.5 13 12l6.5 6.5" : "m4.5 5.5 6.5 6.5-6.5 6.5";
 
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
+      {double ? (
+        <path
+          d={secondaryPath}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ) : null}
       <path
-        d={direction === "left" ? "M14.5 5.5 8 12l6.5 6.5" : "m9.5 5.5 6.5 6.5-6.5 6.5"}
+        d={primaryPath}
         fill="none"
         stroke="currentColor"
         strokeWidth="2.25"
@@ -180,29 +300,71 @@ function PaginationArrowIcon(props: { direction: "left" | "right" }) {
   );
 }
 
+function getFiltersWithClearedChip(
+  filters: SalesFilters,
+  filterKey: ActiveSalesFilterKey,
+  listingContext: SalesPageProps["listingContext"],
+): SalesFilters {
+  if (filterKey === "precio") {
+    return {
+      ...filters,
+      precioMoneda: getDefaultPriceCurrency(listingContext),
+      precioMinimo: "",
+      precioMaximo: "",
+    };
+  }
+
+  return {
+    ...filters,
+    [filterKey]: "",
+  };
+}
+
 function getActiveFilterChips(filters: SalesFilters) {
-  const chips: string[] = [];
+  const chips: SalesFilterChip[] = [];
 
   if (filters.tipo) {
-    chips.push(`Tipo: ${filters.tipo}`);
+    chips.push({
+      key: "tipo",
+      label: `Tipo: ${filters.tipo}`,
+      clearLabel: `Quitar filtro de tipo ${filters.tipo}`,
+    });
   }
 
   if (filters.barrio) {
-    chips.push(`Barrios: ${filters.barrio.split(",").filter(Boolean).join(", ")}`);
+    const neighborhoods = filters.barrio.split(",").filter(Boolean).join(", ");
+
+    chips.push({
+      key: "barrio",
+      label: `Barrios: ${neighborhoods}`,
+      clearLabel: `Quitar filtro de barrios ${neighborhoods}`,
+    });
   }
 
   if (filters.dormitorios) {
-    chips.push(`Dormitorios: ${filters.dormitorios}`);
+    chips.push({
+      key: "dormitorios",
+      label: `Dormitorios: ${filters.dormitorios}`,
+      clearLabel: `Quitar filtro de dormitorios ${filters.dormitorios}`,
+    });
   }
 
   if (filters.precioMinimo || filters.precioMaximo) {
     const minimum = filters.precioMinimo ? Number(filters.precioMinimo) : salesPriceMinLimit;
     const maximum = filters.precioMaximo ? Number(filters.precioMaximo) : salesPriceMaxLimit;
-    chips.push(`Precio: ${formatSalesPriceValue(filters.precioMoneda, minimum)} - ${formatSalesPriceValue(filters.precioMoneda, maximum)}`);
+    chips.push({
+      key: "precio",
+      label: `Precio: ${formatSalesPriceValue(filters.precioMoneda, minimum)} - ${formatSalesPriceValue(filters.precioMoneda, maximum)}`,
+      clearLabel: "Quitar filtro de precio",
+    });
   }
 
   if (filters.ref) {
-    chips.push(`Ref: ${filters.ref}`);
+    chips.push({
+      key: "ref",
+      label: `Ref: ${filters.ref}`,
+      clearLabel: `Quitar filtro de referencia ${filters.ref}`,
+    });
   }
 
   return chips;
@@ -221,8 +383,13 @@ export default function SalesPage({
   hideResultsTitle = false,
   showLoaderDemo = false,
 }: SalesPageProps) {
-  const [draftFilters, setDraftFilters] = useState<SalesFilters>(() => getInitialFiltersFromUrl());
-  const [appliedFilters, setAppliedFilters] = useState<SalesFilters>(() => getInitialFiltersFromUrl());
+  const [draftFilters, setDraftFilters] = useState<SalesFilters>(() => getInitialFiltersFromUrl(listingContext));
+  const [appliedFilters, setAppliedFilters] = useState<SalesFilters>(() => getInitialFiltersFromUrl(listingContext));
+  const [properties, setProperties] = useState<SalesProperty[]>([]);
+  const [loadedPropertiesQueryKey, setLoadedPropertiesQueryKey] = useState("");
+  const [isLoadingProperties, setIsLoadingProperties] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [isUsingFallbackCatalog, setIsUsingFallbackCatalog] = useState(false);
   const [isLoaderVisible, setIsLoaderVisible] = useState(showLoaderDemo);
   const [page, setPage] = useState(1);
   const [activeDropdown, setActiveDropdown] = useState<"tipo" | "barrio" | "precio" | "dormitorios" | null>(null);
@@ -230,21 +397,23 @@ export default function SalesPage({
   const [isCompactFilterViewport, setIsCompactFilterViewport] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(max-width: 480px)").matches : false,
   );
-  const [salesPriceFieldValue, setSalesPriceFieldValue] = useState(() => getInitialFiltersFromUrl().precioMaximo || "");
+  const [salesPriceFieldValue, setSalesPriceFieldValue] = useState(
+    () => getInitialFiltersFromUrl(listingContext).precioMaximo || "",
+  );
   const [isSalesPriceFieldEditing, setIsSalesPriceFieldEditing] = useState(false);
   const filterPanelRef = useRef<HTMLDivElement | null>(null);
 
   const typeOptions = useMemo(
-    () => Array.from(new Set(salesCatalog.map((property) => property.type))).sort((left, right) => left.localeCompare(right, "es")),
-    [],
+    () => Array.from(new Set(properties.map((property) => property.type))).sort((left, right) => left.localeCompare(right, "es")),
+    [properties],
   );
 
   const neighborhoodOptions = useMemo(
     () =>
-      Array.from(new Set(salesCatalog.map((property) => property.location))).sort((left, right) =>
+      Array.from(new Set(properties.map((property) => property.location))).sort((left, right) =>
         left.localeCompare(right, "es"),
       ),
-    [],
+    [properties],
   );
 
   const typeDropdownOptions = useMemo<SearchDropdownOption[]>(
@@ -272,17 +441,67 @@ export default function SalesPage({
     [],
   );
 
+  const propertyListQuery = useMemo<PropertyListQuery>(() => {
+    const selectedNeighborhoods = getSelectedNeighborhoods(appliedFilters.barrio);
+
+    return {
+      tipo: appliedFilters.tipo || undefined,
+      barrio: selectedNeighborhoods.length === 1 ? selectedNeighborhoods[0] : undefined,
+      ref: appliedFilters.ref.trim() || undefined,
+    };
+  }, [appliedFilters.barrio, appliedFilters.ref, appliedFilters.tipo]);
+  const propertyListQueryKey = useMemo(
+    () => getPropertyListQueryKey(listingContext, propertyListQuery),
+    [listingContext, propertyListQuery],
+  );
+  const hasLoadedCurrentProperties = loadedPropertiesQueryKey === propertyListQueryKey;
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    setIsLoadingProperties(true);
+    setLoadError("");
+    setIsUsingFallbackCatalog(false);
+
+    fetchProperties(listingContext, propertyListQuery, controller.signal)
+      .then((nextProperties) => {
+        setProperties(nextProperties);
+        setLoadedPropertiesQueryKey(propertyListQueryKey);
+      })
+      .catch((error: unknown) => {
+        if (isAbortError(error)) {
+          return;
+        }
+
+        setLoadError(getLarsApiErrorMessage(error));
+        setProperties(import.meta.env.DEV ? salesCatalog : []);
+        setLoadedPropertiesQueryKey(propertyListQueryKey);
+        setIsUsingFallbackCatalog(import.meta.env.DEV);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsLoadingProperties(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [listingContext, propertyListQuery, propertyListQueryKey]);
+
   const filteredProperties = useMemo(() => {
+    if (!hasLoadedCurrentProperties) {
+      return [];
+    }
+
     const normalizedRef = appliedFilters.ref.trim();
     const minimumPrice = Number(appliedFilters.precioMinimo || salesPriceMinLimit);
     const maximumPrice = Number(appliedFilters.precioMaximo || salesPriceMaxLimit);
 
-    const filtered = salesCatalog.filter((property) => {
+    const filtered = properties.filter((property) => {
       const matchesType = appliedFilters.tipo ? property.type === appliedFilters.tipo : true;
       const selectedNeighborhoods = getSelectedNeighborhoods(appliedFilters.barrio);
       const matchesLocation = selectedNeighborhoods.length ? selectedNeighborhoods.includes(property.location) : true;
       const matchesRef = normalizedRef
-        ? property.ref.includes(normalizedRef) || String(property.id).includes(normalizedRef)
+        ? String(property.ref).includes(normalizedRef) || String(property.id).includes(normalizedRef)
         : true;
       const matchesMinimum = appliedFilters.precioMinimo ? property.priceValue >= minimumPrice : true;
       const matchesMaximum = appliedFilters.precioMaximo ? property.priceValue <= maximumPrice : true;
@@ -306,10 +525,11 @@ export default function SalesPage({
     }
 
     return filtered;
-  }, [appliedFilters]);
+  }, [appliedFilters, hasLoadedCurrentProperties, properties]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProperties.length / pageSize));
   const visibleProperties = filteredProperties.slice((page - 1) * pageSize, page * pageSize);
+  const isWaitingForCurrentProperties = !hasLoadedCurrentProperties || (isLoadingProperties && !properties.length);
   const activeFilterChips = getActiveFilterChips(appliedFilters);
   const draftPriceMin = Number(draftFilters.precioMinimo || salesPriceMinLimit);
   const draftPriceMax = Number(draftFilters.precioMaximo || salesPriceMaxLimit);
@@ -337,6 +557,28 @@ export default function SalesPage({
 
     return () => window.clearTimeout(timeoutId);
   }, [showLoaderDemo]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handlePopState = () => {
+      const nextFilters = getInitialFiltersFromUrl(listingContext);
+
+      setDraftFilters(nextFilters);
+      setAppliedFilters(nextFilters);
+      setSalesPriceFieldValue(nextFilters.precioMaximo || "");
+      setIsSalesPriceFieldEditing(false);
+      setPage(1);
+      setActiveDropdown(null);
+      setIsCompactFiltersOpen(false);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [listingContext]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -419,7 +661,7 @@ export default function SalesPage({
     elements.forEach((element) => observer.observe(element));
 
     return () => observer.disconnect();
-  }, [isLoaderVisible, page, totalPages, visibleProperties.length, activeFilterChips.length]);
+  }, [isLoaderVisible, isWaitingForCurrentProperties, page, totalPages, visibleProperties.length, activeFilterChips.length]);
 
   useEffect(() => {
     if (!isSalesPriceFieldEditing) {
@@ -427,7 +669,7 @@ export default function SalesPage({
     }
   }, [draftFilters.precioMaximo, isSalesPriceFieldEditing]);
 
-  if (isLoaderVisible) {
+  if (isLoaderVisible || isWaitingForCurrentProperties) {
     return (
       <div className="sales-page">
         <section className="sales-loader-section" aria-live="polite">
@@ -526,9 +768,12 @@ export default function SalesPage({
 
   const handleApplyFilters = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const nextFilters = { ...draftFilters };
+
+    writeSalesFilterSearchParams(nextFilters);
 
     startTransition(() => {
-      setAppliedFilters({ ...draftFilters });
+      setAppliedFilters(nextFilters);
       setPage(1);
     });
     setActiveDropdown(null);
@@ -538,9 +783,13 @@ export default function SalesPage({
   };
 
   const handleResetFilters = () => {
+    const nextFilters = getEmptyFilters(listingContext);
+
+    writeSalesFilterSearchParams(nextFilters);
+
     startTransition(() => {
-      setDraftFilters(initialFilters);
-      setAppliedFilters(initialFilters);
+      setDraftFilters(nextFilters);
+      setAppliedFilters(nextFilters);
       setSalesPriceFieldValue("");
       setPage(1);
     });
@@ -550,13 +799,28 @@ export default function SalesPage({
     }
   };
 
+  const handleClearActiveFilter = (filterKey: ActiveSalesFilterKey) => {
+    const nextFilters = getFiltersWithClearedChip(appliedFilters, filterKey, listingContext);
+
+    writeSalesFilterSearchParams(nextFilters);
+
+    startTransition(() => {
+      setDraftFilters(nextFilters);
+      setAppliedFilters(nextFilters);
+      setSalesPriceFieldValue(nextFilters.precioMaximo || "");
+      setIsSalesPriceFieldEditing(false);
+      setPage(1);
+    });
+    setActiveDropdown(null);
+  };
+
   const handlePageChange = (nextPage: number) => {
     const clampedPage = Math.min(Math.max(nextPage, 1), totalPages);
 
     startTransition(() => {
       setPage(clampedPage);
-      document.getElementById("ventas-resultados")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
+    scrollToCatalogTop();
   };
 
   const filterForm = (
@@ -743,10 +1007,21 @@ export default function SalesPage({
         </div>
 
         {activeFilterChips.length ? (
-          <div className="sales-filter-actions">
-            <div className="sales-filter-summary">
-              <span>Los filtros aplicados aparecen destacados abajo.</span>
-            </div>
+          <div className="sales-filter-actions" aria-label="Filtros aplicados">
+            {activeFilterChips.map((chip) => (
+              <button
+                key={chip.key}
+                type="button"
+                className="sales-filter-chip"
+                onClick={() => handleClearActiveFilter(chip.key)}
+                aria-label={chip.clearLabel}
+              >
+                <span>{chip.label}</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            ))}
           </div>
         ) : null}
       </div>
@@ -759,35 +1034,34 @@ export default function SalesPage({
         <div className="container">
           {filterForm}
 
-          {!hideResultsTitle || activeFilterChips.length ? (
-            <div className={`sales-results-head reveal${hideResultsTitle ? " sales-results-head-no-title" : ""}`}>
-              {!hideResultsTitle ? (
-                <div className="sales-results-copy section-title-frame">
-                  <h2>{resultsTitle}</h2>
-                </div>
-              ) : null}
+          {loadError ? (
+            <div className="sales-data-alert reveal is-visible" role={isUsingFallbackCatalog ? "status" : "alert"}>
+              <strong>
+                {isUsingFallbackCatalog
+                  ? "Mostrando datos de prueba mientras el catálogo público no responde."
+                  : "No pudimos cargar el catálogo público."}
+              </strong>
+              <span>{loadError}</span>
+            </div>
+          ) : null}
 
-              <div className="sales-active-filters">
-                {activeFilterChips.length ? (
-                  activeFilterChips.map((chip) => (
-                    <span key={chip} className="sales-filter-chip">
-                      {chip}
-                    </span>
-                  ))
-                ) : null}
+          {!hideResultsTitle ? (
+            <div className="sales-results-head reveal">
+              <div className="sales-results-copy section-title-frame">
+                <h2>{resultsTitle}</h2>
               </div>
             </div>
           ) : null}
 
           {visibleProperties.length ? (
-            <div className="sales-grid">
+            <div className="sales-grid" id="ventas-catalogo">
               {visibleProperties.map((property, index) => (
                 <article
                   key={property.id}
                   className={`sales-listing-card${property.reserved ? " is-reserved" : ""} reveal reveal-delay-${(index % 4) + 1}`}
                 >
                   <a
-                    href={getSalesPropertyUrl(property.id, listingContext)}
+                    href={getSalesPropertyUrl(property.ref, listingContext)}
                     className="sales-listing-card-hitarea"
                     aria-label={`Ver detalles de ${property.title}`}
                   />
@@ -825,7 +1099,7 @@ export default function SalesPage({
                     <div className="sales-listing-stats" aria-label={`Datos de ${property.title}`}>
                       <div className="sales-listing-stat">
                         <img src="/optimized/home/icon-dorm.webp" alt="" width="40" height="36" />
-                        <span>{property.rooms === 0 ? 1 : property.rooms}</span>
+                        <span>{property.rooms}</span>
                       </div>
                       <div className="sales-listing-stat">
                         <img src="/optimized/home/icon-banos.webp" alt="" width="39" height="40" />
@@ -846,54 +1120,78 @@ export default function SalesPage({
             </div>
           ) : (
             <div className="sales-empty-state reveal reveal-delay-1">
-              <h3>No encontramos propiedades con esos criterios.</h3>
-              <p>
-                Puedes limpiar filtros o ajustar barrio, dormitorios y presupuesto para volver a
-                abrir el abanico.
-              </p>
-              <button type="button" className="primary-button search-cta-button" onClick={handleResetFilters}>
-                Limpiar filtros
-              </button>
+              {loadError && !properties.length ? (
+                <>
+                  <h3>No pudimos cargar propiedades.</h3>
+                </>
+              ) : (
+                <>
+                  <h3>No se encontraron propiedades</h3>
+                  <button type="button" className="primary-button search-cta-button" onClick={handleResetFilters}>
+                    Limpiar filtros
+                  </button>
+                </>
+              )}
             </div>
           )}
 
           {totalPages > 1 ? (
             <div className="sales-pagination reveal reveal-delay-2" aria-label="Paginación de propiedades">
-              {page > 1 ? (
-                <button
-                  type="button"
-                  className="sales-page-button sales-page-arrow-button"
-                  onClick={() => handlePageChange(page - 1)}
-                  aria-label="Página anterior"
-                >
-                  <PaginationArrowIcon direction="left" />
-                </button>
-              ) : null}
+              <button
+                type="button"
+                className={`sales-page-button sales-page-arrow-button${page <= 1 ? " is-placeholder" : ""}`}
+                onClick={() => handlePageChange(1)}
+                aria-label="Primera página"
+                aria-hidden={page <= 1}
+                disabled={page <= 1}
+              >
+                <PaginationArrowIcon direction="left" double />
+              </button>
+              <button
+                type="button"
+                className={`sales-page-button sales-page-arrow-button${page <= 1 ? " is-placeholder" : ""}`}
+                onClick={() => handlePageChange(page - 1)}
+                aria-label="Página anterior"
+                aria-hidden={page <= 1}
+                disabled={page <= 1}
+              >
+                <PaginationArrowIcon direction="left" />
+              </button>
 
               <div className="sales-page-numbers">
-                {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+                {getVisiblePaginationItems(page, totalPages).map((paginationItem) => (
                   <button
-                    key={pageNumber}
+                    key={paginationItem}
                     type="button"
-                    className={`sales-page-button${pageNumber === page ? " is-current" : ""}`}
-                    onClick={() => handlePageChange(pageNumber)}
-                    aria-current={pageNumber === page ? "page" : undefined}
+                    className={`sales-page-button${paginationItem === page ? " is-current" : ""}`}
+                    onClick={() => handlePageChange(paginationItem)}
+                    aria-current={paginationItem === page ? "page" : undefined}
                   >
-                    {pageNumber}
+                    {paginationItem}
                   </button>
                 ))}
               </div>
 
-              {page < totalPages ? (
-                <button
-                  type="button"
-                  className="sales-page-button sales-page-arrow-button"
-                  onClick={() => handlePageChange(page + 1)}
-                  aria-label="Página siguiente"
-                >
-                  <PaginationArrowIcon direction="right" />
-                </button>
-              ) : null}
+              <button
+                type="button"
+                className={`sales-page-button sales-page-arrow-button${page >= totalPages ? " is-placeholder" : ""}`}
+                onClick={() => handlePageChange(page + 1)}
+                aria-label="Página siguiente"
+                aria-hidden={page >= totalPages}
+                disabled={page >= totalPages}
+              >
+                <PaginationArrowIcon direction="right" />
+              </button>
+              <button
+                type="button"
+                className={`sales-page-button sales-page-arrow-button${page >= totalPages ? " is-placeholder" : ""}`}
+                onClick={() => handlePageChange(totalPages)}
+                aria-label="Última página"
+                aria-hidden={page >= totalPages}
+                disabled={page >= totalPages}
+              >
+                <PaginationArrowIcon direction="right" double />
+              </button>
             </div>
           ) : null}
         </div>

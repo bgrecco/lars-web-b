@@ -12,11 +12,15 @@ export type SalesProperty = {
   title: string;
   price: string;
   priceValue: number;
+  currency?: string;
+  operation?: string;
+  operations?: string[];
   location: string;
   address: string;
   rooms: number;
   bathrooms: number;
   size: string;
+  sizeValue?: number;
   image: string;
   cardImage: string;
   imagePosition?: string;
@@ -27,6 +31,7 @@ export type SalesProperty = {
   gallery: SalesGalleryItem[];
   characteristics: string[];
   amenities: string[];
+  services: string[];
   financialInfo: string[];
   internalInfo: string[];
 };
@@ -38,6 +43,7 @@ type SalesPropertySeed = Omit<
   | "gallery"
   | "characteristics"
   | "amenities"
+  | "services"
   | "financialInfo"
   | "internalInfo"
 > & {
@@ -47,6 +53,7 @@ type SalesPropertySeed = Omit<
   gallery?: SalesGalleryItem[];
   characteristics?: string[];
   amenities?: string[];
+  services?: string[];
   financialInfo?: string[];
   internalInfo?: string[];
 };
@@ -154,6 +161,7 @@ function enrichProperty(property: SalesPropertySeed, extraImages: string[]) {
     gallery: property.gallery ?? buildGallery(property.title, property.image, extraImages),
     characteristics: property.characteristics ?? buildCharacteristics(property),
     amenities: property.amenities ?? buildAmenities(property),
+    services: property.services ?? [],
     financialInfo: property.financialInfo ?? buildFinancialInfo(property),
     internalInfo: property.internalInfo ?? buildInternalInfo(property),
   } satisfies SalesProperty;
@@ -499,12 +507,18 @@ export function getSalesPropertyById(id: number) {
   return salesCatalog.find((property) => property.id === id);
 }
 
-export function getSalesPropertyUrl(id: number, origin?: "ventas" | "alquileres") {
-  return origin === "alquileres" ? `/propiedades/${id}?origen=alquileres` : `/propiedades/${id}`;
+export function getSalesPropertyByRef(ref: string) {
+  return salesCatalog.find((property) => property.ref === ref);
 }
 
-export function getSimilarSalesProperties(property: SalesProperty, limit = 3) {
-  return salesCatalog
+export function getSalesPropertyUrl(ref: string | number, origin?: "ventas" | "alquileres") {
+  const url = `/ficha/${encodeURIComponent(String(ref))}`;
+
+  return origin === "alquileres" ? `${url}?origen=alquileres` : url;
+}
+
+export function getSimilarSalesProperties(property: SalesProperty, limit = 3, catalog = salesCatalog) {
+  return catalog
     .filter((candidate) => candidate.id !== property.id)
     .sort((left, right) => {
       const getScore = (candidate: SalesProperty) =>
