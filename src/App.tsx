@@ -1558,6 +1558,7 @@ function App() {
                 onPause={() => setIsHeroVideoPlaying(false)}
                 onError={() => setIsHeroVideoPlaying(false)}
               >
+                <source src="/hero-bg-desktop.mp4" type="video/mp4" media="(min-width: 761px)" />
                 <source src="/hero-bg.mp4" type="video/mp4" />
               </video>
             ) : null}
