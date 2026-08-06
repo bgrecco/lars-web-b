@@ -1,7 +1,5 @@
 import { useEffect } from "react";
 
-import ContactSection from "../components/ContactSection";
-
 type ManagementService = {
 	title: string;
 	body: string;
@@ -142,8 +140,6 @@ export default function PropertyManagementPage() {
 					</div>
 				</div>
 			</section>
-
-			<ContactSection variant="contrast" />
 		</div>
 	);
 }

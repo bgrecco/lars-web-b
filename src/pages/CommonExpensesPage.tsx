@@ -1,5 +1,3 @@
-import ContactSection from "../components/ContactSection";
-
 type ServiceItem = {
   title: string;
   body: string;
@@ -205,10 +203,21 @@ export default function CommonExpensesPage() {
             </div>
 
           </div>
+
+          <aside className="spotlight-panel common-expenses-management-visual common-expenses-mobile-bottom-visual reveal">
+            <div className="spotlight-image-wrap">
+              <img
+                src="/rent-city.jpg"
+                alt="Edificio residencial administrado por Lars"
+                width="900"
+                height="1292"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+          </aside>
         </div>
       </section>
-
-      <ContactSection />
     </div>
   );
 }

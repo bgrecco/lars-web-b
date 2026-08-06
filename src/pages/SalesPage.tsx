@@ -1,6 +1,5 @@
 import { startTransition, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { fetchProperties, getLarsApiErrorMessage, isAbortError, type PropertyListQuery } from "../api/larsApi";
-import ContactSection from "../components/ContactSection";
 import LarsLogoLoader from "../components/LarsLogoLoader";
 import { canUseMockCatalogFallback, shouldUseMockCatalog } from "../config/dataSource";
 import { getSalesPropertyUrl, salesCatalog, type SalesProperty } from "../data/salesCatalog";
@@ -272,23 +271,12 @@ function scrollToCatalogTop() {
   window.setTimeout(scrollToTarget, 80);
 }
 
-function PaginationArrowIcon(props: { direction: "left" | "right"; double?: boolean }) {
-  const { direction, double = false } = props;
+function PaginationArrowIcon(props: { direction: "left" | "right" }) {
+  const { direction } = props;
   const primaryPath = direction === "left" ? "M14.5 5.5 8 12l6.5 6.5" : "m9.5 5.5 6.5 6.5-6.5 6.5";
-  const secondaryPath = direction === "left" ? "M19.5 5.5 13 12l6.5 6.5" : "m4.5 5.5 6.5 6.5-6.5 6.5";
 
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      {double ? (
-        <path
-          d={secondaryPath}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.25"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      ) : null}
       <path
         d={primaryPath}
         fill="none"
@@ -321,13 +309,21 @@ function getFiltersWithClearedChip(
   };
 }
 
+function formatFilterChipValue(value: string) {
+  if (!value) {
+    return value;
+  }
+
+  return value.charAt(0).toLocaleUpperCase("es-UY") + value.slice(1);
+}
+
 function getActiveFilterChips(filters: SalesFilters) {
   const chips: SalesFilterChip[] = [];
 
   if (filters.tipo) {
     chips.push({
       key: "tipo",
-      label: `Tipo: ${filters.tipo}`,
+      label: filters.tipo === projectTypeFilterValue ? "Proyecto" : formatFilterChipValue(filters.tipo),
       clearLabel: `Quitar filtro de tipo ${filters.tipo}`,
     });
   }
@@ -337,7 +333,7 @@ function getActiveFilterChips(filters: SalesFilters) {
 
     chips.push({
       key: "barrio",
-      label: `Barrios: ${neighborhoods}`,
+      label: neighborhoods,
       clearLabel: `Quitar filtro de barrios ${neighborhoods}`,
     });
   }
@@ -345,7 +341,7 @@ function getActiveFilterChips(filters: SalesFilters) {
   if (filters.dormitorios) {
     chips.push({
       key: "dormitorios",
-      label: `Dormitorios: ${filters.dormitorios}`,
+      label: filters.dormitorios,
       clearLabel: `Quitar filtro de dormitorios ${filters.dormitorios}`,
     });
   }
@@ -355,7 +351,7 @@ function getActiveFilterChips(filters: SalesFilters) {
     const maximum = filters.precioMaximo ? Number(filters.precioMaximo) : salesPriceMaxLimit;
     chips.push({
       key: "precio",
-      label: `Precio: ${formatSalesPriceValue(filters.precioMoneda, minimum)} - ${formatSalesPriceValue(filters.precioMoneda, maximum)}`,
+      label: `${formatSalesPriceValue(filters.precioMoneda, minimum)} - ${formatSalesPriceValue(filters.precioMoneda, maximum)}`,
       clearLabel: "Quitar filtro de precio",
     });
   }
@@ -363,7 +359,7 @@ function getActiveFilterChips(filters: SalesFilters) {
   if (filters.ref) {
     chips.push({
       key: "ref",
-      label: `Ref: ${filters.ref}`,
+      label: filters.ref,
       clearLabel: `Quitar filtro de referencia ${filters.ref}`,
     });
   }
@@ -538,6 +534,7 @@ export default function SalesPage({
   const totalPages = Math.max(1, Math.ceil(filteredProperties.length / pageSize));
   const visibleProperties = filteredProperties.slice((page - 1) * pageSize, page * pageSize);
   const isWaitingForCurrentProperties = !hasLoadedCurrentProperties || (isLoadingProperties && !properties.length);
+  const isCatalogLoading = isLoaderVisible || isWaitingForCurrentProperties;
   const activeFilterChips = getActiveFilterChips(appliedFilters);
   const draftPriceMin = Number(draftFilters.precioMinimo || salesPriceMinLimit);
   const draftPriceMax = Number(draftFilters.precioMaximo || salesPriceMaxLimit);
@@ -676,16 +673,6 @@ export default function SalesPage({
       setSalesPriceFieldValue(draftFilters.precioMaximo || "");
     }
   }, [draftFilters.precioMaximo, isSalesPriceFieldEditing]);
-
-  if (isLoaderVisible || isWaitingForCurrentProperties) {
-    return (
-      <div className="sales-page">
-        <section className="sales-loader-section" aria-live="polite">
-          <LarsLogoLoader />
-        </section>
-      </div>
-    );
-  }
 
   const handleDraftFilterChange = (field: keyof SalesFilters, value: string) => {
     setDraftFilters((currentFilters) => ({
@@ -1039,7 +1026,7 @@ export default function SalesPage({
   return (
     <div className="sales-page">
       <section className="sales-results" id="ventas-resultados">
-        <div className="container">
+        <div className="container sales-results-container">
           {filterForm}
 
           {loadError ? (
@@ -1061,7 +1048,11 @@ export default function SalesPage({
             </div>
           ) : null}
 
-          {visibleProperties.length ? (
+          {isCatalogLoading ? (
+            <section className="sales-loader-section sales-catalog-loader" aria-live="polite" aria-busy="true">
+              <LarsLogoLoader />
+            </section>
+          ) : visibleProperties.length ? (
             <div className="sales-grid" id="ventas-catalogo">
               {visibleProperties.map((property, index) => (
                 <article
@@ -1143,18 +1134,8 @@ export default function SalesPage({
             </div>
           )}
 
-          {totalPages > 1 ? (
+          {!isCatalogLoading && totalPages > 1 ? (
             <div className="sales-pagination reveal reveal-delay-2" aria-label="Paginación de propiedades">
-              <button
-                type="button"
-                className={`sales-page-button sales-page-arrow-button${page <= 1 ? " is-placeholder" : ""}`}
-                onClick={() => handlePageChange(1)}
-                aria-label="Primera página"
-                aria-hidden={page <= 1}
-                disabled={page <= 1}
-              >
-                <PaginationArrowIcon direction="left" double />
-              </button>
               <button
                 type="button"
                 className={`sales-page-button sales-page-arrow-button${page <= 1 ? " is-placeholder" : ""}`}
@@ -1190,22 +1171,10 @@ export default function SalesPage({
               >
                 <PaginationArrowIcon direction="right" />
               </button>
-              <button
-                type="button"
-                className={`sales-page-button sales-page-arrow-button${page >= totalPages ? " is-placeholder" : ""}`}
-                onClick={() => handlePageChange(totalPages)}
-                aria-label="Última página"
-                aria-hidden={page >= totalPages}
-                disabled={page >= totalPages}
-              >
-                <PaginationArrowIcon direction="right" double />
-              </button>
             </div>
           ) : null}
         </div>
       </section>
-
-      <ContactSection />
     </div>
   );
 }

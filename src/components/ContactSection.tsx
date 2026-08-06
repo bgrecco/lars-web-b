@@ -9,6 +9,8 @@ type ContactCard = {
 };
 
 type ContactSectionProps = {
+  className?: string;
+  showOffices?: boolean;
   variant?: "default" | "contrast";
 };
 
@@ -45,11 +47,13 @@ function ContactSectionHeaderWithVariant(props: { variant: ContactSectionProps["
   );
 }
 
-export default function ContactSection({ variant = "default" }: ContactSectionProps) {
+export default function ContactSection({ className, showOffices = true, variant = "default" }: ContactSectionProps) {
   const sectionClassName = [
     "section",
     "section-contact",
+    !showOffices ? "section-contact-form-only" : "",
     variant === "contrast" ? "section-contact-contrast" : "",
+    className,
   ]
     .filter(Boolean)
     .join(" ");
@@ -57,29 +61,31 @@ export default function ContactSection({ variant = "default" }: ContactSectionPr
   return (
     <section className={sectionClassName} id="contacto">
       <div className="container contact-layout">
-        <div className="contact-copy">
-          <ContactSectionHeaderWithVariant variant={variant} />
+        {showOffices ? (
+          <div className="contact-copy">
+            <ContactSectionHeaderWithVariant variant={variant} />
 
-          <div className="contact-grid">
-            {contactCards.map((item) => (
-              <article key={item.title} className="contact-card reveal">
-                <h3>{item.title}</h3>
-                {item.address && item.addressHref ? (
-                  <p className="contact-card-details">
-                    <a href={item.addressHref} target="_blank" rel="noreferrer" className="contact-address-link">
-                      {item.address}
-                    </a>
-                    {item.schedule ? (
-                      <span className="contact-card-schedule">{item.schedule}</span>
-                    ) : null}
-                  </p>
-                ) : (
-                  <p className="contact-card-details">{item.details}</p>
-                )}
-              </article>
-            ))}
+            <div className="contact-grid">
+              {contactCards.map((item) => (
+                <article key={item.title} className="contact-card reveal">
+                  <h3>{item.title}</h3>
+                  {item.address && item.addressHref ? (
+                    <p className="contact-card-details">
+                      <a href={item.addressHref} target="_blank" rel="noreferrer" className="contact-address-link">
+                        {item.address}
+                      </a>
+                      {item.schedule ? (
+                        <span className="contact-card-schedule">{item.schedule}</span>
+                      ) : null}
+                    </p>
+                  ) : (
+                    <p className="contact-card-details">{item.details}</p>
+                  )}
+                </article>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <form className="contact-form reveal reveal-delay-2">
           <div className="contact-form-header">

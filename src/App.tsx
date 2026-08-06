@@ -1012,8 +1012,11 @@ function App() {
     setIsMobileRentMenuOpen(false);
   }, [pathname]);
 
+  const hasHomeScrollHeaderEffect =
+    route.name === "home" || route.name === "acerca" || route.name === "ventas" || route.name === "alquileres";
+
   useEffect(() => {
-    if (route.name !== "home" && route.name !== "acerca") {
+    if (!hasHomeScrollHeaderEffect) {
       setIsHeaderScrolled(false);
       return;
     }
@@ -1026,7 +1029,7 @@ function App() {
     window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [route.name]);
+  }, [hasHomeScrollHeaderEffect]);
 
   const listingCount = homeFeaturedListings.length;
   const activeListing = homeFeaturedListings[getWrappedIndex(listingIndex, listingCount)];
@@ -1353,12 +1356,13 @@ function App() {
         ? `Desde ${formatSearchPriceValue(searchPriceCurrency, searchPriceMin)}`
         : `Hasta ${formatSearchPriceValue(searchPriceCurrency, searchPriceMax)}`;
   const hasFullSearchPriceRange = searchPriceMin > searchPriceMinLimit && searchPriceMax < searchPriceMaxLimit;
-
   const activeFooterBranch = topbarBranches[getWrappedIndex(footerBranchIndex, topbarBranches.length)];
   const pageShellClassName = [
     "page-shell",
     route.name === "home" ? "page-shell-home" : "",
     route.name === "acerca" ? "page-shell-about" : "",
+    route.name === "ventas" || route.name === "alquileres" ? "page-shell-catalog" : "",
+    route.name === "ventas" ? "page-shell-ventas" : "",
     route.name !== "home" && route.name !== "acerca" ? "page-shell-sales" : "",
   ]
     .filter(Boolean)
@@ -1819,7 +1823,7 @@ function App() {
             <section className="section section-listings" id="propiedades">
           <div className="container">
             <SectionHeader
-              className="section-heading-featured"
+              className="section-heading-featured is-visible"
               title="Propiedades destacadas"
               description=""
             />
@@ -1888,10 +1892,10 @@ function App() {
                 ))}
               </div>
             </div>
+
+            <ContactSection showOffices={false} className="home-featured-contact" />
           </div>
         </section>
-
-            <ContactSection />
           </>
         )}
       </main>
