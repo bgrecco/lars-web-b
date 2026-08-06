@@ -1363,6 +1363,7 @@ function App() {
     route.name === "acerca" ? "page-shell-about" : "",
     route.name === "ventas" || route.name === "alquileres" ? "page-shell-catalog" : "",
     route.name === "ventas" ? "page-shell-ventas" : "",
+    route.name === "alquileres" ? "page-shell-alquileres" : "",
     route.name !== "home" && route.name !== "acerca" ? "page-shell-sales" : "",
   ]
     .filter(Boolean)

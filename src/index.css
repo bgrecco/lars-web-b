@@ -169,6 +169,7 @@ button {
   }
   .page-shell-home .site-header.is-header-scrolled,
   .page-shell-ventas .site-header,
+  .page-shell-alquileres .site-header,
   .page-shell-catalog .site-header.is-header-scrolled,
   .page-shell-about .site-header {
         overflow:visible;
@@ -181,6 +182,7 @@ button {
   }
   .page-shell-home .site-header.is-header-scrolled .header-inner,
   .page-shell-ventas .site-header .header-inner,
+  .page-shell-alquileres .site-header .header-inner,
   .page-shell-catalog .site-header.is-header-scrolled .header-inner,
   .page-shell-about .site-header .header-inner {
         position:relative;
@@ -197,6 +199,7 @@ button {
   }
   .page-shell-home .site-header.is-header-scrolled:before,
   .page-shell-ventas .site-header:before,
+  .page-shell-alquileres .site-header:before,
   .page-shell-catalog .site-header.is-header-scrolled:before,
   .page-shell-about .site-header:before {
         content:"";
@@ -8644,6 +8647,7 @@ button {
   }
   .page-shell-home .site-header.is-header-scrolled,
   .page-shell-ventas .site-header,
+  .page-shell-alquileres .site-header,
   .page-shell-catalog .site-header.is-header-scrolled {
         overflow:visible;
         isolation:isolate;
@@ -8663,12 +8667,14 @@ button {
   }
   .page-shell-home .site-header.is-header-scrolled .header-inner,
   .page-shell-ventas .site-header .header-inner,
+  .page-shell-alquileres .site-header .header-inner,
   .page-shell-catalog .site-header.is-header-scrolled .header-inner {
         position:relative;
         z-index:1
   }
   .page-shell-home .site-header.is-header-scrolled:before,
   .page-shell-ventas .site-header:before,
+  .page-shell-alquileres .site-header:before,
   .page-shell-catalog .site-header.is-header-scrolled:before {
         content:"";
         position:absolute;
