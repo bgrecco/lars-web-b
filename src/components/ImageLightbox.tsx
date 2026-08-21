@@ -1,9 +1,19 @@
 import { useEffect, useRef, useState, type MouseEvent, type TouchEvent } from "react";
+import {
+  getVideoMimeType,
+  getYouTubeEmbedSrc,
+  isYouTubeShortsSrc,
+  isYouTubeVideoSrc,
+  shouldUsePortraitVideoFrame,
+} from "../utils/videoMedia";
 
 export type LightboxImage = {
+  mediaType?: "image" | "video";
   image: string;
+  thumbImage?: string;
   alt: string;
   objectPosition?: string;
+  videoSrc?: string;
 };
 
 type ImageLightboxProps = {
@@ -21,17 +31,7 @@ function getWrappedIndex(index: number, length: number) {
 function LightboxArrowIcon(props: { direction: "left" | "right" }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      {props.direction === "left" ? (
-        <>
-          <path d="M15 5 8 12l7 7" />
-          <path d="M9 12h11" />
-        </>
-      ) : (
-        <>
-          <path d="m9 5 7 7-7 7" />
-          <path d="M4 12h11" />
-        </>
-      )}
+      <path d={props.direction === "left" ? "m15 18-6-6 6-6" : "m9 6 6 6-6 6"} />
     </svg>
   );
 }
@@ -42,6 +42,92 @@ function CloseIcon() {
       <path d="m6 6 12 12" />
       <path d="M18 6 6 18" />
     </svg>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8.25 5.75v12.5L18.25 12 8.25 5.75Z" />
+    </svg>
+  );
+}
+
+function isVideoMedia(image: LightboxImage) {
+  return image.mediaType === "video" || Boolean(image.videoSrc);
+}
+
+type LightboxVideoProps = {
+  image: LightboxImage;
+  title: string;
+  className: string;
+  dragOffset: number;
+  isDragging: boolean;
+};
+
+function LightboxVideo(props: LightboxVideoProps) {
+  const { image, title, className, dragOffset, isDragging } = props;
+  const videoSrc = image.videoSrc;
+
+  if (!videoSrc) {
+    return null;
+  }
+
+  const isYouTubeVideo = isYouTubeVideoSrc(videoSrc);
+  const orientationClassName = shouldUsePortraitVideoFrame(videoSrc) ? "is-portrait" : "is-landscape";
+  const sourceClassName = isYouTubeShortsSrc(videoSrc) ? "is-shorts" : "";
+  const videoShellClassName = [
+    "image-lightbox-video-shell",
+    orientationClassName,
+    sourceClassName,
+    className.trim(),
+  ].filter(Boolean).join(" ");
+  const videoFrameClassName = [
+    "image-lightbox-video-frame",
+    orientationClassName,
+    sourceClassName,
+  ].filter(Boolean).join(" ");
+
+  return (
+    <div
+      className={videoShellClassName}
+      data-lightbox-keep-open
+      style={{
+        transform: isDragging ? `translate3d(${dragOffset}px, 0, 0)` : undefined,
+      }}
+    >
+      <img
+        src={image.image}
+        alt=""
+        className="image-lightbox-video-backdrop"
+        aria-hidden="true"
+        loading="eager"
+        decoding="async"
+        style={{ objectPosition: image.objectPosition ?? "center center" }}
+      />
+
+      <div className={videoFrameClassName}>
+        {isYouTubeVideo ? (
+          <iframe
+            src={getYouTubeEmbedSrc(videoSrc)}
+            title={`${title} video`}
+            className="image-lightbox-video-iframe"
+            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
+        ) : (
+          <video
+            className="image-lightbox-video-player"
+            controls
+            playsInline
+            preload="metadata"
+            poster={image.image}
+          >
+            <source src={videoSrc} type={getVideoMimeType(videoSrc)} />
+          </video>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -119,6 +205,7 @@ export default function ImageLightbox(props: ImageLightboxProps) {
   }
 
   const showNavigation = images.length > 1;
+  const activeMediaClassName = `${transitionDirection ? ` image-lightbox-image-slide-${transitionDirection}` : ""}${isDragging ? " is-dragging" : ""}`;
   const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
     touchStartXRef.current = event.changedTouches[0]?.clientX ?? null;
     setIsDragging(true);
@@ -205,17 +292,28 @@ export default function ImageLightbox(props: ImageLightboxProps) {
           </button>
         ) : null}
 
-        <img
-          key={`${safeIndex}-${transitionDirection ?? "initial"}`}
-          src={activeImage.image}
-          alt={activeImage.alt}
-          className={`image-lightbox-image${transitionDirection ? ` image-lightbox-image-slide-${transitionDirection}` : ""}${isDragging ? " is-dragging" : ""}`}
-          data-lightbox-keep-open
-          style={{
-            objectPosition: activeImage.objectPosition ?? "center center",
-            transform: isDragging ? `translate3d(${dragOffset}px, 0, 0)` : undefined,
-          }}
-        />
+        {isVideoMedia(activeImage) ? (
+          <LightboxVideo
+            key={`${safeIndex}-${transitionDirection ?? "initial"}`}
+            image={activeImage}
+            title={title}
+            className={activeMediaClassName}
+            dragOffset={dragOffset}
+            isDragging={isDragging}
+          />
+        ) : (
+          <img
+            key={`${safeIndex}-${transitionDirection ?? "initial"}`}
+            src={activeImage.image}
+            alt={activeImage.alt}
+            className={`image-lightbox-image${activeMediaClassName}`}
+            data-lightbox-keep-open
+            style={{
+              objectPosition: activeImage.objectPosition ?? "center center",
+              transform: isDragging ? `translate3d(${dragOffset}px, 0, 0)` : undefined,
+            }}
+          />
+        )}
 
         {showNavigation ? (
           <button
@@ -239,20 +337,30 @@ export default function ImageLightbox(props: ImageLightboxProps) {
               <button
                 key={`${image.image}-${index}`}
                 type="button"
-                className={`image-lightbox-thumb${index === safeIndex ? " is-active" : ""}`}
+                className={[
+                  "image-lightbox-thumb",
+                  index === safeIndex ? "is-active" : "",
+                  isVideoMedia(image) ? "is-video" : "",
+                  isYouTubeShortsSrc(image.videoSrc) ? "is-shorts" : "",
+                ].filter(Boolean).join(" ")}
                 onClick={() => onIndexChange(index)}
-                aria-label={`Abrir imagen ${index + 1}`}
+                aria-label={isVideoMedia(image) ? `Abrir video ${index + 1}` : `Abrir imagen ${index + 1}`}
                 aria-pressed={index === safeIndex}
                 data-lightbox-keep-open
               >
                 <img
-                  src={image.image}
+                  src={image.thumbImage ?? image.image}
                   alt=""
                   className="image-lightbox-thumb-image"
                   loading="lazy"
                   decoding="async"
                   style={{ objectPosition: image.objectPosition ?? "center center" }}
                 />
+                {isVideoMedia(image) ? (
+                  <span className="image-lightbox-thumb-play" aria-hidden="true">
+                    <PlayIcon />
+                  </span>
+                ) : null}
               </button>
             ))}
           </div>

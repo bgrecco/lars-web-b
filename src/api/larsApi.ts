@@ -253,15 +253,35 @@ function normalizeGallery<T extends SalesGalleryItem | ProjectGalleryItem>(
 ) {
   const sourceItems = Array.isArray(value) ? value : [];
   const gallery = sourceItems
-    .filter((item): item is Partial<T> & { image: string } => {
-      return Boolean(item && typeof item === "object" && typeof (item as { image?: unknown }).image === "string");
+    .filter((item): item is Partial<T> => {
+      return Boolean(item && typeof item === "object");
     })
-    .map((item, index) => ({
-      image: item.image,
-      thumbImage: typeof item.thumbImage === "string" ? item.thumbImage : undefined,
-      alt: typeof item.alt === "string" && item.alt.trim() ? item.alt : `${title} imagen ${index + 1}`,
-      objectPosition: typeof item.objectPosition === "string" ? item.objectPosition : imagePosition,
-    }));
+    .flatMap((item, index) => {
+      const itemPayload = getObjectValue(item);
+      const videoSrc =
+        getStringValue(itemPayload?.videoSrc) ??
+        getStringValue(itemPayload?.videoUrl) ??
+        getStringValue(itemPayload?.video_url) ??
+        getStringValue(itemPayload?.youtubeUrl) ??
+        getStringValue(itemPayload?.youtube_url) ??
+        getStringValue(itemPayload?.url_video) ??
+        getStringValue(itemPayload?.video);
+      const mediaType: SalesGalleryItem["mediaType"] = videoSrc ? "video" : "image";
+      const image = getStringValue(itemPayload?.image) ?? (videoSrc ? fallbackImage : undefined);
+
+      if (!image) {
+        return [];
+      }
+
+      return [{
+        mediaType,
+        image,
+        thumbImage: typeof item.thumbImage === "string" ? item.thumbImage : undefined,
+        alt: typeof item.alt === "string" && item.alt.trim() ? item.alt : `${title} imagen ${index + 1}`,
+        objectPosition: typeof item.objectPosition === "string" ? item.objectPosition : imagePosition,
+        videoSrc,
+      }];
+    });
 
   if (gallery.length || !fallbackImage) {
     return gallery;
@@ -380,9 +400,83 @@ function getRawPublicCharacteristics(characteristics: RawSelectedCharacteristic[
     .map(formatRawSelectedCharacteristic);
 }
 
+function isVideoGalleryItem(item: SalesGalleryItem) {
+  return item.mediaType === "video" || Boolean(item.videoSrc);
+}
+
+function getSalesPropertyVideoSrc(property: SalesProperty) {
+  const propertyPayload = getObjectValue(property);
+
+  return (
+    getStringValue(property.videoSrc) ??
+    getStringValue(propertyPayload?.videoUrl) ??
+    getStringValue(propertyPayload?.video_url) ??
+    getStringValue(propertyPayload?.youtubeUrl) ??
+    getStringValue(propertyPayload?.youtube_url) ??
+    getStringValue(propertyPayload?.url_video) ??
+    getStringValue(propertyPayload?.video)
+  );
+}
+
+function appendVideoToSalesGallery(
+  gallery: SalesGalleryItem[],
+  videoSrc: string | undefined,
+  title: string,
+  posterImage: string,
+  thumbImage: string,
+  imagePosition?: string,
+) {
+  const imageItems = gallery.filter((item) => !isVideoGalleryItem(item));
+  const fallbackPosterImage = imageItems[0]?.image ?? posterImage;
+  const fallbackThumbImage = imageItems[0]?.thumbImage ?? thumbImage;
+  const seenVideoSources = new Set<string>();
+  const videoItems = gallery.filter(isVideoGalleryItem).flatMap((item, index) => {
+    const normalizedVideoSrc = item.videoSrc?.trim();
+
+    if (!normalizedVideoSrc || seenVideoSources.has(normalizedVideoSrc)) {
+      return [];
+    }
+
+    seenVideoSources.add(normalizedVideoSrc);
+
+    return [{
+      mediaType: "video",
+      image: item.image || fallbackPosterImage,
+      thumbImage: item.thumbImage ?? fallbackThumbImage,
+      alt: item.alt || `${title} video ${index + 1}`,
+      objectPosition: item.objectPosition ?? imagePosition,
+      videoSrc: normalizedVideoSrc,
+    } satisfies SalesGalleryItem];
+  });
+
+  const normalizedPropertyVideoSrc = videoSrc?.trim();
+
+  if (normalizedPropertyVideoSrc && !seenVideoSources.has(normalizedPropertyVideoSrc)) {
+    videoItems.push({
+      mediaType: "video",
+      image: fallbackPosterImage,
+      thumbImage: fallbackThumbImage,
+      alt: `${title} video`,
+      objectPosition: imagePosition,
+      videoSrc: normalizedPropertyVideoSrc,
+    });
+  }
+
+  if (!videoItems.length) {
+    return imageItems;
+  }
+
+  return [
+    ...imageItems,
+    ...videoItems,
+  ] satisfies SalesGalleryItem[];
+}
+
 function normalizeSalesProperty(property: SalesProperty) {
   const title = property.title || `Propiedad ${property.ref || property.id}`;
   const image = property.image || property.cardImage || "";
+  const cardImage = property.cardImage || image;
+  const videoSrc = getSalesPropertyVideoSrc(property);
   const publicDataSize = getPublicDataNumber(property, "m2");
   const propertySizeValue = getNumberValue(property.sizeValue);
   const sizeValue = propertySizeValue ?? publicDataSize;
@@ -419,11 +513,19 @@ function normalizeSalesProperty(property: SalesProperty) {
     size: size || (sizeValue !== undefined ? `${Math.trunc(sizeValue)} m²` : ""),
     sizeValue,
     image,
-    cardImage: property.cardImage || image,
+    cardImage,
+    videoSrc,
     summary: property.summary || "",
     description: property.description || property.summary || "",
     tags,
-    gallery: normalizeGallery<SalesGalleryItem>(property.gallery, image, title, property.imagePosition),
+    gallery: appendVideoToSalesGallery(
+      normalizeGallery<SalesGalleryItem>(property.gallery, image, title, property.imagePosition),
+      videoSrc,
+      title,
+      image,
+      cardImage,
+      property.imagePosition,
+    ),
     characteristics,
     amenities: mergeStringArrays(rawAmenities, asStringArray(property.amenities)),
     services: mergeStringArrays(rawServices, asStringArray(property.services)),

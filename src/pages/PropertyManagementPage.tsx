@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { ContactForm } from "../components/ContactSection";
 
 type ManagementService = {
 	title: string;
@@ -115,19 +116,21 @@ export default function PropertyManagementPage() {
 						</div>
 					</div>
 
-					<aside className="spotlight-panel common-expenses-management-visual property-management-visual reveal reveal-delay-2">
-						<div className="spotlight-image-wrap">
-							<img
-								src="/rent-city.jpg"
-								alt="Edificios residenciales administrados por Lars"
-								width="840"
-								height="1722"
-								fetchPriority="high"
-								decoding="async"
-							/>
-						</div>
-						
-					</aside>
+					<div className="common-expenses-visual-stack reveal reveal-delay-2">
+						<aside className="spotlight-panel common-expenses-management-visual property-management-visual">
+							<div className="spotlight-image-wrap">
+								<img
+									src="/rent-city.jpg"
+									alt="Edificios residenciales administrados por Lars"
+									width="840"
+									height="1722"
+									fetchPriority="high"
+									decoding="async"
+								/>
+							</div>
+						</aside>
+						<ContactForm className="common-expenses-visual-contact-form" />
+					</div>
 
 					<div className="common-expenses-card-grid common-expenses-card-grid-secondary">
 						{managementServices.slice(managementServicesSplitIndex).map((item, index) => (

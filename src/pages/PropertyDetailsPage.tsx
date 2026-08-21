@@ -1,4 +1,12 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import {
   fetchProperties,
   fetchPropertyByRef,
@@ -10,10 +18,12 @@ import ImageLightbox from "../components/ImageLightbox";
 import LarsLogoLoader from "../components/LarsLogoLoader";
 import WhatsAppIcon from "../components/WhatsAppIcon";
 import { canUseMockCatalogFallback, shouldUseMockCatalog } from "../config/dataSource";
+import { isYouTubeShortsSrc, shouldUsePortraitVideoFrame } from "../utils/videoMedia";
 import {
   getSalesPropertyByRef,
   getSalesPropertyUrl,
   getSimilarSalesProperties,
+  type SalesGalleryItem,
   type SalesProperty,
 } from "../data/salesCatalog";
 
@@ -23,6 +33,7 @@ type PropertyDetailsPageProps = {
 };
 
 type PropertyDetailsDemoVariant = "default" | "sticky-contact" | "hero-summary";
+type PropertyGalleryMedia = SalesProperty["gallery"][number];
 
 function getBedroomStatLabel(rooms: number) {
   return String(rooms);
@@ -34,6 +45,55 @@ function getBedroomDetailLabel(rooms: number) {
 
 function getBathroomLabel(bathrooms: number) {
   return `${bathrooms} baño${bathrooms === 1 ? "" : "s"}`;
+}
+
+function isPropertyVideoMedia(media: PropertyGalleryMedia | undefined): media is PropertyGalleryMedia & { videoSrc: string } {
+  return Boolean(media?.videoSrc);
+}
+
+function getPropertyGalleryMediaLabel(media: PropertyGalleryMedia, index: number, title: string) {
+  return isPropertyVideoMedia(media) ? `Abrir video ${index + 1} de ${title}` : `Abrir imagen ${index + 1} de ${title}`;
+}
+
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8.25 5.75v12.5L18.25 12 8.25 5.75Z" />
+    </svg>
+  );
+}
+
+function PropertyGalleryVideoPreview(props: { media: PropertyGalleryMedia; className?: string }) {
+  const { media, className = "" } = props;
+  const orientationClassName = shouldUsePortraitVideoFrame(media.videoSrc) ? "is-portrait" : "is-landscape";
+  const sourceClassName = isYouTubeShortsSrc(media.videoSrc) ? "is-shorts" : "";
+  const frameClassName = ["property-gallery-video-frame", orientationClassName, sourceClassName, className].filter(Boolean).join(" ");
+
+  return (
+    <span className={frameClassName} aria-hidden="true">
+      <img
+        src={media.image}
+        alt=""
+        className="property-gallery-video-backdrop"
+        loading="lazy"
+        decoding="async"
+        style={{ objectPosition: media.objectPosition ?? "center center" }}
+      />
+      <span className="property-gallery-video-foreground">
+        <img
+          src={media.image}
+          alt=""
+          className="property-gallery-video-poster"
+          loading="lazy"
+          decoding="async"
+          style={{ objectPosition: media.objectPosition ?? "center center" }}
+        />
+      </span>
+      <span className="property-gallery-play-badge">
+        <PlayIcon />
+      </span>
+    </span>
+  );
 }
 
 function normalizePropertyDetailText(value: string) {
@@ -211,24 +271,89 @@ function BackArrowIcon() {
   );
 }
 
-function SimilarPropertyCard(props: { property: SalesProperty; index: number; origin: PropertyOperation }) {
-  const { property, index, origin } = props;
+function getWrappedIndex(index: number, length: number) {
+  return ((index % length) + length) % length;
+}
+
+function getPropertyCardGallery(property: SalesProperty): SalesGalleryItem[] {
+  const [primaryGalleryItem, ...secondaryGalleryItems] = property.gallery;
+
+  return [
+    {
+      mediaType: "image",
+      image: property.cardImage,
+      thumbImage: property.cardImage,
+      alt: property.title,
+      objectPosition: property.imagePosition ?? primaryGalleryItem?.objectPosition ?? "center center",
+    },
+    ...secondaryGalleryItems,
+  ];
+}
+
+function SimilarPropertyCard(props: {
+  property: SalesProperty;
+  index: number;
+  origin: PropertyOperation;
+  activeGalleryIndex: number;
+  onGalleryStep: (
+    event: ReactMouseEvent<HTMLButtonElement>,
+    propertyId: number,
+    galleryLength: number,
+    direction: -1 | 1,
+  ) => void;
+}) {
+  const { property, index, origin, activeGalleryIndex, onGalleryStep } = props;
+  const galleryItems = getPropertyCardGallery(property);
+  const safeGalleryIndex = getWrappedIndex(activeGalleryIndex, galleryItems.length);
+  const activeGalleryItem = galleryItems[safeGalleryIndex] ?? galleryItems[0];
+  const hasGalleryControls = galleryItems.length > 1;
 
   return (
-    <a
-      href={getSalesPropertyUrl(property.ref, origin)}
+    <article
       className={`property-similar-card${property.reserved ? " is-reserved" : ""} reveal reveal-delay-${(index % 3) + 1}`}
     >
+      <a
+        href={getSalesPropertyUrl(property.ref, origin)}
+        className="property-similar-card-hitarea"
+        aria-label={`Ver detalles de ${property.title}`}
+      />
+
       <div className="property-similar-media">
         <img
-          src={property.cardImage}
-          alt={property.title}
+          src={activeGalleryItem.image}
+          alt={activeGalleryItem.alt || property.title}
           width="700"
           height="394"
           loading="lazy"
           decoding="async"
-          style={{ objectPosition: property.imagePosition ?? "center center" }}
+          style={{ objectPosition: activeGalleryItem.objectPosition ?? property.imagePosition ?? "center center" }}
         />
+
+        {hasGalleryControls ? (
+          <>
+            <button
+              type="button"
+              className="sales-listing-gallery-button sales-listing-gallery-button-prev"
+              aria-label={`Ver imagen anterior de ${property.title}`}
+              onClick={(event) => onGalleryStep(event, property.id, galleryItems.length, -1)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="sales-listing-gallery-button sales-listing-gallery-button-next"
+              aria-label={`Ver imagen siguiente de ${property.title}`}
+              onClick={(event) => onGalleryStep(event, property.id, galleryItems.length, 1)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m9 6 6 6-6 6" />
+              </svg>
+            </button>
+          </>
+        ) : null}
+
         {property.reserved ? (
           <div className="property-similar-badges">
             <span className="property-similar-pill is-reserved">Reservada</span>
@@ -260,7 +385,7 @@ function SimilarPropertyCard(props: { property: SalesProperty; index: number; or
           <strong>{property.price}</strong>
         </div>
       </div>
-    </a>
+    </article>
   );
 }
 
@@ -273,8 +398,8 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
   const propertyOrigin = useMemo<PropertyOperation>(() => props.propertyOrigin ?? getPropertyOrigin(), [props.propertyOrigin]);
   const backCopy = getPropertyBackCopy(propertyOrigin);
   const demoVariant = getPropertyDetailsDemoVariant();
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxImageIndex, setLightboxImageIndex] = useState<number | null>(null);
+  const [similarGalleryIndexes, setSimilarGalleryIndexes] = useState<Record<number, number>>({});
   const galleryShellRef = useRef<HTMLDivElement>(null);
   const galleryMainRef = useRef<HTMLDivElement>(null);
   const stickyDemoStageRef = useRef<HTMLDivElement>(null);
@@ -339,8 +464,8 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
   }, [propertyRef, propertyOrigin]);
 
   useEffect(() => {
-    setActiveImageIndex(0);
     setLightboxImageIndex(null);
+    setSimilarGalleryIndexes({});
   }, [property?.id]);
 
   useEffect(() => {
@@ -517,7 +642,8 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
   const gallery = property.gallery.length
     ? property.gallery
     : [{ image: property.image, alt: property.title, objectPosition: property.imagePosition }];
-  const activeImage = gallery[Math.min(activeImageIndex, gallery.length - 1)];
+  const mainGalleryIndex = 0;
+  const activeImage = gallery[mainGalleryIndex];
   const showGalleryRail = gallery.length > 1;
   const galleryThumbnailItems = gallery.slice(1, 5);
   const remainingGalleryCount = Math.max(gallery.length - 5, 0);
@@ -544,12 +670,28 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
     event.preventDefault();
   };
   const handleOpenLightbox = (index: number) => {
-    setActiveImageIndex(index);
     setLightboxImageIndex(index);
   };
   const handleLightboxIndexChange = (index: number) => {
-    setActiveImageIndex(index);
     setLightboxImageIndex(index);
+  };
+  const handleSimilarGalleryStep = (
+    event: ReactMouseEvent<HTMLButtonElement>,
+    propertyId: number,
+    galleryLength: number,
+    direction: -1 | 1,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setSimilarGalleryIndexes((currentIndexes) => {
+      const currentIndex = currentIndexes[propertyId] ?? 0;
+
+      return {
+        ...currentIndexes,
+        [propertyId]: getWrappedIndex(currentIndex + direction, galleryLength),
+      };
+    });
   };
   const galleryClassName = [
     "property-gallery-shell",
@@ -565,18 +707,22 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
         <button
           type="button"
           className="property-gallery-main-button"
-          onClick={() => handleOpenLightbox(activeImageIndex)}
-          aria-label={`Abrir imagen ${activeImageIndex + 1} de ${property.title}`}
+          onClick={() => handleOpenLightbox(mainGalleryIndex)}
+          aria-label={getPropertyGalleryMediaLabel(activeImage, mainGalleryIndex, property.title)}
         >
-          <img
-            src={activeImage.image}
-            alt={activeImage.alt}
-            width="1400"
-            height="788"
-            fetchPriority="high"
-            decoding="async"
-            style={{ objectPosition: activeImage.objectPosition ?? "center center" }}
-          />
+          {isPropertyVideoMedia(activeImage) ? (
+            <PropertyGalleryVideoPreview media={activeImage} className="is-main" />
+          ) : (
+            <img
+              src={activeImage.image}
+              alt={activeImage.alt}
+              width="1400"
+              height="788"
+              fetchPriority="high"
+              decoding="async"
+              style={{ objectPosition: activeImage.objectPosition ?? "center center" }}
+            />
+          )}
         </button>
         {property.reserved ? (
           <span className="property-status-pill property-gallery-status-pill is-reserved">
@@ -595,24 +741,28 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
               <button
                 key={`${image.image}-${galleryIndex}`}
                 type="button"
-                className={`property-gallery-thumb${galleryIndex === activeImageIndex ? " is-active" : ""}${showRemainingOverlay ? " has-more-images" : ""}`}
+                className={`property-gallery-thumb${lightboxImageIndex === galleryIndex ? " is-active" : ""}${showRemainingOverlay ? " has-more-images" : ""}${isPropertyVideoMedia(image) ? " is-video" : ""}`}
                 onClick={() => handleOpenLightbox(galleryIndex)}
                 aria-label={
                   showRemainingOverlay
-                    ? `Abrir galería, ${remainingGalleryCount} imágenes más`
-                    : `Abrir imagen ${galleryIndex + 1}`
+                    ? `Abrir galería, ${remainingGalleryCount} elementos más`
+                    : getPropertyGalleryMediaLabel(image, galleryIndex, property.title)
                 }
-                aria-pressed={galleryIndex === activeImageIndex}
+                aria-pressed={lightboxImageIndex === galleryIndex}
               >
-                <img
-                  src={image.thumbImage ?? image.image}
-                  alt=""
-                  width="480"
-                  height="270"
-                  loading="lazy"
-                  decoding="async"
-                  style={{ objectPosition: image.objectPosition ?? "center center" }}
-                />
+                {isPropertyVideoMedia(image) ? (
+                  <PropertyGalleryVideoPreview media={{ ...image, image: image.thumbImage ?? image.image }} className="is-thumb" />
+                ) : (
+                  <img
+                    src={image.thumbImage ?? image.image}
+                    alt=""
+                    width="480"
+                    height="270"
+                    loading="lazy"
+                    decoding="async"
+                    style={{ objectPosition: image.objectPosition ?? "center center" }}
+                  />
+                )}
                 {showRemainingOverlay ? (
                   <span className="property-gallery-more-count" aria-hidden="true">
                     {remainingGalleryCount} +
@@ -643,7 +793,7 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
           </div>
 
           <div className="property-price-row">
-            <strong className="property-price-value property-price-font-lato">{property.price}</strong>
+            <strong className="property-price-value property-price-font-roboto">{property.price}</strong>
           </div>
         </div>
 
@@ -686,7 +836,7 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
         </div>
 
         <div className="property-price-row">
-          <strong className="property-price-value property-price-font-lato">{property.price}</strong>
+          <strong className="property-price-value property-price-font-roboto">{property.price}</strong>
         </div>
       </div>
 
@@ -719,7 +869,7 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
         </div>
 
         <div className="property-price-row">
-          <strong className="property-price-value property-price-font-lato">{property.price}</strong>
+          <strong className="property-price-value property-price-font-roboto">{property.price}</strong>
         </div>
       </div>
 
@@ -941,6 +1091,8 @@ export default function PropertyDetailsPage(props: PropertyDetailsPageProps) {
                   property={similarProperty}
                   index={index}
                   origin={propertyOrigin}
+                  activeGalleryIndex={similarGalleryIndexes[similarProperty.id] ?? 0}
+                  onGalleryStep={handleSimilarGalleryStep}
                 />
               ))}
             </div>

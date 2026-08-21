@@ -10,14 +10,13 @@ import PropertyAdminPage from "./pages/PropertyAdminPage";
 import PropertyDetailsPage from "./pages/PropertyDetailsPage";
 import PropertyManagementPage from "./pages/PropertyManagementPage";
 import ProjectsPage from "./pages/ProjectsPage";
-import SalesPage from "./pages/SalesPage";
+import SalesPage, { type SalesFilterButtonVariant, type SalesFilterFrameVariant } from "./pages/SalesPage";
 import { getSalesPropertyUrl, type SalesProperty } from "./data/salesCatalog";
 
 type NavRoute =
   | "home"
   | "ventas"
   | "alquileres"
-  | "propietarios"
   | "proyectos"
   | "gastos"
   | "acerca"
@@ -40,7 +39,6 @@ type AppRoute =
   | { name: "ventas" }
   | { name: "alquileres" }
   | { name: "administracion-propiedades" }
-  | { name: "propietarios" }
   | { name: "proyectos" }
   | { name: "proyecto"; projectSlug: string | null }
   | { name: "contacto" }
@@ -84,9 +82,25 @@ type SearchDropdownFieldProps = {
   value: string;
 };
 
+type HomeSearchDemoVariant =
+  | SalesFilterFrameVariant
+  | "glass-home-original-button"
+  | "glass-screenshot-button"
+  | "glass-navy-gold-button"
+  | "original";
+
 const homeSearchButtonVariant = "glow" as const;
 const homeHeaderAccessVariant = "icon-links" as const;
 const maxFeaturedListingSecondaryImages = 4;
+const useSalesFilterHomeDemo = true;
+const homeSearchDemoVariants: HomeSearchDemoVariant[] = [
+  "aurora",
+  "glass",
+  "glass-home-original-button",
+  "glass-screenshot-button",
+  "glass-navy-gold-button",
+  "original",
+];
 
 function buildListingGallery(title: string, primaryImage: string): ListingMedia[] {
   return [
@@ -174,6 +188,7 @@ function propertyToListing(property: SalesProperty): Listing {
     bathrooms: property.bathrooms,
     size: property.size,
     image: firstImage,
+    videoSrc: property.videoSrc,
     gallery: listingGallery.map((media, index) => ({
       image: media.image,
       thumbImage: media.thumbImage,
@@ -440,10 +455,6 @@ function getRouteFromPathname(pathname: string): AppRoute {
     normalizedPathname === "/alquileres/administracion-de-propiedades"
   ) {
     return { name: "administracion-propiedades" };
-  }
-
-  if (normalizedPathname === "/propietarios") {
-    return { name: "propietarios" };
   }
 
   if (normalizedPathname === "/proyectos") {
@@ -846,6 +857,10 @@ function App() {
     );
   }
 
+  if (normalizePathname(window.location.pathname) === "/propietarios") {
+    window.history.replaceState(null, "", `/${window.location.search}#propietarios`);
+  }
+
   const pathname = normalizePathname(window.location.pathname);
   const route = getRouteFromPathname(pathname);
   const activeNavRoute: NavRoute =
@@ -855,9 +870,7 @@ function App() {
         ? "proyectos"
         : route.name === "administracion-propiedades"
           ? "alquileres"
-          : route.name === "propietarios"
-            ? "propietarios"
-            : route.name;
+          : route.name;
   const [listingIndex, setListingIndex] = useState(0);
   const [listingMediaIndex, setListingMediaIndex] = useState(0);
   const [listingTransitionDirection, setListingTransitionDirection] = useState<"left" | "right" | null>(null);
@@ -880,6 +893,7 @@ function App() {
   const [searchZone, setSearchZone] = useState("");
   const [searchReference, setSearchReference] = useState("");
   const [activeSearchDropdown, setActiveSearchDropdown] = useState<"operation" | "type" | "zone" | "price" | "bedrooms" | null>(null);
+  const [homeSearchDemoVariant, setHomeSearchDemoVariant] = useState<HomeSearchDemoVariant>("glass-home-original-button");
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const homeSearchFormRef = useRef<HTMLFormElement | null>(null);
   const heroVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -979,11 +993,6 @@ function App() {
       return;
     }
 
-    if (route.name === "propietarios") {
-      document.title = "Lars | Propietarios";
-      return;
-    }
-
     if (route.name === "proyectos") {
       document.title = "Lars | Proyectos";
       return;
@@ -1012,15 +1021,7 @@ function App() {
     setIsMobileRentMenuOpen(false);
   }, [pathname]);
 
-  const hasHomeScrollHeaderEffect =
-    route.name === "home" || route.name === "acerca" || route.name === "ventas" || route.name === "alquileres";
-
   useEffect(() => {
-    if (!hasHomeScrollHeaderEffect) {
-      setIsHeaderScrolled(false);
-      return;
-    }
-
     const handleScroll = () => {
       setIsHeaderScrolled(window.scrollY > 8);
     };
@@ -1029,7 +1030,7 @@ function App() {
     window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [hasHomeScrollHeaderEffect]);
+  }, [pathname]);
 
   const listingCount = homeFeaturedListings.length;
   const activeListing = homeFeaturedListings[getWrappedIndex(listingIndex, listingCount)];
@@ -1037,6 +1038,16 @@ function App() {
   const nextPreviewListing = homeFeaturedListings[getWrappedIndex(listingIndex + 1, listingCount)];
   const activeHomeSearchButtonDemo = homeSearchButtonVariant;
   const activeHomeHeaderAccessDemo = homeHeaderAccessVariant;
+  const activeHomeSalesFilterVariant: SalesFilterFrameVariant =
+    homeSearchDemoVariant === "aurora" ? "aurora" : homeSearchDemoVariant === "original" ? "aurora" : "glass";
+  const activeHomeSalesFilterButtonVariant: SalesFilterButtonVariant =
+    homeSearchDemoVariant === "glass-home-original-button"
+      ? "home-original"
+      : homeSearchDemoVariant === "glass-screenshot-button"
+        ? "screenshot"
+        : homeSearchDemoVariant === "glass-navy-gold-button"
+          ? "navy-gold"
+          : "default";
 
   useEffect(() => {
     if (route.name !== "home") {
@@ -1346,6 +1357,15 @@ function App() {
     window.location.href = `${targetPath}${queryString ? `?${queryString}` : ""}`;
   };
 
+  const handleHomeSearchDemoVariantChange = (direction: -1 | 1) => {
+    setHomeSearchDemoVariant((currentVariant) => {
+      const currentIndex = homeSearchDemoVariants.indexOf(currentVariant);
+
+      return homeSearchDemoVariants[getWrappedIndex(currentIndex + direction, homeSearchDemoVariants.length)];
+    });
+    setActiveSearchDropdown(null);
+  };
+
   const searchPriceSummary = !hasSearchPriceRange
     ? "Todos"
     : isHomeRentalSearch && searchPriceMax < searchPriceMaxLimit
@@ -1356,14 +1376,219 @@ function App() {
         ? `Desde ${formatSearchPriceValue(searchPriceCurrency, searchPriceMin)}`
         : `Hasta ${formatSearchPriceValue(searchPriceCurrency, searchPriceMax)}`;
   const hasFullSearchPriceRange = searchPriceMin > searchPriceMinLimit && searchPriceMax < searchPriceMaxLimit;
+  const originalHomePropertySearchForm = (
+    <form className="search-card search-card-variant-4 home-original-property-search-card" ref={homeSearchFormRef} onSubmit={handleHomeSearchSubmit}>
+      <div className="search-grid">
+        <SearchDropdownField
+          active={activeSearchDropdown === "operation"}
+          className="search-field-compact search-field-operation"
+          label="Operación"
+          onSelect={(value) => {
+            if (value === "proyectos") {
+              window.location.href = "/proyectos";
+              return;
+            }
+
+            setSearchOperation(value);
+            if (value === "alquiler") {
+              setSearchPriceMin(searchPriceMinLimit);
+              setHasSearchPriceRange(searchPriceMax < searchPriceMaxLimit);
+            }
+            setActiveSearchDropdown(null);
+          }}
+          onToggle={() => {
+            setActiveSearchDropdown((currentValue) => (currentValue === "operation" ? null : "operation"));
+          }}
+          options={searchOperationOptions}
+          value={searchOperation}
+        />
+        <SearchDropdownField
+          active={activeSearchDropdown === "type"}
+          className={`search-field-compact search-field-type${
+            searchType === "casa" ? " search-field-type-house" : " search-field-type-building"
+          }`}
+          label="Tipo"
+          onSelect={(value) => {
+            if (value === "proyectos") {
+              window.location.href = "/proyectos";
+              return;
+            }
+
+            setSearchType(value);
+            setActiveSearchDropdown(null);
+          }}
+          onToggle={() => {
+            setActiveSearchDropdown((currentValue) => (currentValue === "type" ? null : "type"));
+          }}
+          options={searchTypeOptions}
+          value={searchType}
+        />
+        <button
+          type="button"
+          className={`search-mobile-more-toggle${isMobileSearchFiltersOpen ? " is-open" : ""}`}
+          aria-expanded={isMobileSearchFiltersOpen}
+          aria-controls="search-mobile-advanced-fields"
+          onClick={() => setIsMobileSearchFiltersOpen((currentValue) => !currentValue)}
+        >
+          <span>Más filtros</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+        <div
+          className={`search-mobile-advanced-panel${isMobileSearchFiltersOpen ? " is-open" : ""}`}
+          id="search-mobile-advanced-fields"
+          aria-hidden={isSmallScreen ? !isMobileSearchFiltersOpen : undefined}
+          inert={isSmallScreen && !isMobileSearchFiltersOpen ? true : undefined}
+        >
+          <SearchDropdownField
+            active={activeSearchDropdown === "zone"}
+            className="search-field-standard search-field-zone search-mobile-advanced-field"
+            label="Barrio"
+            onSelect={(value) => {
+              setSearchZone(value);
+              setActiveSearchDropdown(null);
+            }}
+            onToggle={() => {
+              setActiveSearchDropdown((currentValue) => (currentValue === "zone" ? null : "zone"));
+            }}
+            options={searchZoneDropdownOptions}
+            value={searchZone}
+          />
+          <div className="search-field-standard search-field-price search-mobile-advanced-field">
+            <span className="search-field-label search-field-heading" id="search-price-field-label">
+              Precio
+            </span>
+            <button
+              type="button"
+              className={`search-select-trigger price-range-trigger${activeSearchDropdown === "price" ? " is-open" : ""}`}
+              aria-expanded={activeSearchDropdown === "price"}
+              aria-haspopup="dialog"
+              aria-labelledby="search-price-field-label"
+              onClick={() => {
+                setActiveSearchDropdown((currentValue) => (currentValue === "price" ? null : "price"));
+              }}
+            >
+              <span className="price-range-trigger-text">{searchPriceSummary}</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            {hasFullSearchPriceRange ? (
+              <span className="search-select-tooltip price-range-tooltip" role="tooltip">
+                <span>Desde: {formatSearchPriceValue(searchPriceCurrency, searchPriceMin)}</span>
+                <span>Hasta: {formatSearchPriceValue(searchPriceCurrency, searchPriceMax)}</span>
+              </span>
+            ) : null}
+            {activeSearchDropdown === "price" ? (
+              <div className="price-range-popover" role="dialog" aria-label="Rango de precio">
+                <div className="price-range-control home-price-range-control">
+                  {!isHomeRentalSearch ? (
+                    <label>
+                      <span>
+                        <span>Desde</span>
+                        <input
+                          className="price-range-value-input"
+                          type="text"
+                          inputMode="numeric"
+                          aria-label="Precio desde"
+                          value={searchPriceMin > searchPriceMinLimit ? formatSearchPriceValue(searchPriceCurrency, searchPriceMin) : ""}
+                          placeholder="Sin mínimo"
+                          onChange={(event) => handleSearchPriceMinInputChange(event.currentTarget.value)}
+                          onFocus={(event) => event.currentTarget.select()}
+                        />
+                      </span>
+                      <input
+                        type="range"
+                        min={searchPriceMinLimit}
+                        max={searchPriceMaxLimit}
+                        step={searchPriceStep}
+                        value={searchPriceMin}
+                        onChange={(event) => handleSearchPriceMinChange(event.currentTarget.value)}
+                      />
+                    </label>
+                  ) : null}
+                  <label>
+                    <span>
+                      <span>Hasta</span>
+                      <input
+                        className="price-range-value-input"
+                        type="text"
+                        inputMode="numeric"
+                        aria-label="Precio hasta"
+                        value={searchPriceMax < searchPriceMaxLimit ? formatSearchPriceValue(searchPriceCurrency, searchPriceMax) : ""}
+                        placeholder="Sin máximo"
+                        onChange={(event) => handleSearchPriceMaxInputChange(event.currentTarget.value)}
+                        onFocus={(event) => event.currentTarget.select()}
+                      />
+                    </span>
+                    <input
+                      type="range"
+                      min={searchPriceMinLimit}
+                      max={searchPriceMaxLimit}
+                      step={searchPriceStep}
+                      value={searchPriceMax}
+                      onChange={(event) => handleSearchPriceMaxChange(event.currentTarget.value)}
+                    />
+                  </label>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <SearchDropdownField
+          active={activeSearchDropdown === "bedrooms"}
+          className="search-field-compact search-field-bedrooms"
+          label="Dormitorios"
+          onSelect={(value) => {
+            setSearchBedrooms(value);
+            setActiveSearchDropdown(null);
+          }}
+          onToggle={() => {
+            setActiveSearchDropdown((currentValue) => (currentValue === "bedrooms" ? null : "bedrooms"));
+          }}
+          options={searchBedroomOptions}
+          value={searchBedrooms}
+        />
+        <label className="search-field-compact search-field-reference">
+          <span className="search-field-heading">REF.</span>
+          <input
+            type="text"
+            placeholder="Ej: 1234"
+            inputMode="numeric"
+            value={searchReference}
+            onChange={(event) => setSearchReference(event.currentTarget.value.replace(/\D/g, ""))}
+          />
+        </label>
+        <div className="search-action-buttons">
+          <button
+            key={activeHomeSearchButtonDemo}
+            type="submit"
+            className={`primary-button search-cta-button search-cta-button-demo search-cta-button-demo-${activeHomeSearchButtonDemo}`}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+            <span>Buscar</span>
+          </button>
+        </div>
+      </div>
+    </form>
+  );
   const activeFooterBranch = topbarBranches[getWrappedIndex(footerBranchIndex, topbarBranches.length)];
+  const usesAboutNavStyle =
+    route.name === "gastos" || route.name === "administracion-propiedades" || route.name === "contacto";
   const pageShellClassName = [
     "page-shell",
     route.name === "home" ? "page-shell-home" : "",
     route.name === "acerca" ? "page-shell-about" : "",
+    usesAboutNavStyle ? "page-shell-about-nav" : "",
     route.name === "ventas" || route.name === "alquileres" ? "page-shell-catalog" : "",
     route.name === "ventas" ? "page-shell-ventas" : "",
     route.name === "alquileres" ? "page-shell-alquileres" : "",
+    route.name === "contacto" ? "page-shell-contact" : "",
+    route.name === "propiedad" ? "page-shell-property-details" : "",
     route.name !== "home" && route.name !== "acerca" ? "page-shell-sales" : "",
   ]
     .filter(Boolean)
@@ -1544,8 +1769,6 @@ function App() {
           <SalesPage listingContext="alquileres" resultsTitle="Alquileres" hideResultsTitle />
         ) : route.name === "administracion-propiedades" ? (
           <PropertyManagementPage />
-        ) : route.name === "propietarios" ? (
-          <PropertyAdminPage />
         ) : route.name === "proyectos" ? (
           <ProjectsPage />
         ) : route.name === "proyecto" ? (
@@ -1553,7 +1776,7 @@ function App() {
         ) : route.name === "propiedad" ? (
           <PropertyDetailsPage propertyRef={route.propertyRef} propertyOrigin={route.propertyOrigin} />
         ) : route.name === "contacto" ? (
-          <ContactSection />
+          <ContactSection variant="contrast" />
         ) : (
           <>
             <section className="hero" id="inicio">
@@ -1600,7 +1823,7 @@ function App() {
                 <a className="primary-button" href="/proyectos">
                   Proyectos
                 </a>
-                <a className="hero-link-button" href="/propietarios">
+                <a className="hero-link-button" href="/#propietarios">
                   Alquilá o vendé tu propiedad con Lars
                 </a>
               </div>
@@ -1609,212 +1832,51 @@ function App() {
             <section className="hero-search-band" id="buscador">
               <div className="search-wrap">
                 <div className="search-stack">
-                  <form className="search-card search-card-variant-4" ref={homeSearchFormRef} onSubmit={handleHomeSearchSubmit}>
-                    <div className="search-grid">
-                      <SearchDropdownField
-                        active={activeSearchDropdown === "operation"}
-                        className="search-field-compact search-field-operation"
-                        label="Operación"
-                        onSelect={(value) => {
-                          if (value === "proyectos") {
-                            window.location.href = "/proyectos";
-                            return;
-                          }
-
-                          setSearchOperation(value);
-                          if (value === "alquiler") {
-                            setSearchPriceMin(searchPriceMinLimit);
-                            setHasSearchPriceRange(searchPriceMax < searchPriceMaxLimit);
-                          }
-                          setActiveSearchDropdown(null);
-                        }}
-                        onToggle={() => {
-                          setActiveSearchDropdown((currentValue) =>
-                            currentValue === "operation" ? null : "operation",
-                          );
-                        }}
-                        options={searchOperationOptions}
-                        value={searchOperation}
-                      />
-                      <SearchDropdownField
-                        active={activeSearchDropdown === "type"}
-                        className={`search-field-compact search-field-type${
-                          searchType === "casa" ? " search-field-type-house" : " search-field-type-building"
-                        }`}
-                        label="Tipo"
-                        onSelect={(value) => {
-                          if (value === "proyectos") {
-                            window.location.href = "/proyectos";
-                            return;
-                          }
-
-                          setSearchType(value);
-                          setActiveSearchDropdown(null);
-                        }}
-                        onToggle={() => {
-                          setActiveSearchDropdown((currentValue) =>
-                            currentValue === "type" ? null : "type",
-                          );
-                        }}
-                        options={searchTypeOptions}
-                        value={searchType}
-                      />
-                      <button
-                        type="button"
-                        className={`search-mobile-more-toggle${isMobileSearchFiltersOpen ? " is-open" : ""}`}
-                        aria-expanded={isMobileSearchFiltersOpen}
-                        aria-controls="search-mobile-advanced-fields"
-                        onClick={() => setIsMobileSearchFiltersOpen((currentValue) => !currentValue)}
-                      >
-                        <span>Más filtros</span>
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="m6 9 6 6 6-6" />
-                        </svg>
-                      </button>
-                      <div
-                        className={`search-mobile-advanced-panel${isMobileSearchFiltersOpen ? " is-open" : ""}`}
-                        id="search-mobile-advanced-fields"
-                        aria-hidden={isSmallScreen ? !isMobileSearchFiltersOpen : undefined}
-                        inert={isSmallScreen && !isMobileSearchFiltersOpen ? true : undefined}
-                      >
-                        <SearchDropdownField
-                          active={activeSearchDropdown === "zone"}
-                          className="search-field-standard search-field-zone search-mobile-advanced-field"
-                          label="Barrio"
-                          onSelect={(value) => {
-                            setSearchZone(value);
-                            setActiveSearchDropdown(null);
-                          }}
-                          onToggle={() => {
-                            setActiveSearchDropdown((currentValue) =>
-                              currentValue === "zone" ? null : "zone",
-                            );
-                          }}
-                          options={searchZoneDropdownOptions}
-                          value={searchZone}
-                        />
-                        <div className="search-field-standard search-field-price search-mobile-advanced-field">
-                          <span className="search-field-label search-field-heading" id="search-price-field-label">
-                            Precio
-                          </span>
+                  {useSalesFilterHomeDemo ? (
+                    <div className={`home-sales-filter-test home-sales-filter-test-${homeSearchDemoVariant}`}>
+                      {homeSearchDemoVariant === "original" ? (
+                        <div className="sales-filter-demo-shell home-original-search-demo-shell home-desktop-property-search reveal is-visible">
                           <button
                             type="button"
-                            className={`search-select-trigger price-range-trigger${activeSearchDropdown === "price" ? " is-open" : ""}`}
-                            aria-expanded={activeSearchDropdown === "price"}
-                            aria-haspopup="dialog"
-                            aria-labelledby="search-price-field-label"
-                            onClick={() => {
-                              setActiveSearchDropdown((currentValue) => (currentValue === "price" ? null : "price"));
-                            }}
+                            className="sales-filter-frame-arrow sales-filter-frame-arrow-prev"
+                            onClick={() => handleHomeSearchDemoVariantChange(-1)}
+                            aria-label="Ver buscador anterior"
                           >
-                            <span className="price-range-trigger-text">{searchPriceSummary}</span>
                             <svg viewBox="0 0 24 24" aria-hidden="true">
-                              <path d="m6 9 6 6 6-6" />
+                              <path d="m15 6-6 6 6 6" />
                             </svg>
                           </button>
-                          {hasFullSearchPriceRange ? (
-                            <span className="search-select-tooltip price-range-tooltip" role="tooltip">
-                              <span>Desde: {formatSearchPriceValue(searchPriceCurrency, searchPriceMin)}</span>
-                              <span>Hasta: {formatSearchPriceValue(searchPriceCurrency, searchPriceMax)}</span>
-                            </span>
-                          ) : null}
-                          {activeSearchDropdown === "price" ? (
-                            <div className="price-range-popover" role="dialog" aria-label="Rango de precio">
-                              <div className="price-range-control home-price-range-control">
-                                {!isHomeRentalSearch ? (
-                                  <label>
-                                    <span>
-                                      <span>Desde</span>
-                                      <input
-                                        className="price-range-value-input"
-                                        type="text"
-                                        inputMode="numeric"
-                                        aria-label="Precio desde"
-                                        value={searchPriceMin > searchPriceMinLimit ? formatSearchPriceValue(searchPriceCurrency, searchPriceMin) : ""}
-                                        placeholder="Sin mínimo"
-                                        onChange={(event) => handleSearchPriceMinInputChange(event.currentTarget.value)}
-                                        onFocus={(event) => event.currentTarget.select()}
-                                      />
-                                    </span>
-                                    <input
-                                      type="range"
-                                      min={searchPriceMinLimit}
-                                      max={searchPriceMaxLimit}
-                                      step={searchPriceStep}
-                                      value={searchPriceMin}
-                                      onChange={(event) => handleSearchPriceMinChange(event.currentTarget.value)}
-                                    />
-                                  </label>
-                                ) : null}
-                                <label>
-                                  <span>
-                                    <span>Hasta</span>
-                                    <input
-                                      className="price-range-value-input"
-                                      type="text"
-                                      inputMode="numeric"
-                                      aria-label="Precio hasta"
-                                      value={searchPriceMax < searchPriceMaxLimit ? formatSearchPriceValue(searchPriceCurrency, searchPriceMax) : ""}
-                                      placeholder="Sin máximo"
-                                      onChange={(event) => handleSearchPriceMaxInputChange(event.currentTarget.value)}
-                                      onFocus={(event) => event.currentTarget.select()}
-                                    />
-                                  </span>
-                                  <input
-                                    type="range"
-                                    min={searchPriceMinLimit}
-                                    max={searchPriceMaxLimit}
-                                    step={searchPriceStep}
-                                    value={searchPriceMax}
-                                    onChange={(event) => handleSearchPriceMaxChange(event.currentTarget.value)}
-                                  />
-                                </label>
-                              </div>
-                            </div>
-                          ) : null}
+
+                          {originalHomePropertySearchForm}
+
+                          <button
+                            type="button"
+                            className="sales-filter-frame-arrow sales-filter-frame-arrow-next"
+                            onClick={() => handleHomeSearchDemoVariantChange(1)}
+                            aria-label="Ver buscador siguiente"
+                          >
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="m9 6 6 6-6 6" />
+                            </svg>
+                          </button>
                         </div>
-                      </div>
-                      <SearchDropdownField
-                        active={activeSearchDropdown === "bedrooms"}
-                        className="search-field-compact search-field-bedrooms"
-                        label="Dormitorios"
-                        onSelect={(value) => {
-                          setSearchBedrooms(value);
-                          setActiveSearchDropdown(null);
-                        }}
-                        onToggle={() => {
-                          setActiveSearchDropdown((currentValue) =>
-                            currentValue === "bedrooms" ? null : "bedrooms",
-                          );
-                        }}
-                        options={searchBedroomOptions}
-                        value={searchBedrooms}
-                      />
-                      <label className="search-field-compact search-field-reference">
-                        <span className="search-field-heading">REF.</span>
-                        <input
-                          type="text"
-                          placeholder="Ej: 1234"
-                          inputMode="numeric"
-                          value={searchReference}
-                          onChange={(event) => setSearchReference(event.currentTarget.value.replace(/\D/g, ""))}
-                        />
-                      </label>
-                      <div className="search-action-buttons">
-                        <button
-                          key={activeHomeSearchButtonDemo}
-                          type="submit"
-                          className={`primary-button search-cta-button search-cta-button-demo search-cta-button-demo-${activeHomeSearchButtonDemo}`}
-                        >
-                          <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="11" cy="11" r="7" />
-                            <path d="m20 20-3.5-3.5" />
-                          </svg>
-                          <span>Buscar</span>
-                        </button>
-                      </div>
+                      ) : (
+                        <div className="home-desktop-property-search">
+                          <SalesPage
+                            filterOnly
+                            compactFilterLabel="Buscar propiedades"
+                            compactFiltersInitiallyOpen
+                            filterFrameVariant={activeHomeSalesFilterVariant}
+                            filterButtonVariant={activeHomeSalesFilterButtonVariant}
+                            filterRedirectPath="/ventas"
+                            onFilterFrameVariantChange={handleHomeSearchDemoVariantChange}
+                          />
+                        </div>
+                      )}
                     </div>
-                  </form>
+                  ) : (
+                    originalHomePropertySearchForm
+                  )}
                 </div>
               </div>
             </section>
@@ -1894,9 +1956,10 @@ function App() {
               </div>
             </div>
 
-            <ContactSection showOffices={false} className="home-featured-contact" />
           </div>
         </section>
+
+        <PropertyAdminPage variant="home-section" />
           </>
         )}
       </main>

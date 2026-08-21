@@ -40,10 +40,58 @@ function ContactSectionHeaderWithVariant(props: { variant: ContactSectionProps["
     <div
       className={`section-heading section-title-frame contact-section-title reveal${
         variant === "contrast" ? " contact-section-title-light" : " contact-section-title-dark"
-      }`}
+      }${variant === "contrast" ? " section-heading-featured" : ""}`}
     >
       <h2>Oficinas</h2>
     </div>
+  );
+}
+
+export function ContactForm(props: { className?: string }) {
+  const { className } = props;
+  const formClassName = ["contact-form", "reveal", "reveal-delay-2", className].filter(Boolean).join(" ");
+
+  return (
+    <form className={formClassName}>
+      <div className="contact-form-header">
+        <h3>Contactanos</h3>
+      </div>
+
+      <div className="contact-form-grid">
+        <label className="contact-field">
+          <span className="sr-only">Nombre</span>
+          <input type="text" placeholder="Nombre" aria-label="Nombre" />
+        </label>
+        <label className="contact-field contact-field-wide">
+          <span className="sr-only">Celular</span>
+          <input type="tel" placeholder="Celular" aria-label="Celular" />
+        </label>
+        <label className="contact-field contact-field-wide">
+          <span className="sr-only">Email</span>
+          <input type="email" placeholder="Email" aria-label="Email" />
+        </label>
+        <label className="contact-field contact-field-wide">
+          <span className="sr-only">Comentarios</span>
+          <textarea rows={5} placeholder="Comentarios" aria-label="Comentarios" />
+        </label>
+      </div>
+
+      <div className="contact-form-actions">
+        <a
+          className="contact-whatsapp-button"
+          href="https://wa.me/59824010101"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <WhatsAppIcon />
+          <span>WhatsApp</span>
+        </a>
+
+        <button type="button" className="primary-button contact-submit">
+          <span>Enviar</span>
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -87,58 +135,7 @@ export default function ContactSection({ className, showOffices = true, variant 
           </div>
         ) : null}
 
-        <form className="contact-form reveal reveal-delay-2">
-          <div className="contact-form-header">
-            <h3>Contactanos</h3>
-          </div>
-
-          <div className="contact-form-grid">
-            <label className="contact-field">
-              <span className="sr-only">Nombre</span>
-              <input type="text" placeholder="Nombre" aria-label="Nombre" />
-            </label>
-            <label className="contact-field contact-field-wide">
-              <span className="sr-only">Celular</span>
-              <input
-                type="tel"
-                placeholder="Celular"
-                aria-label="Celular"
-              />
-            </label>
-            <label className="contact-field contact-field-wide">
-              <span className="sr-only">Email</span>
-              <input
-                type="email"
-                placeholder="Email"
-                aria-label="Email"
-              />
-            </label>
-            <label className="contact-field contact-field-wide">
-              <span className="sr-only">Comentarios</span>
-              <textarea
-                rows={5}
-                placeholder="Comentarios"
-                aria-label="Comentarios"
-              />
-            </label>
-          </div>
-
-          <div className="contact-form-actions">
-            <a
-              className="contact-whatsapp-button"
-              href="https://wa.me/59824010101"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <WhatsAppIcon />
-              <span>WhatsApp</span>
-            </a>
-
-            <button type="button" className="primary-button contact-submit">
-              <span>Enviar</span>
-            </button>
-          </div>
-        </form>
+        <ContactForm />
       </div>
     </section>
   );

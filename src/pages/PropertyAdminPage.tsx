@@ -511,12 +511,10 @@ function QuoteIcon() {
 
 function OwnerLeadForm(props: { compact?: boolean; id?: string }) {
   const { compact = false, id } = props;
-  const [status, setStatus] = useState<"idle" | "sent">("idle");
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     event.currentTarget.reset();
-    setStatus("sent");
   };
 
   return (
@@ -579,17 +577,6 @@ function OwnerLeadForm(props: { compact?: boolean; id?: string }) {
       <button type="submit" className="primary-button owners-submit-button">
         Enviar
       </button>
-
-      <p className="owners-form-note">
-        {status === "sent" ? (
-          "Gracias. Te contactaremos en menos de 24 horas."
-        ) : (
-          <>
-            <OwnerIcon kind="shield" />
-            <span>Tus datos están seguros. No enviamos spam.</span>
-          </>
-        )}
-      </p>
     </form>
   );
 }
@@ -605,7 +592,12 @@ function OwnerSectionHeader(props: { title: string; description: string; inverse
   );
 }
 
-export default function PropertyAdminPage() {
+type PropertyAdminPageProps = {
+  variant?: "page" | "home-section";
+};
+
+export default function PropertyAdminPage({ variant = "page" }: PropertyAdminPageProps) {
+  const isHomeSection = variant === "home-section";
   const [isAnchorNavCondensed, setIsAnchorNavCondensed] = useState(false);
   const [isMobileTestimonials, setIsMobileTestimonials] = useState(false);
   const [metricRotationPage, setMetricRotationPage] = useState(0);
@@ -799,10 +791,12 @@ export default function PropertyAdminPage() {
 
     changeTestimonialPage(swipeDistance < 0 ? "next" : "previous");
   };
+  const rootClassName = `owners-page${isHomeSection ? " owners-home-section" : ""}`;
+  const HeroHeadingTag = isHomeSection ? "h2" : "h1";
 
   return (
-    <div className="owners-page">
-      <section className="owners-hero">
+    <div className={rootClassName}>
+      <section className="owners-hero" id={isHomeSection ? "propietarios" : undefined}>
         <img
           src="/propietarios-hero.jpg"
           alt="Casa moderna administrada por Lars"
@@ -812,7 +806,7 @@ export default function PropertyAdminPage() {
 
         <div className="container owners-hero-layout">
           <div className="owners-hero-copy reveal">
-            <h1>+1.500 personas buscan alquilar ya</h1>
+            <HeroHeadingTag>+1.500 personas buscan alquilar ya</HeroHeadingTag>
 
             <div className="owners-metrics-shell">
               {outgoingMetricRotationPage !== null ? (

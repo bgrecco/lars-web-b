@@ -1,8 +1,17 @@
-import { startTransition, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import { fetchProperties, getLarsApiErrorMessage, isAbortError, type PropertyListQuery } from "../api/larsApi";
 import LarsLogoLoader from "../components/LarsLogoLoader";
 import { canUseMockCatalogFallback, shouldUseMockCatalog } from "../config/dataSource";
-import { getSalesPropertyUrl, salesCatalog, type SalesProperty } from "../data/salesCatalog";
+import { getSalesPropertyUrl, salesCatalog, type SalesGalleryItem, type SalesProperty } from "../data/salesCatalog";
 
 type SearchDropdownOption = {
   value: string;
@@ -39,6 +48,9 @@ type SalesFilterChip = {
   clearLabel: string;
 };
 
+export type SalesFilterFrameVariant = "aurora" | "glass";
+export type SalesFilterButtonVariant = "default" | "home-original" | "screenshot" | "navy-gold";
+
 const initialFilters: SalesFilters = {
   tipo: "",
   barrio: "",
@@ -55,6 +67,19 @@ const salesPriceMinLimit = 0;
 const salesPriceMaxLimit = 500000;
 const salesPriceStep = 5000;
 const projectTypeFilterValue = "__proyectos__";
+const listingHoverGalleryInitialDelayMs = 800;
+const listingHoverGalleryIntervalMs = 1400;
+const salesFilterFrameVariants: SalesFilterFrameVariant[] = ["aurora", "glass"];
+const listingGalleryAnimationClasses = [
+  "sales-listing-image-track-wipe",
+  "sales-listing-image-track-zoom",
+  "sales-listing-image-track-lift",
+  "sales-listing-image-track-slide",
+  "sales-listing-image-track-drift",
+  "sales-listing-image-track-iris",
+  "sales-listing-image-track-curtain",
+  "sales-listing-image-track-flash",
+];
 
 function SearchDropdownField(props: SearchDropdownFieldProps) {
   const { active, className, label, multipleValues, onSelect, onToggle, options, value } = props;
@@ -257,6 +282,25 @@ function getVisiblePaginationItems(page: number, totalPages: number) {
   return Array.from({ length: 3 }, (_, index) => page + index).filter((item) => item <= totalPages);
 }
 
+function getWrappedIndex(index: number, length: number) {
+  return ((index % length) + length) % length;
+}
+
+function getSalesListingCardGallery(property: SalesProperty): SalesGalleryItem[] {
+  const [primaryGalleryItem, ...secondaryGalleryItems] = property.gallery;
+
+  return [
+    {
+      mediaType: "image",
+      image: property.cardImage,
+      thumbImage: property.cardImage,
+      alt: property.title,
+      objectPosition: property.imagePosition ?? primaryGalleryItem?.objectPosition ?? "center center",
+    },
+    ...secondaryGalleryItems,
+  ];
+}
+
 function scrollToCatalogTop() {
   const scrollToTarget = () => {
     const target = document.getElementById("ventas-catalogo") ?? document.getElementById("ventas-resultados");
@@ -372,6 +416,13 @@ type SalesPageProps = {
   resultsTitle?: string;
   hideResultsTitle?: boolean;
   showLoaderDemo?: boolean;
+  filterOnly?: boolean;
+  filterFrameVariant?: SalesFilterFrameVariant;
+  filterButtonVariant?: SalesFilterButtonVariant;
+  onFilterFrameVariantChange?: (direction: -1 | 1) => void;
+  filterRedirectPath?: string;
+  compactFiltersInitiallyOpen?: boolean;
+  compactFilterLabel?: string;
 };
 
 export default function SalesPage({
@@ -379,6 +430,13 @@ export default function SalesPage({
   resultsTitle = "Ventas",
   hideResultsTitle = false,
   showLoaderDemo = false,
+  filterOnly = false,
+  filterFrameVariant: controlledFilterFrameVariant,
+  filterButtonVariant = "default",
+  onFilterFrameVariantChange,
+  filterRedirectPath,
+  compactFiltersInitiallyOpen = false,
+  compactFilterLabel = "Filtros",
 }: SalesPageProps) {
   const [draftFilters, setDraftFilters] = useState<SalesFilters>(() => getInitialFiltersFromUrl(listingContext));
   const [appliedFilters, setAppliedFilters] = useState<SalesFilters>(() => getInitialFiltersFromUrl(listingContext));
@@ -389,8 +447,10 @@ export default function SalesPage({
   const [isUsingFallbackCatalog, setIsUsingFallbackCatalog] = useState(false);
   const [isLoaderVisible, setIsLoaderVisible] = useState(showLoaderDemo);
   const [page, setPage] = useState(1);
+  const [listingGalleryIndexes, setListingGalleryIndexes] = useState<Record<number, number>>({});
   const [activeDropdown, setActiveDropdown] = useState<"tipo" | "barrio" | "precio" | "dormitorios" | null>(null);
-  const [isCompactFiltersOpen, setIsCompactFiltersOpen] = useState(false);
+  const [isCompactFiltersOpen, setIsCompactFiltersOpen] = useState(compactFiltersInitiallyOpen);
+  const [filterFrameVariant, setFilterFrameVariant] = useState<SalesFilterFrameVariant>("aurora");
   const [isCompactFilterViewport, setIsCompactFilterViewport] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(max-width: 480px)").matches : false,
   );
@@ -399,6 +459,58 @@ export default function SalesPage({
   );
   const [isSalesPriceFieldEditing, setIsSalesPriceFieldEditing] = useState(false);
   const filterPanelRef = useRef<HTMLDivElement | null>(null);
+  const listingHoverGalleryTimerRef = useRef<number | null>(null);
+  const activeFilterFrameVariant = controlledFilterFrameVariant ?? filterFrameVariant;
+  const filterButtonClassName = [
+    "primary-button",
+    "search-cta-button",
+    filterButtonVariant !== "default" ? `sales-filter-cta-${filterButtonVariant}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const stopListingGalleryHover = useCallback(() => {
+    if (listingHoverGalleryTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(listingHoverGalleryTimerRef.current);
+    window.clearInterval(listingHoverGalleryTimerRef.current);
+    listingHoverGalleryTimerRef.current = null;
+  }, []);
+
+  const advanceListingGallery = useCallback((propertyId: number, galleryLength: number, direction: -1 | 1 = 1) => {
+    if (galleryLength < 2) {
+      return;
+    }
+
+    setListingGalleryIndexes((currentIndexes) => {
+      const currentIndex = getWrappedIndex(currentIndexes[propertyId] ?? 0, galleryLength);
+
+      return {
+        ...currentIndexes,
+        [propertyId]: getWrappedIndex(currentIndex + direction, galleryLength),
+      };
+    });
+  }, []);
+
+  const handleListingGalleryHoverStart = useCallback(
+    (propertyId: number, galleryLength: number) => {
+      stopListingGalleryHover();
+
+      if (galleryLength < 2) {
+        return;
+      }
+
+      listingHoverGalleryTimerRef.current = window.setTimeout(() => {
+        advanceListingGallery(propertyId, galleryLength);
+        listingHoverGalleryTimerRef.current = window.setInterval(() => {
+          advanceListingGallery(propertyId, galleryLength);
+        }, listingHoverGalleryIntervalMs);
+      }, listingHoverGalleryInitialDelayMs);
+    },
+    [advanceListingGallery, stopListingGalleryHover],
+  );
 
   const typeOptions = useMemo(
     () => Array.from(new Set(properties.map((property) => property.type))).sort((left, right) => left.localeCompare(right, "es")),
@@ -547,6 +659,12 @@ export default function SalesPage({
         ? `Desde ${formatSalesPriceValue("usd", draftPriceMin)}`
         : `Hasta ${formatSalesPriceValue("usd", draftPriceMax)}`;
   const hasFullDraftPriceRange = draftPriceMin > salesPriceMinLimit && draftPriceMax < salesPriceMaxLimit;
+
+  useEffect(() => stopListingGalleryHover, [stopListingGalleryHover]);
+
+  useEffect(() => {
+    stopListingGalleryHover();
+  }, [filteredProperties, isCatalogLoading, page, stopListingGalleryHover]);
 
   useEffect(() => {
     if (!showLoaderDemo) {
@@ -765,6 +883,14 @@ export default function SalesPage({
     event.preventDefault();
     const nextFilters = { ...draftFilters };
 
+    if (filterRedirectPath) {
+      const searchParams = buildSalesFilterSearchParams(nextFilters);
+      const queryString = searchParams.toString();
+
+      window.location.href = `${filterRedirectPath}${queryString ? `?${queryString}` : ""}`;
+      return;
+    }
+
     writeSalesFilterSearchParams(nextFilters);
 
     startTransition(() => {
@@ -775,6 +901,18 @@ export default function SalesPage({
     if (isCompactFilterViewport) {
       setIsCompactFiltersOpen(false);
     }
+  };
+
+  const handleListingGalleryStep = (
+    event: ReactMouseEvent<HTMLButtonElement>,
+    propertyId: number,
+    galleryLength: number,
+    direction: -1 | 1,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    advanceListingGallery(propertyId, galleryLength, direction);
   };
 
   const handleResetFilters = () => {
@@ -818,210 +956,253 @@ export default function SalesPage({
     scrollToCatalogTop();
   };
 
+  const handleFilterFrameVariantChange = (direction: -1 | 1) => {
+    if (onFilterFrameVariantChange) {
+      onFilterFrameVariantChange(direction);
+      setActiveDropdown(null);
+      return;
+    }
+
+    setFilterFrameVariant((currentVariant) => {
+      const currentIndex = salesFilterFrameVariants.indexOf(currentVariant);
+
+      return salesFilterFrameVariants[getWrappedIndex(currentIndex + direction, salesFilterFrameVariants.length)];
+    });
+    setActiveDropdown(null);
+  };
+
   const filterForm = (
-    <form className="sales-filter-card search-card-variant-4 reveal" onSubmit={handleApplyFilters}>
+    <div className={`sales-filter-demo-shell reveal${filterOnly ? " is-visible" : ""}`}>
       <button
         type="button"
-        className={`sales-filter-toggle${isCompactFiltersOpen ? " is-open" : ""}`}
-        onClick={() => setIsCompactFiltersOpen((currentValue) => !currentValue)}
-        aria-expanded={isCompactFilterViewport ? isCompactFiltersOpen : true}
-        aria-controls={`${listingContext}-filters-panel`}
+        className="sales-filter-frame-arrow sales-filter-frame-arrow-prev"
+        onClick={() => handleFilterFrameVariantChange(-1)}
+        aria-label="Ver borde anterior del filtro"
       >
-        <span className="sales-filter-toggle-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path d="M4 7h16M7 12h10M10 17h4" />
-          </svg>
-        </span>
-        <span>Filtros</span>
-        <span className="sales-filter-toggle-caret" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path d="m6 9 6 6 6-6" />
-          </svg>
-        </span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m15 6-6 6 6 6" />
+        </svg>
       </button>
 
-      <div
-        id={`${listingContext}-filters-panel`}
-        className={`sales-filter-collapse${isCompactFiltersOpen ? " is-open" : ""}`}
-        aria-hidden={isCompactFilterViewport ? !isCompactFiltersOpen : undefined}
-        ref={filterPanelRef}
-      >
-        <div className="sales-filter-grid">
-          <SearchDropdownField
-            active={activeDropdown === "tipo"}
-            className={`sales-filter-field sales-filter-field-type${
-              draftFilters.tipo.toLowerCase() === "casa" ? " sales-filter-field-type-house" : " sales-filter-field-type-building"
-            }`}
-            label="Tipo"
-            onSelect={handleTypeFilterSelect}
-            onToggle={() => {
-              setActiveDropdown((currentValue) => (currentValue === "tipo" ? null : "tipo"));
-            }}
-            options={typeDropdownOptions}
-            value={draftFilters.tipo}
-          />
+      <form className={`sales-filter-card sales-filter-card-frame-${activeFilterFrameVariant} search-card-variant-4`} onSubmit={handleApplyFilters}>
+        <button
+          type="button"
+          className={`sales-filter-toggle${isCompactFiltersOpen ? " is-open" : ""}`}
+          onClick={() => setIsCompactFiltersOpen((currentValue) => !currentValue)}
+          aria-expanded={isCompactFilterViewport ? isCompactFiltersOpen : true}
+          aria-controls={`${listingContext}-filters-panel`}
+        >
+          <span className="sales-filter-toggle-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 7h16M7 12h10M10 17h4" />
+            </svg>
+          </span>
+          <span>{compactFilterLabel}</span>
+          <span className="sales-filter-toggle-caret" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </span>
+        </button>
 
-          <SearchDropdownField
-            active={activeDropdown === "barrio"}
-            className="sales-filter-field sales-filter-field-zone"
-            label="Barrio"
-            multipleValues={getSelectedNeighborhoods(draftFilters.barrio)}
-            onSelect={handleNeighborhoodFilterSelect}
-            onToggle={() => {
-              setActiveDropdown((currentValue) => (currentValue === "barrio" ? null : "barrio"));
-            }}
-            options={neighborhoodDropdownOptions}
-            value={draftFilters.barrio}
-          />
+        <div
+          id={`${listingContext}-filters-panel`}
+          className={`sales-filter-collapse${isCompactFiltersOpen ? " is-open" : ""}`}
+          aria-hidden={isCompactFilterViewport ? !isCompactFiltersOpen : undefined}
+          ref={filterPanelRef}
+        >
+          <div className="sales-filter-grid">
+            <SearchDropdownField
+              active={activeDropdown === "tipo"}
+              className={`sales-filter-field sales-filter-field-type${
+                draftFilters.tipo.toLowerCase() === "casa" ? " sales-filter-field-type-house" : " sales-filter-field-type-building"
+              }`}
+              label="Tipo"
+              onSelect={handleTypeFilterSelect}
+              onToggle={() => {
+                setActiveDropdown((currentValue) => (currentValue === "tipo" ? null : "tipo"));
+              }}
+              options={typeDropdownOptions}
+              value={draftFilters.tipo}
+            />
 
-          <div className="sales-filter-field sales-filter-field-price">
-            <span className="sales-filter-field-label">Precio</span>
-            {listingContext === "ventas" ? (
-              <>
+            <SearchDropdownField
+              active={activeDropdown === "barrio"}
+              className="sales-filter-field sales-filter-field-zone"
+              label="Barrio"
+              multipleValues={getSelectedNeighborhoods(draftFilters.barrio)}
+              onSelect={handleNeighborhoodFilterSelect}
+              onToggle={() => {
+                setActiveDropdown((currentValue) => (currentValue === "barrio" ? null : "barrio"));
+              }}
+              options={neighborhoodDropdownOptions}
+              value={draftFilters.barrio}
+            />
+
+            <div className="sales-filter-field sales-filter-field-price">
+              <span className="sales-filter-field-label">Precio</span>
+              {listingContext === "ventas" ? (
+                <>
+                  <button
+                    type="button"
+                    className={`search-select-trigger price-range-trigger${activeDropdown === "precio" ? " is-open" : ""}`}
+                    aria-expanded={activeDropdown === "precio"}
+                    aria-haspopup="dialog"
+                    onClick={() => {
+                      setActiveDropdown((currentValue) => (currentValue === "precio" ? null : "precio"));
+                    }}
+                  >
+                    <span className="price-range-trigger-text">{salesPriceSummary}</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </button>
+                  {hasFullDraftPriceRange ? (
+                    <span className="search-select-tooltip price-range-tooltip" role="tooltip">
+                      <span>Desde: {formatSalesPriceValue("usd", draftPriceMin)}</span>
+                      <span>Hasta: {formatSalesPriceValue("usd", draftPriceMax)}</span>
+                    </span>
+                  ) : null}
+                  {activeDropdown === "precio" ? (
+                    <div className="price-range-popover sales-price-range-popover" role="dialog" aria-label="Rango de precio">
+                      <div className="price-range-control sales-price-range-control">
+                        <label>
+                          <span>
+                            <span>Desde</span>
+                            <input
+                              className="price-range-value-input"
+                              type="text"
+                              inputMode="numeric"
+                              aria-label="Precio desde"
+                              value={draftFilters.precioMinimo ? formatSalesPriceValue("usd", Number(draftFilters.precioMinimo)) : ""}
+                              placeholder="Sin mínimo"
+                              onChange={(event) => handleSalesPriceRangeInputChange("precioMinimo", event.currentTarget.value)}
+                              onFocus={(event) => event.currentTarget.select()}
+                            />
+                          </span>
+                          <input
+                            type="range"
+                            min={salesPriceMinLimit}
+                            max={salesPriceMaxLimit}
+                            step={salesPriceStep}
+                            value={draftPriceMin}
+                            onChange={(event) => handleSalesPriceRangeChange("precioMinimo", event.currentTarget.value)}
+                          />
+                        </label>
+                        <label>
+                          <span>
+                            <span>Hasta</span>
+                            <input
+                              className="price-range-value-input"
+                              type="text"
+                              inputMode="numeric"
+                              aria-label="Precio hasta"
+                              value={draftFilters.precioMaximo ? formatSalesPriceValue("usd", Number(draftFilters.precioMaximo)) : ""}
+                              placeholder="Sin máximo"
+                              onChange={(event) => handleSalesPriceRangeInputChange("precioMaximo", event.currentTarget.value)}
+                              onFocus={(event) => event.currentTarget.select()}
+                            />
+                          </span>
+                          <input
+                            type="range"
+                            min={salesPriceMinLimit}
+                            max={salesPriceMaxLimit}
+                            step={salesPriceStep}
+                            value={draftPriceMax}
+                            onChange={(event) => handleSalesPriceRangeChange("precioMaximo", event.currentTarget.value)}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <div className="search-price-trigger-input-shell sales-price-trigger-input-shell">
+                  <span className="search-price-trigger-prefix">
+                    {`Hasta ${listingContext === "alquileres" ? "$" : "US$"}`}
+                  </span>
+                  <input
+                    className="search-price-trigger-input sales-price-trigger-input"
+                    type="text"
+                    inputMode="numeric"
+                    value={salesPriceFieldValue}
+                    onFocus={handleSalesPriceFieldFocus}
+                    onChange={(event) => handleSalesPriceFieldChange(event.currentTarget.value)}
+                    onBlur={handleSalesPriceFieldBlur}
+                  />
+                </div>
+              )}
+            </div>
+
+            <SearchDropdownField
+              active={activeDropdown === "dormitorios"}
+              className="sales-filter-field sales-filter-field-bedrooms"
+              label="Dormitorios"
+              onSelect={(value) => {
+                handleDraftFilterChange("dormitorios", value);
+                setActiveDropdown(null);
+              }}
+              onToggle={() => {
+                setActiveDropdown((currentValue) => (currentValue === "dormitorios" ? null : "dormitorios"));
+              }}
+              options={bedroomDropdownOptions}
+              value={draftFilters.dormitorios}
+            />
+
+            <label className="sales-filter-field sales-filter-field-reference">
+              <span className="sales-filter-field-label">REF.</span>
+              <input
+                type="text"
+                placeholder="Ej: 1234"
+                value={draftFilters.ref}
+                onChange={(event) => handleDraftFilterChange("ref", event.target.value)}
+              />
+            </label>
+
+            <div className="sales-filter-buttons">
+              <button type="submit" className={filterButtonClassName}>
+                <span>Buscar</span>
+              </button>
+            </div>
+          </div>
+
+          {activeFilterChips.length ? (
+            <div className="sales-filter-actions" aria-label="Filtros aplicados">
+              {activeFilterChips.map((chip) => (
                 <button
+                  key={chip.key}
                   type="button"
-                  className={`search-select-trigger price-range-trigger${activeDropdown === "precio" ? " is-open" : ""}`}
-                  aria-expanded={activeDropdown === "precio"}
-                  aria-haspopup="dialog"
-                  onClick={() => {
-                    setActiveDropdown((currentValue) => (currentValue === "precio" ? null : "precio"));
-                  }}
+                  className="sales-filter-chip"
+                  onClick={() => handleClearActiveFilter(chip.key)}
+                  aria-label={chip.clearLabel}
                 >
-                  <span className="price-range-trigger-text">{salesPriceSummary}</span>
+                  <span>{chip.label}</span>
                   <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="m6 9 6 6 6-6" />
+                    <path d="M18 6 6 18M6 6l12 12" />
                   </svg>
                 </button>
-                {hasFullDraftPriceRange ? (
-                  <span className="search-select-tooltip price-range-tooltip" role="tooltip">
-                    <span>Desde: {formatSalesPriceValue("usd", draftPriceMin)}</span>
-                    <span>Hasta: {formatSalesPriceValue("usd", draftPriceMax)}</span>
-                  </span>
-                ) : null}
-                {activeDropdown === "precio" ? (
-                  <div className="price-range-popover sales-price-range-popover" role="dialog" aria-label="Rango de precio">
-                    <div className="price-range-control sales-price-range-control">
-                      <label>
-                        <span>
-                          <span>Desde</span>
-                          <input
-                            className="price-range-value-input"
-                            type="text"
-                            inputMode="numeric"
-                            aria-label="Precio desde"
-                            value={draftFilters.precioMinimo ? formatSalesPriceValue("usd", Number(draftFilters.precioMinimo)) : ""}
-                            placeholder="Sin mínimo"
-                            onChange={(event) => handleSalesPriceRangeInputChange("precioMinimo", event.currentTarget.value)}
-                            onFocus={(event) => event.currentTarget.select()}
-                          />
-                        </span>
-                        <input
-                          type="range"
-                          min={salesPriceMinLimit}
-                          max={salesPriceMaxLimit}
-                          step={salesPriceStep}
-                          value={draftPriceMin}
-                          onChange={(event) => handleSalesPriceRangeChange("precioMinimo", event.currentTarget.value)}
-                        />
-                      </label>
-                      <label>
-                        <span>
-                          <span>Hasta</span>
-                          <input
-                            className="price-range-value-input"
-                            type="text"
-                            inputMode="numeric"
-                            aria-label="Precio hasta"
-                            value={draftFilters.precioMaximo ? formatSalesPriceValue("usd", Number(draftFilters.precioMaximo)) : ""}
-                            placeholder="Sin máximo"
-                            onChange={(event) => handleSalesPriceRangeInputChange("precioMaximo", event.currentTarget.value)}
-                            onFocus={(event) => event.currentTarget.select()}
-                          />
-                        </span>
-                        <input
-                          type="range"
-                          min={salesPriceMinLimit}
-                          max={salesPriceMaxLimit}
-                          step={salesPriceStep}
-                          value={draftPriceMax}
-                          onChange={(event) => handleSalesPriceRangeChange("precioMaximo", event.currentTarget.value)}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                ) : null}
-              </>
-            ) : (
-              <div className="search-price-trigger-input-shell sales-price-trigger-input-shell">
-                <span className="search-price-trigger-prefix">
-                  {`Hasta ${listingContext === "alquileres" ? "$" : "US$"}`}
-                </span>
-                <input
-                  className="search-price-trigger-input sales-price-trigger-input"
-                  type="text"
-                  inputMode="numeric"
-                  value={salesPriceFieldValue}
-                  onFocus={handleSalesPriceFieldFocus}
-                  onChange={(event) => handleSalesPriceFieldChange(event.currentTarget.value)}
-                  onBlur={handleSalesPriceFieldBlur}
-                />
-              </div>
-            )}
-          </div>
-
-          <SearchDropdownField
-            active={activeDropdown === "dormitorios"}
-            className="sales-filter-field sales-filter-field-bedrooms"
-            label="Dormitorios"
-            onSelect={(value) => {
-              handleDraftFilterChange("dormitorios", value);
-              setActiveDropdown(null);
-            }}
-            onToggle={() => {
-              setActiveDropdown((currentValue) => (currentValue === "dormitorios" ? null : "dormitorios"));
-            }}
-            options={bedroomDropdownOptions}
-            value={draftFilters.dormitorios}
-          />
-
-          <label className="sales-filter-field sales-filter-field-reference">
-            <span className="sales-filter-field-label">REF.</span>
-            <input
-              type="text"
-              placeholder="Ej: 1234"
-              value={draftFilters.ref}
-              onChange={(event) => handleDraftFilterChange("ref", event.target.value)}
-            />
-          </label>
-
-          <div className="sales-filter-buttons">
-            <button type="submit" className="primary-button search-cta-button">
-              Buscar
-            </button>
-          </div>
+              ))}
+            </div>
+          ) : null}
         </div>
+      </form>
 
-        {activeFilterChips.length ? (
-          <div className="sales-filter-actions" aria-label="Filtros aplicados">
-            {activeFilterChips.map((chip) => (
-              <button
-                key={chip.key}
-                type="button"
-                className="sales-filter-chip"
-                onClick={() => handleClearActiveFilter(chip.key)}
-                aria-label={chip.clearLabel}
-              >
-                <span>{chip.label}</span>
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
-              </button>
-            ))}
-          </div>
-        ) : null}
-      </div>
-    </form>
+      <button
+        type="button"
+        className="sales-filter-frame-arrow sales-filter-frame-arrow-next"
+        onClick={() => handleFilterFrameVariantChange(1)}
+        aria-label="Ver borde siguiente del filtro"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m9 6 6 6-6 6" />
+        </svg>
+      </button>
+    </div>
   );
+
+  if (filterOnly) {
+    return filterForm;
+  }
 
   return (
     <div className="sales-page">
@@ -1054,68 +1235,108 @@ export default function SalesPage({
             </section>
           ) : visibleProperties.length ? (
             <div className="sales-grid" id="ventas-catalogo">
-              {visibleProperties.map((property, index) => (
-                <article
-                  key={property.id}
-                  className={`sales-listing-card${property.reserved ? " is-reserved" : ""} reveal reveal-delay-${(index % 4) + 1}`}
-                >
-                  <a
-                    href={getSalesPropertyUrl(property.ref, listingContext)}
-                    className="sales-listing-card-hitarea"
-                    aria-label={`Ver detalles de ${property.title}`}
-                  />
+              {visibleProperties.map((property, index) => {
+                const galleryItems = getSalesListingCardGallery(property);
+                const activeGalleryIndex = getWrappedIndex(listingGalleryIndexes[property.id] ?? 0, galleryItems.length);
+                const activeGalleryItem = galleryItems[activeGalleryIndex] ?? galleryItems[0];
+                const hasGalleryControls = galleryItems.length > 1;
+                const galleryAnimationClass = listingGalleryAnimationClasses[index] ?? listingGalleryAnimationClasses[0];
 
-                  <div className="sales-listing-media">
-                    <img
-                      src={property.cardImage}
-                      alt={property.title}
-                      className="sales-listing-image"
-                      width="700"
-                      height="394"
-                      loading="lazy"
-                      decoding="async"
-                      style={{ objectPosition: property.imagePosition ?? "center center" }}
+                return (
+                  <article
+                    key={property.id}
+                    className={`sales-listing-card${property.reserved ? " is-reserved" : ""} reveal reveal-delay-${(index % 4) + 1}`}
+                    onMouseEnter={() => handleListingGalleryHoverStart(property.id, galleryItems.length)}
+                    onMouseLeave={stopListingGalleryHover}
+                  >
+                    <a
+                      href={getSalesPropertyUrl(property.ref, listingContext)}
+                      className="sales-listing-card-hitarea"
+                      aria-label={`Ver detalles de ${property.title}`}
                     />
 
-                    <div className="sales-listing-badges">
-                      {property.reserved ? (
-                        <span className="sales-listing-pill is-reserved">Reservada</span>
+                    <div className="sales-listing-media">
+                      <div
+                        key={`${property.id}-${activeGalleryIndex}-${activeGalleryItem.image}`}
+                        className={`sales-listing-image-track ${galleryAnimationClass}`}
+                      >
+                        <img
+                          src={activeGalleryItem.image}
+                          alt={activeGalleryItem.alt || property.title}
+                          className="sales-listing-image"
+                          width="700"
+                          height="394"
+                          loading="lazy"
+                          decoding="async"
+                          style={{ objectPosition: activeGalleryItem.objectPosition ?? property.imagePosition ?? "center center" }}
+                        />
+                      </div>
+
+                      {hasGalleryControls ? (
+                        <>
+                          <button
+                            type="button"
+                            className="sales-listing-gallery-button sales-listing-gallery-button-prev"
+                            aria-label={`Ver imagen anterior de ${property.title}`}
+                            onClick={(event) => handleListingGalleryStep(event, property.id, galleryItems.length, -1)}
+                          >
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="m15 18-6-6 6-6" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            className="sales-listing-gallery-button sales-listing-gallery-button-next"
+                            aria-label={`Ver imagen siguiente de ${property.title}`}
+                            onClick={(event) => handleListingGalleryStep(event, property.id, galleryItems.length, 1)}
+                          >
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="m9 6 6 6-6 6" />
+                            </svg>
+                          </button>
+                        </>
                       ) : null}
-                    </div>
-                  </div>
 
-                  <div className="sales-listing-body">
-                    <div className="sales-listing-meta">
-                      <span>{property.location}</span>
-                      <span>Ref. {property.ref}</span>
-                    </div>
-
-                    <div className="sales-listing-copy">
-                      <h3>{property.title}</h3>
-                      <p>{property.summary}</p>
-                    </div>
-
-                    <div className="sales-listing-stats" aria-label={`Datos de ${property.title}`}>
-                      <div className="sales-listing-stat">
-                        <img src="/optimized/home/icon-dorm.webp" alt="" width="40" height="36" />
-                        <span>{property.rooms}</span>
-                      </div>
-                      <div className="sales-listing-stat">
-                        <img src="/optimized/home/icon-banos.webp" alt="" width="39" height="40" />
-                        <span>{property.bathrooms}</span>
-                      </div>
-                      <div className="sales-listing-stat">
-                        <img src="/optimized/home/icon-sup.webp" alt="" width="40" height="36" />
-                        <span>{property.size}</span>
+                      <div className="sales-listing-badges">
+                        {property.reserved ? (
+                          <span className="sales-listing-pill is-reserved">Reservada</span>
+                        ) : null}
                       </div>
                     </div>
 
-                    <div className="sales-listing-footer">
-                      <strong>{property.price}</strong>
+                    <div className="sales-listing-body">
+                      <div className="sales-listing-meta">
+                        <span>{property.location}</span>
+                        <span>Ref. {property.ref}</span>
+                      </div>
+
+                      <div className="sales-listing-copy">
+                        <h3>{property.title}</h3>
+                        <p>{property.summary}</p>
+                      </div>
+
+                      <div className="sales-listing-stats" aria-label={`Datos de ${property.title}`}>
+                        <div className="sales-listing-stat">
+                          <img src="/optimized/home/icon-dorm.webp" alt="" width="40" height="36" />
+                          <span>{property.rooms}</span>
+                        </div>
+                        <div className="sales-listing-stat">
+                          <img src="/optimized/home/icon-banos.webp" alt="" width="39" height="40" />
+                          <span>{property.bathrooms}</span>
+                        </div>
+                        <div className="sales-listing-stat">
+                          <img src="/optimized/home/icon-sup.webp" alt="" width="40" height="36" />
+                          <span>{property.size}</span>
+                        </div>
+                      </div>
+
+                      <div className="sales-listing-footer">
+                        <strong>{property.price}</strong>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           ) : (
             <div className="sales-empty-state reveal reveal-delay-1">

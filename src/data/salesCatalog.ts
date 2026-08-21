@@ -1,8 +1,10 @@
 export type SalesGalleryItem = {
+  mediaType?: "image" | "video";
   image: string;
   thumbImage?: string;
   alt: string;
   objectPosition?: string;
+  videoSrc?: string;
 };
 
 export type SalesProperty = {
@@ -24,6 +26,7 @@ export type SalesProperty = {
   image: string;
   cardImage: string;
   imagePosition?: string;
+  videoSrc?: string;
   reserved?: boolean;
   summary: string;
   description: string;
@@ -60,6 +63,7 @@ type SalesPropertySeed = Omit<
 
 function buildGallery(title: string, primaryImage: string, extraImages: string[]): SalesGalleryItem[] {
   return [primaryImage, ...extraImages].slice(0, 4).map((image, index) => ({
+    mediaType: "image",
     image: getOptimizedGalleryImage(image),
     thumbImage: getOptimizedGalleryThumb(image),
     alt: `${title} imagen ${index + 1}`,
@@ -152,13 +156,69 @@ function buildAddress(location: string) {
   return `${location}, Montevideo`;
 }
 
-function enrichProperty(property: SalesPropertySeed, extraImages: string[]) {
+function isVideoGalleryItem(item: SalesGalleryItem) {
+  return item.mediaType === "video" || Boolean(item.videoSrc);
+}
+
+function appendVideoToGallery(property: SalesPropertySeed, gallery: SalesGalleryItem[]) {
+  const imageItems = gallery.filter((item) => !isVideoGalleryItem(item));
+  const fallbackPosterImage = imageItems[0]?.image ?? getOptimizedGalleryImage(property.image);
+  const fallbackThumbImage = imageItems[0]?.thumbImage ?? getOptimizedGalleryThumb(property.image);
+  const seenVideoSources = new Set<string>();
+  const videoItems = gallery.filter(isVideoGalleryItem).flatMap((item, index) => {
+    const videoSrc = item.videoSrc?.trim();
+
+    if (!videoSrc || seenVideoSources.has(videoSrc)) {
+      return [];
+    }
+
+    seenVideoSources.add(videoSrc);
+
+    return [{
+      mediaType: "video",
+      image: item.image || fallbackPosterImage,
+      thumbImage: item.thumbImage ?? fallbackThumbImage,
+      alt: item.alt || `${property.title} video ${index + 1}`,
+      objectPosition: item.objectPosition ?? property.imagePosition ?? "center center",
+      videoSrc,
+    } satisfies SalesGalleryItem];
+  });
+
+  const propertyVideoSrc = property.videoSrc?.trim();
+
+  if (propertyVideoSrc && !seenVideoSources.has(propertyVideoSrc)) {
+    videoItems.push({
+      mediaType: "video",
+      image: fallbackPosterImage,
+      thumbImage: fallbackThumbImage,
+      alt: `${property.title} video`,
+      objectPosition: property.imagePosition ?? "center center",
+      videoSrc: propertyVideoSrc,
+    });
+  }
+
+  if (!videoItems.length) {
+    return imageItems;
+  }
+
+  return [
+    ...imageItems,
+    ...videoItems,
+  ] satisfies SalesGalleryItem[];
+}
+
+function enrichProperty(property: SalesPropertySeed, extraImages: string[]): SalesProperty {
+  const gallery = property.gallery ?? buildGallery(property.title, property.image, extraImages);
+  const galleryWithVideo = appendVideoToGallery(property, gallery);
+  const videoSrc = property.videoSrc?.trim() || galleryWithVideo.find(isVideoGalleryItem)?.videoSrc?.trim();
+
   return {
     ...property,
     cardImage: property.cardImage ?? property.image,
     address: property.address ?? buildAddress(property.location),
     description: property.description ?? buildDescription(property),
-    gallery: property.gallery ?? buildGallery(property.title, property.image, extraImages),
+    videoSrc,
+    gallery: galleryWithVideo,
     characteristics: property.characteristics ?? buildCharacteristics(property),
     amenities: property.amenities ?? buildAmenities(property),
     services: property.services ?? [],
@@ -198,6 +258,7 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     size: "46 m²",
     image: "/property-punta-carretas.png",
     cardImage: "/optimized/listings/property-punta-carretas-card.webp",
+    videoSrc: "/property%20video%20test.mp4",
     summary: "Perfil joven, flexible y con una puesta más editorial para una zona con demanda sostenida.",
     tags: ["Loft", "Cerca del mar", "Entrega inmediata"],
   },
@@ -216,6 +277,25 @@ const salesCatalogSeeds: SalesPropertySeed[] = [
     cardImage: "/optimized/listings/property-la-blanqueada-card.webp",
     reserved: true,
     summary: "Monoambiente funcional con circulación clara y potencial para primera vivienda o renta universitaria.",
+    gallery: [
+      ...buildGallery("La Blanqueada Studio", "/property-la-blanqueada.png", ["/3.png", "/4.png"]),
+      {
+        mediaType: "video",
+        image: "https://i.ytimg.com/vi/bkLGeMMAlyg/hqdefault.jpg",
+        thumbImage: "https://i.ytimg.com/vi/bkLGeMMAlyg/hqdefault.jpg",
+        alt: "La Blanqueada Studio video short",
+        objectPosition: "center center",
+        videoSrc: "https://www.youtube.com/shorts/bkLGeMMAlyg",
+      },
+      {
+        mediaType: "video",
+        image: "https://i.ytimg.com/vi/9QFQK4OnZFY/hqdefault.jpg",
+        thumbImage: "https://i.ytimg.com/vi/9QFQK4OnZFY/hqdefault.jpg",
+        alt: "La Blanqueada Studio video recorrido",
+        objectPosition: "center center",
+        videoSrc: "https://www.youtube.com/watch?v=9QFQK4OnZFY",
+      },
+    ],
     tags: ["Monoambiente", "Bajo mantenimiento", "Buen metraje"],
   },
   {

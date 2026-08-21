@@ -1,3 +1,5 @@
+import { ContactForm } from "../components/ContactSection";
+
 type ServiceItem = {
   title: string;
   body: string;
@@ -135,19 +137,21 @@ export default function CommonExpensesPage() {
             </div>
           </div>
 
-          <aside className="spotlight-panel common-expenses-management-visual reveal reveal-delay-2">
-            <div className="spotlight-image-wrap">
-              <img
-                src="/rent-city.jpg"
-                alt="Edificio residencial administrado por Lars"
-                width="900"
-                height="1292"
-                fetchPriority="high"
-                decoding="async"
-              />
-            </div>
-            
-          </aside>
+          <div className="common-expenses-visual-stack reveal reveal-delay-2">
+            <aside className="spotlight-panel common-expenses-management-visual">
+              <div className="spotlight-image-wrap">
+                <img
+                  src="/rent-city.jpg"
+                  alt="Edificio residencial administrado por Lars"
+                  width="900"
+                  height="1292"
+                  fetchPriority="high"
+                  decoding="async"
+                />
+              </div>
+            </aside>
+            <ContactForm className="common-expenses-visual-contact-form" />
+          </div>
 
           <div className="common-expenses-card-grid common-expenses-card-grid-secondary">
             {serviceItems.slice(serviceItemsSplitIndex).map((item, index) => (
@@ -204,18 +208,21 @@ export default function CommonExpensesPage() {
 
           </div>
 
-          <aside className="spotlight-panel common-expenses-management-visual common-expenses-mobile-bottom-visual reveal">
-            <div className="spotlight-image-wrap">
-              <img
-                src="/rent-city.jpg"
-                alt="Edificio residencial administrado por Lars"
-                width="900"
-                height="1292"
-                loading="lazy"
-                decoding="async"
-              />
-            </div>
-          </aside>
+          <div className="common-expenses-mobile-bottom-visual-stack reveal">
+            <aside className="spotlight-panel common-expenses-management-visual common-expenses-mobile-bottom-visual">
+              <div className="spotlight-image-wrap">
+                <img
+                  src="/rent-city.jpg"
+                  alt="Edificio residencial administrado por Lars"
+                  width="900"
+                  height="1292"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+            </aside>
+            <ContactForm className="common-expenses-visual-contact-form" />
+          </div>
         </div>
       </section>
     </div>
